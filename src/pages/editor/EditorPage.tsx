@@ -1,11 +1,14 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTheme } from '../../shared/context/ThemeContext'
 import styles from './EditorPage.module.css'
 
 export default function EditorPage() {
     const navigate = useNavigate()
+    const { theme, toggleTheme } = useTheme()
     const [isDragging, setIsDragging] = useState(false)
     const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+    const [zoom, setZoom] = useState(1)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const handleLogout = () => {
@@ -43,6 +46,7 @@ export default function EditorPage() {
                 const reader = new FileReader()
                 reader.onload = (e) => {
                     setUploadedImage(e.target?.result as string)
+                    setZoom(1) // Reset zoom on new upload
                 }
                 reader.readAsDataURL(file)
             } else {
@@ -54,6 +58,10 @@ export default function EditorPage() {
     const triggerFileInput = () => {
         fileInputRef.current?.click()
     }
+
+    const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 3))
+    const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5))
+    const handleZoomReset = () => setZoom(1)
 
     return (
         <div className={styles.container}>
@@ -67,6 +75,30 @@ export default function EditorPage() {
                 </div>
 
                 <div className={styles.toolbar}>
+                    {/* Zoom Controls */}
+                    <div className={styles.zoomControls}>
+                        <button onClick={handleZoomOut} className={styles.toolButton} title="Zoom Out">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                        </button>
+                        <span className={styles.zoomLevel}>{Math.round(zoom * 100)}%</span>
+                        <button onClick={handleZoomIn} className={styles.toolButton} title="Zoom In">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                        </button>
+                        <button onClick={handleZoomReset} className={styles.toolButton} title="Reset Zoom">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                <path d="M3 3v5h5" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)', margin: '0 8px' }} />
+
                     <button className={styles.toolButton}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
@@ -78,7 +110,30 @@ export default function EditorPage() {
                     <button className={`${styles.toolButton} ${styles.primaryButton}`}>
                         Export
                     </button>
+
                     <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)', margin: '0 8px' }} />
+
+                    {/* Theme Toggle */}
+                    <button onClick={toggleTheme} className={styles.toolButton} title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}>
+                        {theme === 'light' ? (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                            </svg>
+                        ) : (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="5" />
+                                <line x1="12" y1="1" x2="12" y2="3" />
+                                <line x1="12" y1="21" x2="12" y2="23" />
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                                <line x1="1" y1="12" x2="3" y2="12" />
+                                <line x1="21" y1="12" x2="23" y2="12" />
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                            </svg>
+                        )}
+                    </button>
+
                     <button
                         onClick={handleLogout}
                         className={styles.toolButton}
@@ -150,7 +205,10 @@ export default function EditorPage() {
                             />
                         </div>
                     ) : (
-                        <div className={styles.canvasContent}>
+                        <div
+                            className={styles.canvasContent}
+                            style={{ transform: `scale(${zoom})`, transition: 'transform 0.1s ease-out' }}
+                        >
                             <img src={uploadedImage} alt="Blueprint" className={styles.blueprintImage} />
                         </div>
                     )}

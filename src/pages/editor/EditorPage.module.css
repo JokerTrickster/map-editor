@@ -198,6 +198,7 @@
     box-shadow: var(--shadow-lg);
     max-width: 90%;
     max-height: 90%;
+    transform-origin: center center;
 }
 
 .blueprintImage {
@@ -205,4 +206,25 @@
     max-width: 100%;
     max-height: 100%;
     border-radius: var(--radius-sm);
+    pointer-events: none;
+    /* Prevent image dragging */
+}
+
+/* Zoom Controls */
+.zoomControls {
+    display: flex;
+    align-items: center;
+    background-color: var(--color-surface-hover);
+    border-radius: var(--radius-md);
+    padding: 2px;
+    margin-right: var(--space-2);
+}
+
+.zoomLevel {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    min-width: 48px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
 }
