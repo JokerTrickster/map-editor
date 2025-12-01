@@ -1,0 +1,208 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: var(--color-bg);
+    overflow: hidden;
+}
+
+/* Header / Toolbar */
+.header {
+    height: 56px;
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-4);
+    z-index: var(--z-dropdown);
+}
+
+.logo {
+    font-weight: 700;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-md);
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.toolButton {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    transition: all var(--transition-fast);
+}
+
+.toolButton:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text);
+}
+
+.primaryButton {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.primaryButton:hover {
+    background-color: var(--color-primary-hover);
+    color: white;
+}
+
+/* Main Layout */
+.main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Left Sidebar - Tools */
+.leftSidebar {
+    width: 64px;
+    background-color: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-4) 0;
+    gap: var(--space-4);
+}
+
+.iconButton {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.iconButton:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text);
+}
+
+.iconButtonActive {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--color-primary);
+}
+
+/* Canvas Area */
+.canvasArea {
+    flex: 1;
+    background-color: #13151a;
+    /* Darker background for canvas */
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image:
+        radial-gradient(circle, #2d3139 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Right Sidebar - Properties */
+.rightSidebar {
+    width: 280px;
+    background-color: var(--color-surface);
+    border-left: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebarHeader {
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+}
+
+.sidebarContent {
+    padding: var(--space-4);
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Upload Zone (Empty State) */
+.uploadZone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-16);
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-xl);
+    background-color: var(--color-surface);
+    transition: all var(--transition-normal);
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+}
+
+.uploadZone:hover {
+    border-color: var(--color-primary);
+    background-color: rgba(59, 130, 246, 0.05);
+    transform: scale(1.01);
+}
+
+.uploadIcon {
+    width: 64px;
+    height: 64px;
+    color: var(--color-text-tertiary);
+    margin-bottom: var(--space-6);
+}
+
+.uploadTitle {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+}
+
+.uploadDesc {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-8);
+}
+
+.uploadButton {
+    background-color: var(--color-primary);
+    color: white;
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    transition: background-color var(--transition-fast);
+}
+
+.uploadButton:hover {
+    background-color: var(--color-primary-hover);
+}
+
+/* Canvas Content */
+.canvasContent {
+    position: relative;
+    box-shadow: var(--shadow-lg);
+    max-width: 90%;
+    max-height: 90%;
+}
+
+.blueprintImage {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: var(--radius-sm);
+}
