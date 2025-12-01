@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 309 614" preserveAspectRatio="none">
+  <!-- Frame (외곽선) -->
+  <rect x="0" y="0" width="309" height="614" 
+        fill="transparent" 
+        stroke="#1B3852" 
+        stroke-width="10"
+        vector-effect="non-scaling-stroke"/>
+  
+  <!-- Top line (가로) -->
+  <line x1="78.5" y1="0" x2="230.5" y2="0" 
+        stroke="#FFCA28" 
+        stroke-width="10"
+        vector-effect="non-scaling-stroke"/>
+  
+  <!-- Left line (세로 - 좌측, 더 길게) -->
+  <line x1="0" y1="78.5" x2="0" y2="535.5" 
+        stroke="#FFCA28" 
+        stroke-width="10"
+        vector-effect="non-scaling-stroke"/>
+  
+  <!-- Right line (세로 - 우측, 더 길게) -->
+  <line x1="309" y1="78.5" x2="309" y2="535.5" 
+        stroke="#FFCA28" 
+        stroke-width="10"
+        vector-effect="non-scaling-stroke"/>
+  
+  <!-- Bottom line (가로) -->
+  <line x1="78.5" y1="614" x2="230.5" y2="614" 
+        stroke="#FFCA28" 
+        stroke-width="10"
+        vector-effect="non-scaling-stroke"/>
+</svg>
+

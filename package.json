@@ -12,15 +12,19 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@joint/core": "^4.2.1",
+    "@react-oauth/google": "^0.12.1",
+    "@tanstack/react-query": "^5.14.2",
+    "jointjs": "^3.7.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.0",
-    "zustand": "^4.4.7",
-    "@tanstack/react-query": "^5.14.2",
     "zod": "^3.22.4",
-    "@react-oauth/google": "^0.12.1"
+    "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.1.2",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
@@ -29,11 +33,9 @@
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "playwright": "^1.40.1",
     "typescript": "^5.3.3",
     "vite": "^5.0.8",
-    "vitest": "^1.0.4",
-    "@testing-library/react": "^14.1.2",
-    "@testing-library/jest-dom": "^6.1.5",
-    "playwright": "^1.40.1"
+    "vitest": "^1.0.4"
   }
 }
