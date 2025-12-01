@@ -94,17 +94,20 @@ export default function EditorPage() {
     useEffect(() => {
         if (!paperRef.current) return
 
-        const style = getComputedStyle(document.documentElement)
-        const gridColor = style.getPropertyValue('--color-canvas-grid').trim()
-        const bgColor = style.getPropertyValue('--color-canvas-bg').trim()
+        // Use setTimeout to ensure the DOM has been updated by ThemeProvider
+        setTimeout(() => {
+            const style = getComputedStyle(document.documentElement)
+            const gridColor = style.getPropertyValue('--color-canvas-grid').trim()
+            const bgColor = style.getPropertyValue('--color-canvas-bg').trim()
 
-        const paper = paperRef.current as any
-        if (paper.setGrid) {
-            paper.setGrid({ name: 'dot', args: { color: gridColor, thickness: 1 } })
-        }
-        if (paper.drawBackground) {
-            paper.drawBackground({ color: bgColor })
-        }
+            const paper = paperRef.current as any
+            if (paper.setGrid) {
+                paper.setGrid({ name: 'dot', args: { color: gridColor, thickness: 1 } })
+            }
+            if (paper.drawBackground) {
+                paper.drawBackground({ color: bgColor })
+            }
+        }, 0)
     }, [theme])
 
     const handleLogout = () => {
