@@ -168,7 +168,7 @@ export function transformCoordinates(
   const {
     minX,
     minY,
-    scale = 0.1,     // 1:10 scale
+    scale = 1.0,     // 1:1 scale (preserve original units)
     flipY = true     // Flip Y axis (AutoCAD uses negative Y)
   } = options
 

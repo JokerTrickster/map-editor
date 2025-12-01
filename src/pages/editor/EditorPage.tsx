@@ -20,6 +20,10 @@ export default function EditorPage() {
     const graphRef = useRef<dia.Graph | null>(null)
     const paperRef = useRef<dia.Paper | null>(null)
 
+    // Panning state refs
+    const isPanning = useRef(false)
+    const lastMousePosition = useRef({ x: 0, y: 0 })
+
     // Initialize JointJS canvas (Run once)
     useEffect(() => {
         if (!canvasRef.current) return
@@ -46,10 +50,43 @@ export default function EditorPage() {
         // Append paper to container
         canvasRef.current.appendChild(paper.el)
 
+        // Panning Handlers
+        paper.on('blank:pointerdown', (evt: dia.Event) => {
+            isPanning.current = true
+            lastMousePosition.current = { x: evt.clientX || 0, y: evt.clientY || 0 }
+            if (canvasRef.current) {
+                canvasRef.current.style.cursor = 'grabbing'
+            }
+        })
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isPanning.current || !paper) return
+
+            const dx = e.clientX - lastMousePosition.current.x
+            const dy = e.clientY - lastMousePosition.current.y
+
+            const currentTranslate = paper.translate()
+            paper.translate(currentTranslate.tx + dx, currentTranslate.ty + dy)
+
+            lastMousePosition.current = { x: e.clientX, y: e.clientY }
+        }
+
+        const handleMouseUp = () => {
+            isPanning.current = false
+            if (canvasRef.current) {
+                canvasRef.current.style.cursor = 'default'
+            }
+        }
+
+        document.addEventListener('mousemove', handleMouseMove)
+        document.addEventListener('mouseup', handleMouseUp)
+
         // Cleanup
         return () => {
             paper.remove()
             graph.clear()
+            document.removeEventListener('mousemove', handleMouseMove)
+            document.removeEventListener('mouseup', handleMouseUp)
         }
     }, [])
 
@@ -62,8 +99,12 @@ export default function EditorPage() {
         const bgColor = style.getPropertyValue('--color-canvas-bg').trim()
 
         const paper = paperRef.current as any
-        paper.drawGrid({ name: 'dot', args: { color: gridColor, thickness: 1 } })
-        paper.drawBackground({ color: bgColor })
+        if (paper.setGrid) {
+            paper.setGrid({ name: 'dot', args: { color: gridColor, thickness: 1 } })
+        }
+        if (paper.drawBackground) {
+            paper.drawBackground({ color: bgColor })
+        }
     }, [theme])
 
     const handleLogout = () => {

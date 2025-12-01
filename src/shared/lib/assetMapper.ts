@@ -61,34 +61,37 @@ export function getAssetPath(layer: string): string {
 /**
  * Get fill color based on layer type
  */
+/**
+ * Get fill color based on layer type
+ */
 export function getLayerFillColor(layer: string): string {
   if (layer.startsWith('p-parking-large-electric')) {
-    return 'rgba(34, 197, 94, 0.5)'  // Green for electric
+    return 'var(--color-map-parking-electric-fill)'
   }
   if (layer.startsWith('p-parking-large-women')) {
-    return 'rgba(236, 72, 153, 0.5)'  // Pink for women
+    return 'var(--color-map-parking-women-fill)'
   }
   if (layer.startsWith('p-parking-disable')) {
-    return 'rgba(239, 68, 68, 0.5)'  // Red for disabled
+    return 'var(--color-map-parking-disable-fill)'
   }
   if (layer.startsWith('p-parking-small')) {
-    return 'rgba(245, 158, 11, 0.5)'  // Orange for small cars
+    return 'var(--color-map-parking-basic-fill)' // Using basic for small for now or add specific
   }
   if (layer.startsWith('p-parking-large')) {
-    return 'rgba(168, 85, 247, 0.5)'  // Purple for large
+    return 'var(--color-map-parking-basic-fill)' // Using basic for large for now or add specific
   }
   if (layer.startsWith('p-parking-basic')) {
-    return 'rgba(59, 130, 246, 0.5)'  // Blue for basic
+    return 'var(--color-map-parking-basic-fill)'
   }
   if (layer.startsWith('e-zone-area')) {
-    return 'rgba(156, 163, 175, 0.3)'  // Gray for zones
+    return 'var(--color-map-line)' // Using line color for zones with low opacity
   }
   if (layer.startsWith('p-guideboard-area')) {
-    return 'rgba(251, 191, 36, 0.3)'  // Yellow for guideboards
+    return 'var(--color-map-line)'
   }
 
   // Default
-  return 'rgba(156, 163, 175, 0.3)'
+  return 'var(--color-map-line)'
 }
 
 /**
@@ -96,32 +99,32 @@ export function getLayerFillColor(layer: string): string {
  */
 export function getLayerStrokeColor(layer: string): string {
   if (layer.startsWith('p-parking-large-electric')) {
-    return '#22c55e'  // Green
+    return 'var(--color-map-parking-electric-stroke)'
   }
   if (layer.startsWith('p-parking-large-women')) {
-    return '#ec4899'  // Pink
+    return 'var(--color-map-parking-women-stroke)'
   }
   if (layer.startsWith('p-parking-disable')) {
-    return '#ef4444'  // Red
+    return 'var(--color-map-parking-disable-stroke)'
   }
   if (layer.startsWith('p-parking-small')) {
-    return '#f59e0b'  // Orange
+    return 'var(--color-map-parking-basic-stroke)'
   }
   if (layer.startsWith('p-parking-large')) {
-    return '#bf9bde'  // Purple
+    return 'var(--color-map-parking-basic-stroke)'
   }
   if (layer.startsWith('e-outline')) {
-    return '#ffffff'  // White for outlines
+    return 'var(--color-map-line)'
   }
   if (layer.startsWith('e-innerline')) {
-    return '#6b7280'  // Gray for inner lines
+    return 'var(--color-map-line)'
   }
   if (layer.startsWith('l-lightingline')) {
-    return '#fbbf24'  // Yellow for lighting
+    return 'var(--color-map-line)'
   }
 
   // Default
-  return '#9ca3af'
+  return 'var(--color-map-line)'
 }
 
 /**
