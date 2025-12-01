@@ -24,12 +24,18 @@ import {
 /**
  * Create elements from grouped entities
  */
-export function createElementsFromEntities(entities: GroupedEntity[]): dia.Element[] {
+/**
+ * Create elements from grouped entities
+ */
+export function createElementsFromEntities(
+  entities: GroupedEntity[],
+  bounds: { minX: number; minY: number }
+): dia.Element[] {
   const elements: dia.Element[] = []
 
   entities.forEach(entity => {
     try {
-      const element = createElementFromEntity(entity)
+      const element = createElementFromEntity(entity, bounds)
       if (element) {
         elements.push(element)
       }
@@ -45,7 +51,10 @@ export function createElementsFromEntities(entities: GroupedEntity[]): dia.Eleme
 /**
  * Create a single element from entity
  */
-function createElementFromEntity(entity: GroupedEntity): dia.Element | null {
+function createElementFromEntity(
+  entity: GroupedEntity,
+  bounds: { minX: number; minY: number }
+): dia.Element | null {
   const { layer, points } = entity
 
   // Skip empty entities
@@ -53,13 +62,13 @@ function createElementFromEntity(entity: GroupedEntity): dia.Element | null {
 
   // Route to appropriate renderer based on layer type
   if (isPolygonLayer(layer) && entity.isPolygon) {
-    return createPolygonElement(entity)
+    return createPolygonElement(entity, bounds)
   } else if (isPointLayer(layer)) {
-    return createPointElements(entity)[0] // Return first point
+    return createPointElements(entity, bounds)[0] // Return first point
   } else if (isLineLayer(layer)) {
-    return createLineElement(entity)
+    return createLineElement(entity, bounds)
   } else if (isTextLayer(layer)) {
-    return createTextElement(entity)
+    return createTextElement(entity, bounds)
   }
 
   return null
@@ -68,12 +77,15 @@ function createElementFromEntity(entity: GroupedEntity): dia.Element | null {
 /**
  * Create polygon element (parking areas, zones)
  */
-function createPolygonElement(entity: GroupedEntity): dia.Element {
+function createPolygonElement(
+  entity: GroupedEntity,
+  bounds: { minX: number; minY: number }
+): dia.Element {
   const { layer, points, entityHandle } = entity
 
   // Transform all coordinates
   const transformedCoords = points.map(p =>
-    transformCoordinates(p.x, p.y)
+    transformCoordinates(p.x, p.y, { minX: bounds.minX, minY: bounds.minY })
   )
 
   // Generate SVG path
@@ -111,12 +123,15 @@ function createPolygonElement(entity: GroupedEntity): dia.Element {
 /**
  * Create point elements (CCTV, chargers, etc.)
  */
-function createPointElements(entity: GroupedEntity): dia.Element[] {
+function createPointElements(
+  entity: GroupedEntity,
+  bounds: { minX: number; minY: number }
+): dia.Element[] {
   const { layer, points } = entity
   const elements: dia.Element[] = []
 
   points.forEach((point, index) => {
-    const pos = transformCoordinates(point.x, point.y)
+    const pos = transformCoordinates(point.x, point.y, { minX: bounds.minX, minY: bounds.minY })
     const size = getIconSize(layer)
     const assetPath = getAssetPath(layer)
 
@@ -156,14 +171,17 @@ function createPointElements(entity: GroupedEntity): dia.Element[] {
 /**
  * Create line element (outlines, inner lines)
  */
-function createLineElement(entity: GroupedEntity): dia.Element | null {
+function createLineElement(
+  entity: GroupedEntity,
+  bounds: { minX: number; minY: number }
+): dia.Element | null {
   const { layer, points } = entity
 
   if (points.length < 2) return null
 
   // Transform coordinates
   const transformedCoords = points.map(p =>
-    transformCoordinates(p.x, p.y)
+    transformCoordinates(p.x, p.y, { minX: bounds.minX, minY: bounds.minY })
   )
 
   // Create polyline using Path
@@ -195,13 +213,16 @@ function createLineElement(entity: GroupedEntity): dia.Element | null {
 /**
  * Create text/label element
  */
-function createTextElement(entity: GroupedEntity): dia.Element | null {
+function createTextElement(
+  entity: GroupedEntity,
+  bounds: { minX: number; minY: number }
+): dia.Element | null {
   const { layer, points } = entity
 
   if (points.length === 0 || !points[0].text) return null
 
   const point = points[0]
-  const pos = transformCoordinates(point.x, point.y)
+  const pos = transformCoordinates(point.x, point.y, { minX: bounds.minX, minY: bounds.minY })
 
   return new shapes.standard.Rectangle({
     id: `${layer}_${point.entityHandle}`,
@@ -235,44 +256,3 @@ function createTextElement(entity: GroupedEntity): dia.Element | null {
   })
 }
 
-/**
- * Create all elements from CSV rows (alternative approach)
- * Useful for ungrouped rendering
- */
-export function createElementsFromRows(rows: BanpoRow[]): dia.Element[] {
-  const elements: dia.Element[] = []
-
-  // Group by layer for processing
-  const byLayer = new Map<string, BanpoRow[]>()
-  rows.forEach(row => {
-    if (!byLayer.has(row.layer)) {
-      byLayer.set(row.layer, [])
-    }
-    byLayer.get(row.layer)!.push(row)
-  })
-
-  // Process each layer
-  byLayer.forEach((layerRows, layer) => {
-    if (isPointLayer(layer)) {
-      layerRows.forEach(row => {
-        const pos = transformCoordinates(row.x, row.y)
-        const size = getIconSize(layer)
-        const assetPath = getAssetPath(layer)
-
-        elements.push(new shapes.standard.Image({
-          position: { x: pos.x - size.width / 2, y: pos.y - size.height / 2 },
-          size,
-          attrs: {
-            image: {
-              xlinkHref: assetPath,
-              opacity: 0.9
-            }
-          },
-          data: { layer, type: 'point' }
-        }))
-      })
-    }
-  })
-
-  return elements
-}

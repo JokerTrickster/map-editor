@@ -63,32 +63,32 @@ export function getAssetPath(layer: string): string {
  */
 export function getLayerFillColor(layer: string): string {
   if (layer.startsWith('p-parking-large-electric')) {
-    return 'rgba(34, 197, 94, 0.2)'  // Green for electric
+    return 'rgba(34, 197, 94, 0.5)'  // Green for electric
   }
   if (layer.startsWith('p-parking-large-women')) {
-    return 'rgba(236, 72, 153, 0.2)'  // Pink for women
+    return 'rgba(236, 72, 153, 0.5)'  // Pink for women
   }
   if (layer.startsWith('p-parking-disable')) {
-    return 'rgba(239, 68, 68, 0.2)'  // Red for disabled
+    return 'rgba(239, 68, 68, 0.5)'  // Red for disabled
   }
   if (layer.startsWith('p-parking-small')) {
-    return 'rgba(245, 158, 11, 0.2)'  // Orange for small cars
+    return 'rgba(245, 158, 11, 0.5)'  // Orange for small cars
   }
   if (layer.startsWith('p-parking-large')) {
-    return 'rgba(191, 155, 222, 0.2)'  // Purple for large
+    return 'rgba(168, 85, 247, 0.5)'  // Purple for large
   }
   if (layer.startsWith('p-parking-basic')) {
-    return 'rgba(59, 130, 246, 0.2)'  // Blue for basic
+    return 'rgba(59, 130, 246, 0.5)'  // Blue for basic
   }
   if (layer.startsWith('e-zone-area')) {
-    return 'rgba(156, 163, 175, 0.15)'  // Gray for zones
+    return 'rgba(156, 163, 175, 0.3)'  // Gray for zones
   }
   if (layer.startsWith('p-guideboard-area')) {
-    return 'rgba(251, 191, 36, 0.15)'  // Yellow for guideboards
+    return 'rgba(251, 191, 36, 0.3)'  // Yellow for guideboards
   }
 
   // Default
-  return 'rgba(156, 163, 175, 0.2)'
+  return 'rgba(156, 163, 175, 0.3)'
 }
 
 /**

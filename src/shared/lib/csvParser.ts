@@ -134,21 +134,40 @@ export function getLayerStats(rows: BanpoRow[]): Map<string, number> {
 }
 
 /**
+ * Calculate bounds from rows
+ */
+export function calculateBounds(rows: BanpoRow[]): { minX: number; minY: number; maxX: number; maxY: number } {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  rows.forEach(row => {
+    minX = Math.min(minX, row.x)
+    minY = Math.min(minY, row.y)
+    maxX = Math.max(maxX, row.x)
+    maxY = Math.max(maxY, row.y)
+  })
+
+  return { minX, minY, maxX, maxY }
+}
+
+/**
  * Transform coordinates from AutoCAD space to canvas space
  */
 export function transformCoordinates(
   x: number,
   y: number,
   options: {
-    minX?: number
-    minY?: number
+    minX: number
+    minY: number
     scale?: number
     flipY?: boolean
-  } = {}
+  }
 ): { x: number; y: number } {
   const {
-    minX = 7840,     // From analysis
-    minY = -49500,   // From analysis
+    minX,
+    minY,
     scale = 0.1,     // 1:10 scale
     flipY = true     // Flip Y axis (AutoCAD uses negative Y)
   } = options

@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { dia, shapes } from '@joint/core'
 import { parseBanpoCSV, groupByEntity, getLayerStats } from '@/shared/lib/csvParser'
 import { createElementsFromEntities } from '@/features/editor/lib/elementFactory'
+import { useTheme } from '@/shared/context/ThemeContext'
 import styles from './EditorPage.module.css'
 
 export default function EditorPage() {
     const navigate = useNavigate()
+    const { theme, toggleTheme } = useTheme()
     const [isDragging, setIsDragging] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [loadedFileName, setLoadedFileName] = useState<string | null>(null)
@@ -18,7 +20,7 @@ export default function EditorPage() {
     const graphRef = useRef<dia.Graph | null>(null)
     const paperRef = useRef<dia.Paper | null>(null)
 
-    // Initialize JointJS canvas
+    // Initialize JointJS canvas (Run once)
     useEffect(() => {
         if (!canvasRef.current) return
 
@@ -26,7 +28,7 @@ export default function EditorPage() {
         const graph = new dia.Graph({}, { cellNamespace: shapes })
         graphRef.current = graph
 
-        // Create paper
+        // Create paper with default theme (will be updated by theme effect)
         const paper = new dia.Paper({
             model: graph,
             width: 5000,
@@ -50,6 +52,19 @@ export default function EditorPage() {
             graph.clear()
         }
     }, [])
+
+    // Update Paper Theme when theme changes
+    useEffect(() => {
+        if (!paperRef.current) return
+
+        const style = getComputedStyle(document.documentElement)
+        const gridColor = style.getPropertyValue('--color-canvas-grid').trim()
+        const bgColor = style.getPropertyValue('--color-canvas-bg').trim()
+
+        const paper = paperRef.current as any
+        paper.drawGrid({ name: 'dot', args: { color: gridColor, thickness: 1 } })
+        paper.drawBackground({ color: bgColor })
+    }, [theme])
 
     const handleLogout = () => {
         localStorage.removeItem('accessToken')
@@ -102,6 +117,11 @@ export default function EditorPage() {
             const rows = parseBanpoCSV(csvText)
             console.log('Parsed rows:', rows.length)
 
+            // Calculate bounds
+            const { calculateBounds } = await import('@/shared/lib/csvParser')
+            const bounds = calculateBounds(rows)
+            console.log('Map bounds:', bounds)
+
             // Get statistics
             const stats = getLayerStats(rows)
             console.log('Layer statistics:', Object.fromEntries(stats))
@@ -110,8 +130,8 @@ export default function EditorPage() {
             const entities = groupByEntity(rows)
             console.log('Grouped entities:', entities.length)
 
-            // Create JointJS elements
-            const elements = createElementsFromEntities(entities)
+            // Create JointJS elements with dynamic bounds
+            const elements = createElementsFromEntities(entities, bounds)
             console.log('Created elements:', elements.length)
 
             // Clear existing graph
@@ -128,6 +148,10 @@ export default function EditorPage() {
                     maxScale: 2,
                     minScale: 0.1
                 })
+                // Update zoom state
+                if (paperRef.current) {
+                    setZoom(paperRef.current.scale().sx)
+                }
             }, 100)
 
             console.log('Map rendering complete!')
@@ -251,6 +275,29 @@ export default function EditorPage() {
 
                     <button className={`${styles.toolButton} ${styles.primaryButton}`}>
                         Export
+                    </button>
+
+                    <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)', margin: '0 8px' }} />
+
+                    {/* Theme Toggle */}
+                    <button onClick={toggleTheme} className={styles.toolButton} title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}>
+                        {theme === 'light' ? (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                            </svg>
+                        ) : (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="5" />
+                                <line x1="12" y1="1" x2="12" y2="3" />
+                                <line x1="12" y1="21" x2="12" y2="23" />
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                                <line x1="1" y1="12" x2="3" y2="12" />
+                                <line x1="21" y1="12" x2="23" y2="12" />
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                            </svg>
+                        )}
                     </button>
 
                     <button
