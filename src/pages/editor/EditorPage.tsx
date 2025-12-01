@@ -14,6 +14,8 @@ export default function EditorPage() {
     const [loadedFileName, setLoadedFileName] = useState<string | null>(null)
     const [zoom, setZoom] = useState(1)
     const [elementCount, setElementCount] = useState(0)
+    const [objectsByLayer, setObjectsByLayer] = useState<Map<string, dia.Element[]>>(new Map())
+    const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
 
     const fileInputRef = useRef<HTMLInputElement>(null)
     const canvasRef = useRef<HTMLDivElement>(null)
@@ -33,10 +35,11 @@ export default function EditorPage() {
         graphRef.current = graph
 
         // Create paper with default theme (will be updated by theme effect)
+        // Use large paper size to accommodate CAD coordinates
         const paper = new dia.Paper({
             model: graph,
-            width: 5000,
-            height: 5000,
+            width: 100000,
+            height: 100000,
             gridSize: 10,
             drawGrid: { name: 'dot', args: { color: '#2d3139', thickness: 1 } },
             background: { color: '#13151a' },
@@ -49,6 +52,26 @@ export default function EditorPage() {
 
         // Append paper to container
         canvasRef.current.appendChild(paper.el)
+
+        // Element selection handler
+        paper.on('element:pointerclick', (elementView: dia.ElementView) => {
+            const elementId = elementView.model.id as string
+            setSelectedElementId(elementId)
+
+            // Highlight selected element
+            graph.getCells().forEach(cell => {
+                if (cell.isElement()) {
+                    const view = paper.findViewByModel(cell)
+                    if (cell.id === elementId) {
+                        // Highlight selected
+                        view?.highlight()
+                    } else {
+                        // Unhighlight others
+                        view?.unhighlight()
+                    }
+                }
+            })
+        })
 
         // Panning Handlers
         paper.on('blank:pointerdown', (evt: dia.Event) => {
@@ -185,16 +208,86 @@ export default function EditorPage() {
             graphRef.current?.addCells(elements)
             setElementCount(elements.length)
 
-            // Fit content to view
+            // Group elements by layer
+            const grouped = new Map<string, dia.Element[]>()
+            elements.forEach(element => {
+                const layer = element.get('data')?.layer || 'unknown'
+                if (!grouped.has(layer)) {
+                    grouped.set(layer, [])
+                }
+                grouped.get(layer)!.push(element)
+            })
+            setObjectsByLayer(grouped)
+
+            // Auto fit to screen with appropriate zoom
             setTimeout(() => {
-                paperRef.current?.scaleContentToFit({
-                    padding: 50,
-                    maxScale: 2,
-                    minScale: 0.1
-                })
-                // Update zoom state
-                if (paperRef.current) {
-                    setZoom(paperRef.current.scale().sx)
+                if (paperRef.current && graphRef.current) {
+                    // Calculate actual bounding box from all elements, excluding background/outline
+                    const elements = graphRef.current.getElements()
+                    if (elements.length === 0) return
+
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+                    let contentElementCount = 0
+
+                    elements.forEach(el => {
+                        const layer = el.get('data')?.layer || ''
+
+                        // Skip background and outline elements - they span the entire map
+                        if (layer === 'e-background' || layer === 'e-outline') {
+                            return
+                        }
+
+                        const position = el.position()
+                        const size = el.size()
+
+                        minX = Math.min(minX, position.x)
+                        minY = Math.min(minY, position.y)
+                        maxX = Math.max(maxX, position.x + size.width)
+                        maxY = Math.max(maxY, position.y + size.height)
+                        contentElementCount++
+                    })
+
+                    // If no content elements, fall back to all elements
+                    if (contentElementCount === 0) {
+                        elements.forEach(el => {
+                            const position = el.position()
+                            const size = el.size()
+                            minX = Math.min(minX, position.x)
+                            minY = Math.min(minY, position.y)
+                            maxX = Math.max(maxX, position.x + size.width)
+                            maxY = Math.max(maxY, position.y + size.height)
+                        })
+                    }
+
+                    const contentWidth = maxX - minX
+                    const contentHeight = maxY - minY
+                    console.log('📦 Content BBox (excluding outline):', { x: minX, y: minY, width: contentWidth, height: contentHeight })
+
+                    // Get viewport size
+                    const viewport = paperRef.current.el.parentElement
+                    if (!viewport) return
+
+                    const viewportWidth = viewport.clientWidth
+                    const viewportHeight = viewport.clientHeight
+                    const padding = 50
+
+                    // Set initial scale to 100% (1.0)
+                    const scale = 1.0
+
+                    // Set scale
+                    paperRef.current.scale(scale, scale)
+
+                    // Calculate translation to center content
+                    const centerX = minX + contentWidth / 2
+                    const centerY = minY + contentHeight / 2
+                    const tx = viewportWidth / 2 - centerX * scale
+                    const ty = viewportHeight / 2 - centerY * scale
+
+                    paperRef.current.translate(tx, ty)
+
+                    console.log('🔍 Scale after fit:', scale)
+                    console.log('🔍 Translate:', { tx, ty })
+                    setZoom(scale)
                 }
             }, 100)
 
@@ -249,6 +342,53 @@ export default function EditorPage() {
             graphRef.current?.clear()
             setElementCount(0)
             setLoadedFileName(null)
+            setObjectsByLayer(new Map())
+            setSelectedElementId(null)
+        }
+    }
+
+    const handleObjectClick = (elementId: string) => {
+        if (!graphRef.current || !paperRef.current) return
+
+        setSelectedElementId(elementId)
+
+        // Find and highlight the element
+        const element = graphRef.current.getCell(elementId)
+        if (element && element.isElement()) {
+            // Unhighlight all
+            graphRef.current.getCells().forEach(cell => {
+                if (cell.isElement()) {
+                    const view = paperRef.current!.findViewByModel(cell)
+                    view?.unhighlight()
+                }
+            })
+
+            // Highlight selected
+            const view = paperRef.current.findViewByModel(element)
+            view?.highlight()
+
+            // Center on element
+            const bbox = element.getBBox()
+            const currentScale = paperRef.current.scale()
+            const translate = paperRef.current.translate()
+
+            console.log('🎯 Element bbox:', { x: bbox.x, y: bbox.y, width: bbox.width, height: bbox.height })
+            console.log('🎯 Current scale:', currentScale)
+            console.log('🎯 Current translate:', translate)
+
+            // Get viewport size (not paper size)
+            const viewportWidth = paperRef.current.el.parentElement?.clientWidth || 800
+            const viewportHeight = paperRef.current.el.parentElement?.clientHeight || 600
+            console.log('🎯 Viewport size:', { width: viewportWidth, height: viewportHeight })
+            console.log('🎯 Paper el size:', { width: paperRef.current.el.clientWidth, height: paperRef.current.el.clientHeight })
+
+            // Calculate center position using viewport size
+            const centerX = -bbox.x * currentScale.sx + (viewportWidth / 2) - (bbox.width * currentScale.sx / 2)
+            const centerY = -bbox.y * currentScale.sy + (viewportHeight / 2) - (bbox.height * currentScale.sy / 2)
+
+            console.log('🎯 Calculated center:', { centerX, centerY })
+
+            paperRef.current.translate(centerX, centerY)
         }
     }
 
@@ -455,6 +595,66 @@ export default function EditorPage() {
                                     </div>
                                     <div style={{ fontSize: '13px', color: 'var(--color-text)' }}>
                                         {Math.round(zoom * 100)}%
+                                    </div>
+                                </div>
+
+                                {/* Object List by Layer */}
+                                <div style={{ marginTop: '20px', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+                                    <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginBottom: '8px', fontWeight: 600 }}>
+                                        Objects
+                                    </div>
+                                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                                        {Array.from(objectsByLayer.entries()).map(([layer, elements]) => (
+                                            <details key={layer} open style={{ marginBottom: '8px' }}>
+                                                <summary style={{
+                                                    fontSize: '12px',
+                                                    fontWeight: 500,
+                                                    color: 'var(--color-text)',
+                                                    cursor: 'pointer',
+                                                    padding: '4px 0',
+                                                    userSelect: 'none'
+                                                }}>
+                                                    {layer} ({elements.length})
+                                                </summary>
+                                                <div style={{ paddingLeft: '12px', marginTop: '4px' }}>
+                                                    {elements.map(element => {
+                                                        const elementId = element.id as string
+                                                        const data = element.get('data')
+                                                        const text = data?.text || data?.entityHandle || elementId.slice(0, 8)
+                                                        const isSelected = selectedElementId === elementId
+
+                                                        return (
+                                                            <div
+                                                                key={elementId}
+                                                                onClick={() => handleObjectClick(elementId)}
+                                                                style={{
+                                                                    fontSize: '11px',
+                                                                    padding: '3px 6px',
+                                                                    marginBottom: '2px',
+                                                                    cursor: 'pointer',
+                                                                    borderRadius: '3px',
+                                                                    backgroundColor: isSelected ? 'var(--color-primary)' : 'transparent',
+                                                                    color: isSelected ? '#ffffff' : 'var(--color-text-secondary)',
+                                                                    transition: 'all 0.15s ease'
+                                                                }}
+                                                                onMouseEnter={(e) => {
+                                                                    if (!isSelected) {
+                                                                        e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'
+                                                                    }
+                                                                }}
+                                                                onMouseLeave={(e) => {
+                                                                    if (!isSelected) {
+                                                                        e.currentTarget.style.backgroundColor = 'transparent'
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {text}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </details>
+                                        ))}
                                     </div>
                                 </div>
                             </>

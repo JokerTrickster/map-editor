@@ -83,6 +83,9 @@ export function getLayerFillColor(layer: string): string {
   if (layer.startsWith('p-parking-basic')) {
     return 'var(--color-map-parking-basic-fill)'
   }
+  if (layer.startsWith('e-elevator')) {
+    return 'rgba(198, 176, 188, 0.3)' // Semi-transparent purple/pink
+  }
   if (layer.startsWith('e-zone-area')) {
     return 'var(--color-map-line)' // Using line color for zones with low opacity
   }
@@ -112,6 +115,9 @@ export function getLayerStrokeColor(layer: string): string {
   }
   if (layer.startsWith('p-parking-large')) {
     return 'var(--color-map-parking-basic-stroke)'
+  }
+  if (layer.startsWith('e-elevator')) {
+    return '#c6b0bc' // Purple/pink border
   }
   if (layer.startsWith('e-outline')) {
     return 'var(--color-map-line)'
