@@ -6,68 +6,7 @@
     overflow: hidden;
 }
 
-/* Header / Toolbar */
-.header {
-    height: 60px;
-    background-color: var(--color-surface-glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--color-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 var(--space-6);
-    z-index: var(--z-dropdown);
-    position: relative;
-}
-
-.logo {
-    font-weight: 700;
-    color: var(--color-text);
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    font-size: var(--font-size-md);
-    letter-spacing: -0.02em;
-}
-
-.toolbar {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-}
-
-.toolButton {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-md);
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    transition: all var(--transition-fast);
-    border: 1px solid transparent;
-}
-
-.toolButton:hover {
-    background-color: var(--color-surface-hover);
-    color: var(--color-text);
-    border-color: var(--color-border);
-}
-
-.primaryButton {
-    background-color: var(--color-primary);
-    color: white;
-    box-shadow: var(--shadow-glow);
-}
-
-.primaryButton:hover {
-    background-color: var(--color-primary-hover);
-    color: white;
-    border-color: transparent;
-    transform: translateY(-1px);
-}
+/* Note: Header styles moved to EditorHeader.module.css */
 
 /* Main Layout */
 .main {
@@ -87,6 +26,13 @@
     padding: var(--space-6) 0;
     gap: var(--space-4);
     z-index: 10;
+}
+
+.leftSidebarContent {
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    padding: 8px;
+    text-align: center;
 }
 
 .iconButton {
@@ -116,44 +62,40 @@
 /* Canvas Area */
 .canvasArea {
     flex: 1;
-    background-color: var(--color-canvas-bg);
+    background-color: var(--color-bg);
     position: relative;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image:
-        radial-gradient(circle, var(--color-canvas-grid) 1px, transparent 1px);
-    background-size: 24px 24px;
     transition: background-color 0.3s ease;
 }
 
-/* Right Sidebar - Properties */
-.rightSidebar {
-    width: 300px;
-    background-color: var(--color-surface);
-    border-left: 1px solid var(--color-border);
-    display: flex;
-    flex-direction: column;
-    z-index: 10;
+.canvas {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
-.sidebarHeader {
-    padding: var(--space-5);
-    border-bottom: 1px solid var(--color-border);
-    font-weight: 600;
-    color: var(--color-text);
-    font-size: var(--font-size-sm);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+.loadingOverlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
 }
 
-.sidebarContent {
-    padding: var(--space-5);
-    flex: 1;
-    overflow-y: auto;
+.loadingBox {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px 40px;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
 }
+
+/* Note: Right sidebar styles moved to EditorSidebar.module.css */
 
 /* Upload Zone (Empty State) */
 .uploadZone {
@@ -240,26 +182,7 @@
     pointer-events: none;
 }
 
-/* Zoom Controls */
-.zoomControls {
-    display: flex;
-    align-items: center;
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 2px;
-    margin-right: var(--space-3);
-}
-
-.zoomLevel {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-secondary);
-    min-width: 52px;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-    user-select: none;
-    font-weight: 500;
-}
+/* Note: Zoom controls styles moved to ZoomControls.module.css */
 
 /* Minimap */
 .minimapContainer {
