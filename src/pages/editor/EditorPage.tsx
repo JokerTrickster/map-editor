@@ -4,6 +4,8 @@ import { dia, shapes } from '@joint/core'
 import { parseBanpoCSV, groupByEntity, getLayerStats } from '@/shared/lib/csvParser'
 import { createElementsFromEntities } from '@/features/editor/lib/elementFactory'
 import { useTheme } from '@/shared/context/ThemeContext'
+import { FloorTabs } from '@/widgets/editor/FloorTabs'
+import '@/shared/lib/testHelpers' // Initialize test helpers for development
 import styles from './EditorPage.module.css'
 
 export default function EditorPage() {
@@ -370,7 +372,7 @@ export default function EditorPage() {
             centerOnPoint(x, y)
         })
 
-        minimapPaper.on('cell:pointerdown', (_cellView: dia.ElementView, _evt: dia.Event, x: number, y: number) => {
+        minimapPaper.on('cell:pointerdown', (_cellView: dia.CellView, _evt: dia.Event, x: number, y: number) => {
             centerOnPoint(x, y)
         })
 
@@ -923,6 +925,9 @@ export default function EditorPage() {
                     </button>
                 </div>
             </header>
+
+            {/* Floor Tabs */}
+            <FloorTabs />
 
             {/* Main Content */}
             <main className={styles.main}>

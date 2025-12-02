@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/login/LoginPage'
+import DashboardPage from './pages/dashboard/DashboardPage'
 import EditorPage from './pages/editor/EditorPage'
 import { ThemeProvider } from './shared/context/ThemeContext'
 
@@ -20,6 +21,14 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/editor"
             element={
               <PrivateRoute>
@@ -27,7 +36,7 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/editor" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

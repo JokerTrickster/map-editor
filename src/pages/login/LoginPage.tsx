@@ -12,8 +12,8 @@ export default function LoginPage() {
       // 액세스 토큰을 localStorage에 저장
       localStorage.setItem('accessToken', tokenResponse.access_token)
 
-      // 에디터로 이동
-      navigate('/editor')
+      // 대시보드로 이동
+      navigate('/dashboard')
     },
     onError: (error) => {
       console.error('Login Failed:', error)
