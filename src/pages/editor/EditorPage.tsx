@@ -22,6 +22,10 @@ export default function EditorPage() {
     const graphRef = useRef<dia.Graph | null>(null)
     const paperRef = useRef<dia.Paper | null>(null)
 
+    // Manual undo/redo history
+    const historyStack = useRef<string[]>([]) // Graph JSON states
+    const historyIndex = useRef<number>(-1)
+
     // Panning state refs
     const isPanning = useRef(false)
     const lastMousePosition = useRef({ x: 0, y: 0 })
@@ -35,7 +39,7 @@ export default function EditorPage() {
 
     // Sync Minimap Viewport
     const updateMinimapViewport = () => {
-        if (!paperRef.current || !minimapPaperRef.current || !viewportRectRef.current) return
+        if (!paperRef.current || !minimapPaperRef.current || !viewportRectRef.current || !graphRef.current) return
 
         const mainScale = paperRef.current.scale()
         const mainTranslate = paperRef.current.translate()
@@ -45,24 +49,12 @@ export default function EditorPage() {
         const viewportWidth = viewportEl.clientWidth
         const viewportHeight = viewportEl.clientHeight
 
-        const baseMinimapScale = minimapBaseScaleRef.current ?? minimapPaperRef.current.scale().sx
-        const baseMinimapTranslate = minimapBaseTranslateRef.current ?? minimapPaperRef.current.translate()
+        // 1. Calculate Content Center and Extent
+        const contentBBox = graphRef.current.getBBox() || { x: 0, y: 0, width: 1000, height: 1000 }
+        const contentCenterX = contentBBox.x + contentBBox.width / 2
+        const contentCenterY = contentBBox.y + contentBBox.height / 2
 
-        if (!minimapBaseScaleRef.current) {
-            minimapBaseScaleRef.current = baseMinimapScale
-        }
-        if (!minimapBaseTranslateRef.current) {
-            minimapBaseTranslateRef.current = baseMinimapTranslate
-        }
-
-        // Keep minimap at its base scale (fit to content) – do not rescale with main canvas zoom.
-        // The minimap remains static; only the viewport rectangle changes size based on main zoom.
-        // No scaling adjustments are needed here.
-
-        const minimapScale = minimapPaperRef.current.scale()
-        const minimapTranslate = minimapPaperRef.current.translate()
-
-        // Calculate visible area in graph coordinates
+        // 2. Calculate Visible Viewport in Graph Coordinates
         const visibleRect = {
             x: -mainTranslate.tx / mainScale.sx,
             y: -mainTranslate.ty / mainScale.sy,
@@ -70,38 +62,80 @@ export default function EditorPage() {
             height: viewportHeight / mainScale.sy
         }
 
-        // Convert to minimap coordinates
-        const minimapRect = {
-            x: visibleRect.x * minimapScale.sx + minimapTranslate.tx,
-            y: visibleRect.y * minimapScale.sy + minimapTranslate.ty,
-            width: visibleRect.width * minimapScale.sx,
-            height: visibleRect.height * minimapScale.sy
-        }
+        // 3. Calculate Max Distance from Center (Center-Anchored Expansion)
+        // We want the minimap to stay centered on contentCenterX/Y.
+        // We expand the view only enough to include the furthest point of interest (content or viewport).
 
-        console.log('🗺️ Minimap Sync:', {
-            visibleRect,
-            minimapRect,
-            minimapScale: minimapScale.sx,
-            minimapTranslate
+        // Points of interest: Content corners and Viewport corners
+        const points = [
+            { x: contentBBox.x, y: contentBBox.y },
+            { x: contentBBox.x + contentBBox.width, y: contentBBox.y + contentBBox.height },
+            { x: visibleRect.x, y: visibleRect.y },
+            { x: visibleRect.x + visibleRect.width, y: visibleRect.y + visibleRect.height }
+        ]
+
+        let maxDistX = 0
+        let maxDistY = 0
+
+        points.forEach(p => {
+            const dx = Math.abs(p.x - contentCenterX)
+            const dy = Math.abs(p.y - contentCenterY)
+            maxDistX = Math.max(maxDistX, dx)
+            maxDistY = Math.max(maxDistY, dy)
         })
 
-        // Update viewport indicator with visual scaling (50%) and centering on main view center
+        // The required viewing area is a rectangle centered on contentCenter
+        // with width = 2 * maxDistX and height = 2 * maxDistY
+        const requiredWidth = maxDistX * 2
+        const requiredHeight = maxDistY * 2
+
+        // 4. Scale Minimap to Fit Required Area
+        const minimapContainer = minimapContainerRef.current
+        if (!minimapContainer) return
+
+        const containerWidth = minimapContainer.clientWidth
+        const containerHeight = minimapContainer.clientHeight
+        const padding = 10
+
+        const safeWidth = Math.max(requiredWidth, 1)
+        const safeHeight = Math.max(requiredHeight, 1)
+
+        const scaleX = (containerWidth - 2 * padding) / safeWidth
+        const scaleY = (containerHeight - 2 * padding) / safeHeight
+        const scale = Math.min(scaleX, scaleY)
+
+        // Calculate translation to center the contentCenter in the container
+        // tx = (containerCenter) - (contentCenter * scale)
+        const tx = (containerWidth / 2) - (contentCenterX * scale)
+        const ty = (containerHeight / 2) - (contentCenterY * scale)
+
+        // Apply transform to minimap paper
+        minimapPaperRef.current.scale(scale, scale)
+        minimapPaperRef.current.translate(tx, ty)
+
+        // 5. Update Viewport Indicator
+        const viewportRect = {
+            x: visibleRect.x * scale + tx,
+            y: visibleRect.y * scale + ty,
+            width: visibleRect.width * scale,
+            height: visibleRect.height * scale
+        }
+
         const viewport = viewportRectRef.current
-        // Compute main viewport center in graph coordinates
-        const mainCenterX = visibleRect.x + visibleRect.width / 2
-        const mainCenterY = visibleRect.y + visibleRect.height / 2
-        // Convert to minimap coordinates
-        const minimapCenterX = mainCenterX * minimapScale.sx + minimapTranslate.tx
-        const minimapCenterY = mainCenterY * minimapScale.sy + minimapTranslate.ty
+
+        // Visual adjustment: Reduce the indicator size by 50% as requested
         const visualScale = 0.5
-        const visualWidth = minimapRect.width * visualScale
-        const visualHeight = minimapRect.height * visualScale
-        const visualX = minimapCenterX - visualWidth / 2
-        const visualY = minimapCenterY - visualHeight / 2
+        const visualWidth = viewportRect.width * visualScale
+        const visualHeight = viewportRect.height * visualScale
+        const visualX = viewportRect.x + (viewportRect.width - visualWidth) / 2
+        const visualY = viewportRect.y + (viewportRect.height - visualHeight) / 2
+
         viewport.style.left = `${visualX}px`
         viewport.style.top = `${visualY}px`
         viewport.style.width = `${visualWidth}px`
         viewport.style.height = `${visualHeight}px`
+        // Ensure clicks pass through to the paper below
+        viewport.style.pointerEvents = 'none'
     }
 
     // Initialize JointJS canvas (Run once)
@@ -130,6 +164,28 @@ export default function EditorPage() {
 
         // Append paper to container
         canvasRef.current.appendChild(paper.el)
+
+        // Save graph state to history
+        const saveState = () => {
+            if (!graphRef.current) return
+            const state = JSON.stringify(graphRef.current.toJSON())
+
+            // Remove future states if we're not at the end
+            historyStack.current = historyStack.current.slice(0, historyIndex.current + 1)
+
+            // Add new state
+            historyStack.current.push(state)
+            historyIndex.current++
+
+            // Limit history to 50 states
+            if (historyStack.current.length > 50) {
+                historyStack.current.shift()
+                historyIndex.current--
+            }
+        }
+
+        // Track changes for undo/redo
+        graph.on('change', saveState)
 
         // Attach listeners for minimap sync
         paper.on('translate resize scale', () => {
@@ -183,7 +239,42 @@ export default function EditorPage() {
             const dy = e.clientY - lastMousePosition.current.y
 
             const currentTranslate = paper.translate()
-            paper.translate(currentTranslate.tx + dx, currentTranslate.ty + dy)
+            const currentScale = paper.scale()
+            let newTx = currentTranslate.tx + dx
+            let newTy = currentTranslate.ty + dy
+
+            // Restrict Panning Area
+            // Calculate content bounding box
+            const contentBBox = graphRef.current?.getBBox() || { x: 0, y: 0, width: 1000, height: 1000 }
+            const viewportWidth = paper.el.parentElement?.clientWidth || 800
+            const viewportHeight = paper.el.parentElement?.clientHeight || 600
+
+            // Define padding (how far user can pan away from content)
+            const PAN_PADDING = 2000 // px
+
+            // Calculate allowed translation bounds
+            // The logic is: we don't want the viewport to completely lose sight of the content + padding
+            // So, the viewport's visible area (in graph coords) must overlap with (content + padding)
+
+
+
+            // Calculate min/max translation values
+            // These formulas ensure that we can't pan the content completely off-screen
+
+            // Max Tx: Panning right (content moves right). Limit is when left edge of content is at right edge of viewport + padding
+            // Min Tx: Panning left (content moves left). Limit is when right edge of content is at left edge of viewport - padding
+
+            const minTx = - (contentBBox.x + contentBBox.width + PAN_PADDING) * currentScale.sx + viewportWidth
+            const maxTx = - (contentBBox.x - PAN_PADDING) * currentScale.sx
+
+            const minTy = - (contentBBox.y + contentBBox.height + PAN_PADDING) * currentScale.sy + viewportHeight
+            const maxTy = - (contentBBox.y - PAN_PADDING) * currentScale.sy
+
+            // Clamp values
+            newTx = Math.min(Math.max(newTx, minTx), maxTx)
+            newTy = Math.min(Math.max(newTy, minTy), maxTy)
+
+            paper.translate(newTx, newTy)
 
             lastMousePosition.current = { x: e.clientX, y: e.clientY }
         }
@@ -596,6 +687,70 @@ export default function EditorPage() {
             }
         }
     }, [])
+
+    // Undo function
+    const undo = () => {
+        if (historyIndex.current > 0 && graphRef.current) {
+            historyIndex.current--
+            const state = historyStack.current[historyIndex.current]
+            graphRef.current.off('change') // Temporarily disable change tracking
+            graphRef.current.fromJSON(JSON.parse(state))
+            graphRef.current.on('change', () => { }) // Re-enable (will be properly set on mount)
+            setElementCount(graphRef.current.getElements().length)
+            console.log('🔙 Undo')
+        }
+    }
+
+    // Redo function
+    const redo = () => {
+        if (historyIndex.current < historyStack.current.length - 1 && graphRef.current) {
+            historyIndex.current++
+            const state = historyStack.current[historyIndex.current]
+            graphRef.current.off('change') // Temporarily disable change tracking
+            graphRef.current.fromJSON(JSON.parse(state))
+            graphRef.current.on('change', () => { }) // Re-enable
+            setElementCount(graphRef.current.getElements().length)
+            console.log('🔜 Redo')
+        }
+    }
+
+    // Keyboard Shortcuts (Undo/Redo/Delete)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Undo: Ctrl+Z (or Cmd+Z on Mac)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault()
+                undo()
+            }
+            // Redo: Ctrl+Y or Ctrl+Shift+Z (or Cmd+Shift+Z on Mac)
+            else if (
+                ((e.ctrlKey || e.metaKey) && e.key === 'y') ||
+                ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z')
+            ) {
+                e.preventDefault()
+                redo()
+            }
+            // Delete: Delete or Backspace key
+            else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementId) {
+                e.preventDefault()
+                if (graphRef.current) {
+                    const element = graphRef.current.getCell(selectedElementId)
+                    if (element) {
+                        element.remove()
+                        setSelectedElementId(null)
+                        setElementCount(graphRef.current.getElements().length)
+                        console.log('🗑️ Deleted element:', selectedElementId)
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown)
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown)
+        }
+    }, [selectedElementId])
 
     const handleZoomReset = () => {
         if (paperRef.current) {

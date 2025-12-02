@@ -35,13 +35,14 @@ export function createElementsFromEntities(
   const dataWidth = bounds.maxX - bounds.minX
   const dataHeight = Math.abs(bounds.maxY - bounds.minY)
 
-  // Use 0.75x scale to fit within Paper bounds (100000 x 100000)
-  // Data size: 65550 x 50700 -> Scaled: ~49162 x ~38025
-  const baseScale = 0.75
+  // Target width in pixels (e.g., 1000px) to ensure 100% zoom fits the screen
+  const TARGET_WIDTH = 1000
+  const baseScale = TARGET_WIDTH / dataWidth
 
   console.log(`📏 Data bounds: ${dataWidth.toFixed(0)} x ${dataHeight.toFixed(0)}`)
+  console.log(`📏 Target width: ${TARGET_WIDTH}`)
+  console.log(`📏 Scale factor: ${baseScale.toFixed(4)}`)
   console.log(`📏 Scaled size: ${(dataWidth * baseScale).toFixed(0)} x ${(dataHeight * baseScale).toFixed(0)}`)
-  console.log(`📏 Scale factor: ${baseScale.toFixed(2)}`)
 
   const transformBounds = {
     ...bounds,
@@ -233,53 +234,6 @@ function createPointElementFromPolygon(
   })
 }
 
-/**
- * Create point elements (CCTV, chargers, etc.)
- */
-function createPointElements(
-  entity: GroupedEntity,
-  bounds: { minX: number; minY: number; scale: number }
-): dia.Element[] {
-  const { layer, points } = entity
-  const elements: dia.Element[] = []
-
-  points.forEach((point, index) => {
-    const pos = transformCoordinates(point.x, point.y, { minX: bounds.minX, minY: bounds.minY, scale: bounds.scale })
-    const size = getIconSize(layer)
-    const assetPath = getAssetPath(layer)
-
-    const element = new shapes.standard.Image({
-      id: `${layer}_${point.entityHandle}_${index}`,
-      position: { x: pos.x - size.width / 2, y: pos.y - size.height / 2 },
-      size,
-      attrs: {
-        image: {
-          xlinkHref: assetPath,
-          opacity: 0.9
-        },
-        label: {
-          text: point.text || '',
-          fill: '#ffffff',
-          fontSize: 10,
-          refY: size.height + 5,
-          refX: '50%',
-          textAnchor: 'middle'
-        }
-      },
-      data: {
-        layer,
-        entityHandle: point.entityHandle,
-        type: 'point',
-        originalCoords: { x: point.x, y: point.y },
-        text: point.text
-      }
-    })
-
-    elements.push(element)
-  })
-
-  return elements
-}
 
 /**
  * Create line element (outlines, inner lines)
