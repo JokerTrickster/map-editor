@@ -26,6 +26,84 @@ export default function EditorPage() {
     const isPanning = useRef(false)
     const lastMousePosition = useRef({ x: 0, y: 0 })
 
+    // Minimap Refs
+    const minimapContainerRef = useRef<HTMLDivElement>(null)
+    const minimapPaperRef = useRef<dia.Paper | null>(null)
+    const viewportRectRef = useRef<HTMLDivElement>(null)
+    const minimapBaseScaleRef = useRef<number | null>(null)
+    const minimapBaseTranslateRef = useRef<{ tx: number; ty: number } | null>(null)
+
+    // Sync Minimap Viewport
+    const updateMinimapViewport = () => {
+        if (!paperRef.current || !minimapPaperRef.current || !viewportRectRef.current) return
+
+        const mainScale = paperRef.current.scale()
+        const mainTranslate = paperRef.current.translate()
+        const viewportEl = paperRef.current.el.parentElement
+        if (!viewportEl) return
+
+        const viewportWidth = viewportEl.clientWidth
+        const viewportHeight = viewportEl.clientHeight
+
+        const baseMinimapScale = minimapBaseScaleRef.current ?? minimapPaperRef.current.scale().sx
+        const baseMinimapTranslate = minimapBaseTranslateRef.current ?? minimapPaperRef.current.translate()
+
+        if (!minimapBaseScaleRef.current) {
+            minimapBaseScaleRef.current = baseMinimapScale
+        }
+        if (!minimapBaseTranslateRef.current) {
+            minimapBaseTranslateRef.current = baseMinimapTranslate
+        }
+
+        // Keep minimap at its base scale (fit to content) – do not rescale with main canvas zoom.
+        // The minimap remains static; only the viewport rectangle changes size based on main zoom.
+        // No scaling adjustments are needed here.
+
+        const minimapScale = minimapPaperRef.current.scale()
+        const minimapTranslate = minimapPaperRef.current.translate()
+
+        // Calculate visible area in graph coordinates
+        const visibleRect = {
+            x: -mainTranslate.tx / mainScale.sx,
+            y: -mainTranslate.ty / mainScale.sy,
+            width: viewportWidth / mainScale.sx,
+            height: viewportHeight / mainScale.sy
+        }
+
+        // Convert to minimap coordinates
+        const minimapRect = {
+            x: visibleRect.x * minimapScale.sx + minimapTranslate.tx,
+            y: visibleRect.y * minimapScale.sy + minimapTranslate.ty,
+            width: visibleRect.width * minimapScale.sx,
+            height: visibleRect.height * minimapScale.sy
+        }
+
+        console.log('🗺️ Minimap Sync:', {
+            visibleRect,
+            minimapRect,
+            minimapScale: minimapScale.sx,
+            minimapTranslate
+        })
+
+        // Update viewport indicator with visual scaling (50%) and centering on main view center
+        const viewport = viewportRectRef.current
+        // Compute main viewport center in graph coordinates
+        const mainCenterX = visibleRect.x + visibleRect.width / 2
+        const mainCenterY = visibleRect.y + visibleRect.height / 2
+        // Convert to minimap coordinates
+        const minimapCenterX = mainCenterX * minimapScale.sx + minimapTranslate.tx
+        const minimapCenterY = mainCenterY * minimapScale.sy + minimapTranslate.ty
+        const visualScale = 0.5
+        const visualWidth = minimapRect.width * visualScale
+        const visualHeight = minimapRect.height * visualScale
+        const visualX = minimapCenterX - visualWidth / 2
+        const visualY = minimapCenterY - visualHeight / 2
+        viewport.style.left = `${visualX}px`
+        viewport.style.top = `${visualY}px`
+        viewport.style.width = `${visualWidth}px`
+        viewport.style.height = `${visualHeight}px`
+    }
+
     // Initialize JointJS canvas (Run once)
     useEffect(() => {
         if (!canvasRef.current) return
@@ -44,7 +122,7 @@ export default function EditorPage() {
             drawGrid: { name: 'dot', args: { color: '#2d3139', thickness: 1 } },
             background: { color: '#13151a' },
             cellViewNamespace: shapes,
-            interactive: true,
+            interactive: false, // Disable interaction by default
             async: true,
             sorting: dia.Paper.sorting.APPROX,
         })
@@ -52,6 +130,11 @@ export default function EditorPage() {
 
         // Append paper to container
         canvasRef.current.appendChild(paper.el)
+
+        // Attach listeners for minimap sync
+        paper.on('translate resize scale', () => {
+            updateMinimapViewport()
+        })
 
         // Element selection handler
         paper.on('element:pointerclick', (elementView: dia.ElementView) => {
@@ -75,6 +158,17 @@ export default function EditorPage() {
 
         // Panning Handlers
         paper.on('blank:pointerdown', (evt: dia.Event) => {
+            // Deselect any selected element when clicking on blank area
+            setSelectedElementId(null)
+
+            // Unhighlight all elements
+            graph.getCells().forEach(cell => {
+                if (cell.isElement()) {
+                    const view = paper.findViewByModel(cell)
+                    view?.unhighlight()
+                }
+            })
+
             isPanning.current = true
             lastMousePosition.current = { x: evt.clientX || 0, y: evt.clientY || 0 }
             if (canvasRef.current) {
@@ -132,6 +226,108 @@ export default function EditorPage() {
             }
         }, 0)
     }, [theme])
+
+    // Initialize Minimap
+    useEffect(() => {
+        // Only initialize if container exists and graph exists
+        if (!minimapContainerRef.current || !graphRef.current) return
+
+        // Prevent double initialization
+        if (minimapPaperRef.current) return
+
+        const minimapGraph = graphRef.current // Share the same graph
+
+        const minimapPaper = new dia.Paper({
+            model: minimapGraph,
+            width: 200,
+            height: 150,
+            gridSize: 10,
+            interactive: false, // Minimap is not interactive for editing
+            background: { color: 'rgba(0,0,0,0)' } // Transparent background
+        })
+
+        minimapPaperRef.current = minimapPaper
+        minimapContainerRef.current.appendChild(minimapPaper.el)
+
+        // Initial fit
+        minimapPaper.scaleContentToFit({ padding: 10 })
+        minimapBaseScaleRef.current = minimapPaper.scale().sx
+        minimapBaseTranslateRef.current = minimapPaper.translate()
+
+        // Minimap interaction
+        // Minimap interaction handler
+        const centerOnPoint = (x: number, y: number) => {
+            if (!paperRef.current) return
+
+            // x, y are already in graph coordinates from the event
+            const mainPaper = paperRef.current
+            const mainScale = mainPaper.scale()
+            const viewport = mainPaper.el.parentElement
+
+            if (viewport) {
+                const viewportWidth = viewport.clientWidth
+                const viewportHeight = viewport.clientHeight
+
+                const newTx = viewportWidth / 2 - x * mainScale.sx
+                const newTy = viewportHeight / 2 - y * mainScale.sy
+
+                mainPaper.translate(newTx, newTy)
+            }
+        }
+
+        minimapPaper.on('blank:pointerdown', (_evt: dia.Event, x: number, y: number) => {
+            centerOnPoint(x, y)
+        })
+
+        minimapPaper.on('cell:pointerdown', (_cellView: dia.ElementView, _evt: dia.Event, x: number, y: number) => {
+            centerOnPoint(x, y)
+        })
+
+        // Force update viewport
+        updateMinimapViewport()
+
+        return () => {
+            minimapPaper.remove()
+            minimapPaperRef.current = null
+            minimapBaseScaleRef.current = null
+            minimapBaseTranslateRef.current = null
+        }
+    }, [loadedFileName]) // Re-run when file is loaded (and container is rendered)
+
+    // Update minimap content when elements change
+    useEffect(() => {
+        if (minimapPaperRef.current && elementCount > 0) {
+            minimapPaperRef.current.scaleContentToFit({ padding: 10 })
+            minimapBaseScaleRef.current = minimapPaperRef.current.scale().sx
+            minimapBaseTranslateRef.current = minimapPaperRef.current.translate()
+            updateMinimapViewport()
+        }
+    }, [elementCount])
+
+    // Update element interactivity based on selection
+    useEffect(() => {
+        if (!graphRef.current || !paperRef.current) return
+
+        const graph = graphRef.current
+        const paper = paperRef.current
+
+        // Update interactivity for all elements
+        graph.getCells().forEach(cell => {
+            if (cell.isElement()) {
+                const cellView = paper.findViewByModel(cell)
+                if (cellView) {
+                    const cellId = cell.id as string
+                    // Enable interaction only for selected element
+                    if (cellId === selectedElementId) {
+                        cellView.setInteractivity(true)
+                    } else {
+                        cellView.setInteractivity(false)
+                    }
+                }
+            }
+        })
+    }, [selectedElementId])
+
 
     const handleLogout = () => {
         localStorage.removeItem('accessToken')
@@ -271,8 +467,10 @@ export default function EditorPage() {
                     const viewportHeight = viewport.clientHeight
                     const padding = 50
 
-                    // Set initial scale to 100% (1.0)
-                    const scale = 1.0
+                    // Calculate scale to fit content
+                    const scaleX = (viewportWidth - padding * 2) / contentWidth
+                    const scaleY = (viewportHeight - padding * 2) / contentHeight
+                    const scale = Math.min(scaleX, scaleY, 1.0) // Don't zoom in more than 1.0 initially
 
                     // Set scale
                     paperRef.current.scale(scale, scale)
@@ -280,6 +478,8 @@ export default function EditorPage() {
                     // Calculate translation to center content
                     const centerX = minX + contentWidth / 2
                     const centerY = minY + contentHeight / 2
+
+                    // New translation: center of viewport - (center of content * scale)
                     const tx = viewportWidth / 2 - centerX * scale
                     const ty = viewportHeight / 2 - centerY * scale
 
@@ -288,6 +488,14 @@ export default function EditorPage() {
                     console.log('🔍 Scale after fit:', scale)
                     console.log('🔍 Translate:', { tx, ty })
                     setZoom(scale)
+
+                    // Update minimap
+                    if (minimapPaperRef.current) {
+                        minimapPaperRef.current.scaleContentToFit({ padding: 10 })
+                        minimapBaseScaleRef.current = minimapPaperRef.current.scale().sx
+                        minimapBaseTranslateRef.current = minimapPaperRef.current.translate()
+                        updateMinimapViewport()
+                    }
                 }
             }, 100)
 
@@ -307,20 +515,87 @@ export default function EditorPage() {
     const handleZoomIn = () => {
         if (paperRef.current) {
             const currentScale = paperRef.current.scale()
-            const newScale = Math.min(currentScale.sx * 1.2, 3)
-            paperRef.current.scale(newScale, newScale)
-            setZoom(newScale)
+            const nextScale = Math.min(currentScale.sx * 1.2, 5) // Max zoom 5x
+
+            // Zoom to center of viewport
+            const viewportWidth = paperRef.current.el.parentElement?.clientWidth || 800
+            const viewportHeight = paperRef.current.el.parentElement?.clientHeight || 600
+
+            const ox = viewportWidth / 2
+            const oy = viewportHeight / 2
+
+            zoomToPoint(nextScale, ox, oy)
         }
     }
 
     const handleZoomOut = () => {
         if (paperRef.current) {
             const currentScale = paperRef.current.scale()
-            const newScale = Math.max(currentScale.sx / 1.2, 0.1)
-            paperRef.current.scale(newScale, newScale)
-            setZoom(newScale)
+            const nextScale = Math.max(currentScale.sx / 1.2, 0.1) // Min zoom 0.1x
+
+            // Zoom to center of viewport
+            const viewportWidth = paperRef.current.el.parentElement?.clientWidth || 800
+            const viewportHeight = paperRef.current.el.parentElement?.clientHeight || 600
+
+            const ox = viewportWidth / 2
+            const oy = viewportHeight / 2
+
+            zoomToPoint(nextScale, ox, oy)
         }
     }
+
+    const zoomToPoint = (nextScale: number, x: number, y: number) => {
+        if (!paperRef.current) return
+
+        const currentScale = paperRef.current.scale().sx
+        const currentTranslate = paperRef.current.translate()
+
+        // Calculate new translation to keep the point (x, y) fixed
+        // Formula: newTx = x - (x - oldTx) * (newScale / oldScale)
+        const newTx = x - (x - currentTranslate.tx) * (nextScale / currentScale)
+        const newTy = y - (y - currentTranslate.ty) * (nextScale / currentScale)
+
+        paperRef.current.scale(nextScale, nextScale)
+        paperRef.current.translate(newTx, newTy)
+        setZoom(nextScale)
+    }
+
+    // Wheel Zoom Handler
+    useEffect(() => {
+        const handleWheel = (e: WheelEvent) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault()
+
+                if (!paperRef.current) return
+
+                const currentScale = paperRef.current.scale().sx
+                const delta = e.deltaY > 0 ? 0.9 : 1.1 // Zoom out or in
+
+                let nextScale = currentScale * delta
+                nextScale = Math.max(0.1, Math.min(nextScale, 5)) // Clamp zoom
+
+                // Get mouse position relative to viewport
+                const rect = paperRef.current.el.parentElement?.getBoundingClientRect()
+                if (!rect) return
+
+                const ox = e.clientX - rect.left
+                const oy = e.clientY - rect.top
+
+                zoomToPoint(nextScale, ox, oy)
+            }
+        }
+
+        const canvasEl = canvasRef.current
+        if (canvasEl) {
+            canvasEl.addEventListener('wheel', handleWheel, { passive: false })
+        }
+
+        return () => {
+            if (canvasEl) {
+                canvasEl.removeEventListener('wheel', handleWheel)
+            }
+        }
+    }, [])
 
     const handleZoomReset = () => {
         if (paperRef.current) {
@@ -548,6 +823,13 @@ export default function EditorPage() {
                             left: 0
                         }}
                     />
+
+                    {/* Minimap Container */}
+                    {loadedFileName && (
+                        <div className={styles.minimapContainer} ref={minimapContainerRef}>
+                            <div className={styles.minimapViewport} ref={viewportRectRef} />
+                        </div>
+                    )}
 
                     {isLoading && (
                         <div style={{
