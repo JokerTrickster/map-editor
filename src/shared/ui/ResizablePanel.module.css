@@ -71,10 +71,11 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 1001;
+  z-index: 100;
   transition: all 0.2s ease;
   font-size: 14px;
   color: var(--color-text-secondary);
+  pointer-events: auto;
 }
 
 .collapseButton:hover {

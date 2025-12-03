@@ -75,12 +75,12 @@ export function ResizablePanel({
 
   // Update button position when panel width or collapse state changes
   useEffect(() => {
-    if (panelRef.current) {
+    if (panelRef.current && !isCollapsed) {
       const rect = panelRef.current.getBoundingClientRect()
       if (side === 'left') {
-        setButtonPosition(isCollapsed ? 0 : rect.right)
+        setButtonPosition(rect.right)
       } else {
-        setButtonPosition(isCollapsed ? window.innerWidth : rect.left)
+        setButtonPosition(rect.left)
       }
     }
   }, [width, isCollapsed, side])
@@ -93,9 +93,16 @@ export function ResizablePanel({
           isCollapsed ? styles.collapsedButton : ''
         }`}
         onClick={toggleCollapse}
-        style={{
-          [side === 'left' ? 'left' : 'right']: isCollapsed ? '0px' : side === 'left' ? `${buttonPosition - 12}px` : `${window.innerWidth - buttonPosition - 12}px`,
-        }}
+        style={
+          isCollapsed
+            ? undefined
+            : {
+                [side === 'left' ? 'left' : 'right']:
+                  side === 'left'
+                    ? `${buttonPosition - 12}px`
+                    : `${window.innerWidth - buttonPosition - 12}px`,
+              }
+        }
         title={isCollapsed ? `Show ${side} panel` : `Hide ${side} panel`}
       >
         {isCollapsed ? (
