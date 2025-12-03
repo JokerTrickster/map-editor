@@ -71,7 +71,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 100;
+  z-index: 300;
   transition: all 0.2s ease;
   font-size: 14px;
   color: var(--color-text-secondary);
