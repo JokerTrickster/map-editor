@@ -89,19 +89,17 @@ export function ResizablePanel({
     <>
       {/* Collapse Button - Always visible */}
       <button
-        className={`${styles.collapseButton} ${styles[`collapse-${side}`]} ${
-          isCollapsed ? styles.collapsedButton : ''
-        }`}
+        className={`${styles.collapseButton} ${styles[`collapse-${side}`]}`}
         onClick={toggleCollapse}
         style={
-          isCollapsed
-            ? undefined
-            : {
+          !isCollapsed && buttonPosition > 0
+            ? {
                 [side === 'left' ? 'left' : 'right']:
                   side === 'left'
                     ? `${buttonPosition - 12}px`
                     : `${window.innerWidth - buttonPosition - 12}px`,
               }
+            : undefined
         }
         title={isCollapsed ? `Show ${side} panel` : `Hide ${side} panel`}
       >

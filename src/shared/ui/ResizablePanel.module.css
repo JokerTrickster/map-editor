@@ -89,15 +89,7 @@
   left: 0;
 }
 
-.collapse-left.collapsedButton {
-  left: 0;
-}
-
 .collapse-right {
-  right: 0;
-}
-
-.collapse-right.collapsedButton {
   right: 0;
 }
 
