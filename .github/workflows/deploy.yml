@@ -9,8 +9,7 @@ on:
         type: choice
         options:
           - main
-          - develop
-        default: 'develop'
+        default: 'main'
 
 jobs:
   deploy:
