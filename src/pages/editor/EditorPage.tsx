@@ -98,8 +98,9 @@ export default function EditorPage() {
 
     const previousFloor = previousFloorRef.current
 
-    // Save previous floor data before switching
+    // Only process floor changes, not initial mount
     if (previousFloor && previousFloor !== currentFloor) {
+      // Save previous floor data before switching
       const floor = floors.find((f) => f.id === previousFloor)
       if (floor) {
         updateFloor(previousFloor, {
@@ -116,47 +117,51 @@ export default function EditorPage() {
           },
         })
       }
-    }
 
-    // Clear canvas
-    graph.clear()
-    setElementCount(0)
-    setLoadedFileName(null)
-    setObjectsByLayer(new Map())
-    setSelectedElementId(null)
-    clearFile()
+      // Clear canvas and state
+      graph.clear()
+      setElementCount(0)
+      setLoadedFileName(null)
+      setObjectsByLayer(new Map())
+      setSelectedElementId(null)
 
-    // Restore new floor data if exists
-    const newFloor = floors.find((f) => f.id === currentFloor)
-    if (newFloor?.mapData?.csvRawData) {
-      // Restore CSV data to csvStore
-      const mapData = newFloor.mapData
-      const rawData = mapData.csvRawData!
+      // Clear CSV store first
+      clearFile()
 
-      // Create a File object from saved data
-      const blob = new Blob([rawData], { type: 'text/csv' })
-      const file = new File([blob], mapData.csvFileName || 'restored.csv', { type: 'text/csv' })
+      // Then restore new floor data if exists (after a small delay to ensure clearFile completes)
+      setTimeout(() => {
+        const newFloor = floors.find((f) => f.id === currentFloor)
+        if (newFloor?.mapData?.csvRawData) {
+          // Restore CSV data to csvStore
+          const mapData = newFloor.mapData
+          const rawData = mapData.csvRawData!
 
-      setFile(file)
-      setUploadState({
-        status: 'parsed',
-        fileName: mapData.csvFileName || 'restored.csv',
-        rowCount: mapData.csvParsedData?.rowCount || 0,
-      })
+          // Create a File object from saved data
+          const blob = new Blob([rawData], { type: 'text/csv' })
+          const file = new File([blob], mapData.csvFileName || 'restored.csv', { type: 'text/csv' })
 
-      // Restore parsed data and selections
-      useCSVStore.setState({
-        rawData: mapData.csvRawData,
-        parsedData: mapData.csvParsedData,
-        groupedLayers: mapData.csvGroupedLayers,
-        selectedLayers: new Set(mapData.csvSelectedLayers || []),
-      })
+          // Restore all CSV store state at once
+          useCSVStore.setState({
+            file,
+            rawData: mapData.csvRawData,
+            parsedData: mapData.csvParsedData,
+            groupedLayers: mapData.csvGroupedLayers,
+            selectedLayers: new Set(mapData.csvSelectedLayers || []),
+            uploadState: {
+              status: 'parsed',
+              fileName: mapData.csvFileName || 'restored.csv',
+              rowCount: mapData.csvParsedData?.rowCount || 0,
+            },
+          })
 
-      setLoadedFileName(mapData.csvFileName || null)
+          setLoadedFileName(mapData.csvFileName || null)
+        }
+      }, 0)
     }
 
     // Update previous floor ref
     previousFloorRef.current = currentFloor
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFloor, graph])
 
   // Handlers
