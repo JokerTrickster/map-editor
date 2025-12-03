@@ -24,10 +24,12 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
   const [formData, setFormData] = useState<{
     name: string
     icon: string
+    color: string
     properties: { key: string; type: Property['type']; required: boolean }[]
   }>({
     name: '',
     icon: '',
+    color: '#3b82f6',
     properties: [
       { key: 'position', type: 'string', required: false },
       { key: 'description', type: 'string', required: false },
@@ -69,10 +71,11 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
       addType({
         name: formData.name.trim(),
         icon: formData.icon,
+        color: formData.color,
         properties: formData.properties,
       })
 
-      setFormData({ name: '', icon: '', properties: [] })
+      setFormData({ name: '', icon: '', color: '#3b82f6', properties: [] })
       setAssetFile(undefined)
       setPreviewUrl(null)
       setShowAddForm(false)
@@ -92,11 +95,12 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
       updateType(id, {
         name: formData.name.trim(),
         icon: formData.icon,
+        color: formData.color,
         properties: formData.properties,
       })
 
       setEditingId(null)
-      setFormData({ name: '', icon: '', properties: [] })
+      setFormData({ name: '', icon: '', color: '#3b82f6', properties: [] })
       setAssetFile(undefined)
       setPreviewUrl(null)
     } catch (err) {
@@ -115,6 +119,7 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
     setFormData({
       name: type.name,
       icon: type.icon || '',
+      color: type.color || '#3b82f6',
       properties: [...type.properties],
     })
     if (type.icon) {
@@ -130,7 +135,7 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
   const cancelEdit = () => {
     setEditingId(null)
     setShowAddForm(false)
-    setFormData({ name: '', icon: '', properties: [] })
+    setFormData({ name: '', icon: '', color: '#3b82f6', properties: [] })
     setAssetFile(undefined)
     setPreviewUrl(null)
     setError(null)
@@ -360,6 +365,7 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
     setFormData({
       name: '',
       icon: '',
+      color: '#3b82f6',
       properties: [
         { key: 'position', type: 'string', required: false },
         { key: 'description', type: 'string', required: false },
