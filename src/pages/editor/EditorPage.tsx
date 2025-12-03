@@ -22,6 +22,7 @@ import { useCSVProcessing } from './hooks/useCSVProcessing'
 import { useThemeSync } from './hooks/useThemeSync'
 import { useElementSelection } from './hooks/useElementSelection'
 import { useLayerRendering } from './hooks/useLayerRendering'
+import { useDragAndDropMapping } from './hooks/useDragAndDropMapping'
 
 import { EditorHeader } from './components/EditorHeader'
 import { EditorSidebar } from './components/EditorSidebar'
@@ -87,6 +88,9 @@ export default function EditorPage() {
 
   // Layer rendering - handles selected layer rendering to canvas
   useLayerRendering(graph, setElementCount, setObjectsByLayer, setLoadedFileName)
+
+  // Drag and drop mapping
+  useDragAndDropMapping(paper, graph)
 
   // CSV processing
   const { processCSVData } = useCSVProcessing(

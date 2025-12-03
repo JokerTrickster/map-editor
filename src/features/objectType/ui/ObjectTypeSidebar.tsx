@@ -308,7 +308,15 @@ export function ObjectTypeSidebar() {
             ) : (
               /* View Mode */
               <>
-                <div className={styles.typeHeader}>
+                <div
+                  className={styles.typeHeader}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('objectTypeId', type.id)
+                    e.dataTransfer.setData('objectTypeName', type.name)
+                    e.dataTransfer.effectAllowed = 'copy'
+                  }}
+                >
                   <span className={styles.typeName}>{type.name}</span>
                   <div className={styles.typeActions}>
                     <button

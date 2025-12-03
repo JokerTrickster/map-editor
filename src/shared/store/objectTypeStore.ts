@@ -43,7 +43,9 @@ interface ObjectTypeState {
   // Mapping actions
   addMapping: (mapping: Omit<Mapping, 'id' | 'created'>) => void;
   removeMapping: (id: string) => void;
+  removeMappingByEntity: (entityHandle: string) => void;
   getMappingsByFloorId: (floorId: string) => Mapping[];
+  getMappingByEntity: (floorId: string, entityHandle: string) => Mapping | undefined;
 }
 
 const STORAGE_KEY = 'map-editor-object-types';
@@ -202,6 +204,20 @@ export const useObjectTypeStore = create<ObjectTypeState>((set, get) => {
 
     getMappingsByFloorId: (floorId) => {
       return get().mappings.filter((m) => m.floorId === floorId);
+    },
+
+    removeMappingByEntity: (entityHandle) => {
+      const state = get();
+      const mapping = state.mappings.find((m) => m.entityHandle === entityHandle);
+      if (mapping) {
+        get().removeMapping(mapping.id);
+      }
+    },
+
+    getMappingByEntity: (floorId, entityHandle) => {
+      return get().mappings.find(
+        (m) => m.floorId === floorId && m.entityHandle === entityHandle
+      );
     },
   };
 });
