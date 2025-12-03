@@ -173,6 +173,7 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
     const preview: Record<string, any> = {
       name: formData.name,
       icon: formData.icon ? '(Asset URL)' : '',
+      color: formData.color,
     }
 
     formData.properties.forEach(prop => {
@@ -226,9 +227,49 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
           <div style={{ color: 'var(--local-text-secondary)', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '20px' }}>📁</span>
             <span>클릭하여 아이콘/이미지 업로드</span>
+            <span style={{ fontSize: '11px', opacity: 0.7 }}>(아이콘이 없으면 색상을 선택할 수 있습니다)</span>
           </div>
         )}
       </div>
+
+      {/* Color Picker (Only if no icon) */}
+      {!previewUrl && (
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', fontSize: '12px', marginBottom: '8px', color: 'var(--local-text-secondary)' }}>
+            객체 색상
+          </label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              type="color"
+              value={formData.color}
+              onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+              style={{
+                width: '40px',
+                height: '40px',
+                padding: '0',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                background: 'none'
+              }}
+            />
+            <input
+              type="text"
+              value={formData.color}
+              onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+              style={{
+                background: 'var(--local-surface)',
+                border: '1px solid var(--local-border)',
+                color: 'var(--local-text)',
+                padding: '8px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                width: '100px'
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Properties */}
       <div className={styles.properties}>
@@ -372,8 +413,18 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
                   {type.icon ? (
                     <img src={type.icon} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover', background: '#000' }} />
                   ) : (
-                    <div style={{ width: '24px', height: '24px', borderRadius: '4px', background: 'var(--local-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>
-                      T
+                    <div style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '4px',
+                      background: type.color || 'var(--local-surface-hover)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      border: type.color ? '1px solid rgba(255,255,255,0.2)' : 'none'
+                    }}>
+                      {!type.color && 'T'}
                     </div>
                   )}
                   <span className={styles.typeName}>{type.name}</span>

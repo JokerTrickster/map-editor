@@ -43,10 +43,12 @@ export function useObjectCreation(
 
                     // Create temp path/polygon
                     const path = new shapes.standard.Path()
+                    const color = selectedType.color || '#3b82f6'
                     path.attr({
                         body: {
-                            fill: 'rgba(59, 130, 246, 0.2)',
-                            stroke: '#3b82f6',
+                            fill: color,
+                            fillOpacity: 0.2,
+                            stroke: color,
                             strokeWidth: 2
                         }
                     })
@@ -124,11 +126,15 @@ export function useObjectCreation(
             const polygon = new shapes.standard.Polygon()
             // Convert points to string "x,y x,y"
             const pointsStr = points.map(p => `${p.x},${p.y}`).join(' ')
+
+            const color = selectedType.color || '#3b82f6'
+
             polygon.attr({
                 body: {
                     refPoints: pointsStr,
-                    fill: 'rgba(59, 130, 246, 0.5)',
-                    stroke: '#3b82f6',
+                    fill: color,
+                    fillOpacity: 0.5,
+                    stroke: color,
                     strokeWidth: 2
                 },
                 label: { text: selectedType.name }

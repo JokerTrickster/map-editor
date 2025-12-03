@@ -17,6 +17,7 @@ export interface ObjectType {
   id: string;
   name: string;
   icon?: string;
+  color?: string;
   properties: Property[];
   created: string;
   modified: string;
