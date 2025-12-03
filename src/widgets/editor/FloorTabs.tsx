@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useProjectStore } from '@/shared/store/projectStore';
-import { useFloorStore } from '@/shared/store/floorStore';
+import { useFloorStore, type Floor } from '@/shared/store/floorStore';
 import styles from './FloorTabs.module.css';
 
 export function FloorTabs() {
@@ -9,7 +9,12 @@ export function FloorTabs() {
     currentLot ? state.getFloorsByLotId(currentLot) : []
   );
   const currentFloor = useFloorStore((state) => state.currentFloor);
-  const { addFloor, deleteFloor, setCurrentFloor } = useFloorStore();
+  const { addFloor, deleteFloor, setCurrentFloor, updateFloor } = useFloorStore();
+
+  // State for inline editing
+  const [editingFloorId, setEditingFloorId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Initialize first floor if none exists
   useEffect(() => {
@@ -17,6 +22,14 @@ export function FloorTabs() {
       addFloor(currentLot, { order: 0 });
     }
   }, [currentLot, floors.length, addFloor]);
+
+  // Focus input when entering edit mode
+  useEffect(() => {
+    if (editingFloorId && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingFloorId]);
 
   // Handle add floor
   const handleAddFloor = () => {
@@ -58,6 +71,41 @@ export function FloorTabs() {
     setCurrentFloor(floorId);
   };
 
+  // Handle double-click to edit floor name
+  const handleDoubleClick = (floor: Floor) => {
+    setEditingFloorId(floor.id);
+    setEditValue(floor.name);
+  };
+
+  // Handle save edit
+  const handleSaveEdit = () => {
+    if (!editingFloorId || !editValue.trim()) {
+      setEditingFloorId(null);
+      return;
+    }
+
+    updateFloor(editingFloorId, { name: editValue.trim() });
+    setEditingFloorId(null);
+    setEditValue('');
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setEditingFloorId(null);
+    setEditValue('');
+  };
+
+  // Handle input key down
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleSaveEdit();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      handleCancelEdit();
+    }
+  };
+
   // Handle keyboard navigation
   const handleKeyDown = (event: React.KeyboardEvent, floorId: string) => {
     const currentIndex = floors.findIndex((f) => f.id === floorId);
@@ -88,19 +136,34 @@ export function FloorTabs() {
       <div className={styles.tabs}>
         {floors.map((floor) => {
           const isActive = currentFloor === floor.id;
+          const isEditing = editingFloorId === floor.id;
 
           return (
             <div
               key={floor.id}
               className={`${styles.tab} ${isActive ? styles.active : ''}`}
-              onClick={() => handleSelectFloor(floor.id)}
-              onKeyDown={(e) => handleKeyDown(e, floor.id)}
-              tabIndex={0}
+              onClick={() => !isEditing && handleSelectFloor(floor.id)}
+              onDoubleClick={() => handleDoubleClick(floor)}
+              onKeyDown={(e) => !isEditing && handleKeyDown(e, floor.id)}
+              tabIndex={isEditing ? -1 : 0}
               role="tab"
               aria-selected={isActive}
             >
-              <span className={styles.tabName}>{floor.name}</span>
-              {floors.length > 1 && (
+              {isEditing ? (
+                <input
+                  ref={inputRef}
+                  type="text"
+                  className={styles.editInput}
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={handleInputKeyDown}
+                  onBlur={handleSaveEdit}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span className={styles.tabName}>{floor.name}</span>
+              )}
+              {!isEditing && floors.length > 1 && (
                 <button
                   className={styles.deleteBtn}
                   onClick={(e) => handleDeleteFloor(floor.id, e)}
