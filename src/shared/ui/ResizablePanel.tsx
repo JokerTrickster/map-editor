@@ -26,6 +26,7 @@ export function ResizablePanel({
   const [width, setWidth] = useState(defaultWidth)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
+  const [buttonPosition, setButtonPosition] = useState(0)
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -72,16 +73,29 @@ export function ResizablePanel({
     setIsCollapsed(!isCollapsed)
   }
 
+  // Update button position when panel width or collapse state changes
+  useEffect(() => {
+    if (panelRef.current) {
+      const rect = panelRef.current.getBoundingClientRect()
+      if (side === 'left') {
+        setButtonPosition(isCollapsed ? 0 : rect.right)
+      } else {
+        setButtonPosition(isCollapsed ? window.innerWidth : rect.left)
+      }
+    }
+  }, [width, isCollapsed, side])
+
   return (
-    <div
-      ref={panelRef}
-      className={`${styles.panel} ${styles[side]} ${isCollapsed ? styles.collapsed : ''}`}
-      style={{ width: isCollapsed ? 0 : `${width}px` }}
-    >
-      {/* Collapse Button */}
+    <>
+      {/* Collapse Button - Always visible */}
       <button
-        className={`${styles.collapseButton} ${styles[`collapse-${side}`]}`}
+        className={`${styles.collapseButton} ${styles[`collapse-${side}`]} ${
+          isCollapsed ? styles.collapsedButton : ''
+        }`}
         onClick={toggleCollapse}
+        style={{
+          [side === 'left' ? 'left' : 'right']: isCollapsed ? '0px' : side === 'left' ? `${buttonPosition - 12}px` : `${window.innerWidth - buttonPosition - 12}px`,
+        }}
         title={isCollapsed ? `Show ${side} panel` : `Hide ${side} panel`}
       >
         {isCollapsed ? (
@@ -91,18 +105,25 @@ export function ResizablePanel({
         )}
       </button>
 
-      {/* Panel Content */}
-      {!isCollapsed && <div className={styles.content}>{children}</div>}
+      {/* Panel */}
+      <div
+        ref={panelRef}
+        className={`${styles.panel} ${styles[side]} ${isCollapsed ? styles.collapsed : ''}`}
+        style={{ width: isCollapsed ? 0 : `${width}px` }}
+      >
+        {/* Panel Content */}
+        {!isCollapsed && <div className={styles.content}>{children}</div>}
 
-      {/* Resize Handle */}
-      {!isCollapsed && (
-        <div
-          className={`${styles.resizeHandle} ${styles[`handle-${side}`]} ${
-            isResizing ? styles.resizing : ''
-          }`}
-          onMouseDown={handleResizeStart}
-        />
-      )}
-    </div>
+        {/* Resize Handle */}
+        {!isCollapsed && (
+          <div
+            className={`${styles.resizeHandle} ${styles[`handle-${side}`]} ${
+              isResizing ? styles.resizing : ''
+            }`}
+            onMouseDown={handleResizeStart}
+          />
+        )}
+      </div>
+    </>
   )
 }

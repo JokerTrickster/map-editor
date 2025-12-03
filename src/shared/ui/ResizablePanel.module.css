@@ -59,7 +59,7 @@
 
 /* Collapse Button */
 .collapseButton {
-  position: absolute;
+  position: fixed;
   top: 50%;
   transform: translateY(-50%);
   width: 24px;
@@ -71,7 +71,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 101;
+  z-index: 1001;
   transition: all 0.2s ease;
   font-size: 14px;
   color: var(--color-text-secondary);
@@ -81,14 +81,23 @@
   background-color: var(--color-bg-hover);
   color: var(--color-primary);
   border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .collapse-left {
-  right: -12px;
+  left: 0;
+}
+
+.collapse-left.collapsedButton {
+  left: 0;
 }
 
 .collapse-right {
-  left: -12px;
+  right: 0;
+}
+
+.collapse-right.collapsedButton {
+  right: 0;
 }
 
 /* User select prevention during resize */
