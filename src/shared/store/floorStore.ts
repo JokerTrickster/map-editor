@@ -18,6 +18,7 @@ export interface MapData {
   metadata: Record<string, any>;
   assets: any[];
   objects: any[];
+  graphJson?: any;
 }
 
 export interface Floor {

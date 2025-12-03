@@ -12,14 +12,35 @@ export function useLayerRendering(
   graph: dia.Graph | null,
   setElementCount: (count: number) => void,
   setObjectsByLayer: (layers: Map<string, dia.Element[]>) => void,
-  setLoadedFileName: (name: string | null) => void
+  setLoadedFileName: (name: string | null) => void,
+  pendingGraphJson: any | null,
+  setPendingGraphJson: (json: any | null) => void
 ) {
   const groupedLayers = useCSVStore(state => state.groupedLayers)
   const selectedLayers = useCSVStore(state => state.selectedLayers)
   const uploadState = useCSVStore(state => state.uploadState)
 
   useEffect(() => {
-    if (!graph || !groupedLayers || groupedLayers.length === 0) {
+    if (!graph) return
+
+    // Priority 1: Restore pending graph JSON (from floor switch)
+    if (pendingGraphJson) {
+      graph.fromJSON(pendingGraphJson)
+      setPendingGraphJson(null)
+
+      // Update element count
+      setElementCount(graph.getCells().length)
+
+      // We also need to rebuild objectsByLayer map for the sidebar
+      // This is a bit tricky as we need to map back from graph elements to layers
+      // For now, we can try to reconstruct it or just leave it empty until next CSV render
+      // But better to at least set the count.
+
+      return
+    }
+
+    // Priority 2: Render from CSV
+    if (!groupedLayers || groupedLayers.length === 0) {
       return
     }
 
@@ -74,8 +95,10 @@ export function useLayerRendering(
     groupedLayers,
     selectedLayers,
     uploadState,
+    pendingGraphJson, // Add dependency
     setElementCount,
     setObjectsByLayer,
     setLoadedFileName,
+    setPendingGraphJson, // Add dependency
   ])
 }

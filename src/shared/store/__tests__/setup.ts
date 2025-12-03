@@ -34,7 +34,7 @@ class LocalStorageMock {
 }
 
 beforeAll(() => {
-  global.localStorage = new LocalStorageMock() as Storage;
+  globalThis.localStorage = new LocalStorageMock() as Storage;
 });
 
 afterEach(() => {

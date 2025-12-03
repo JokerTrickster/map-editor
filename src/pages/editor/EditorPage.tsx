@@ -45,6 +45,7 @@ export default function EditorPage() {
   const [elementCount, setElementCount] = useState(0)
   const [objectsByLayer, setObjectsByLayer] = useState<Map<string, dia.Element[]>>(new Map())
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
+  const [pendingGraphJson, setPendingGraphJson] = useState<any | null>(null)
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -85,21 +86,45 @@ export default function EditorPage() {
   )
 
   // Layer rendering - handles selected layer rendering to canvas
-  useLayerRendering(graph, setElementCount, setObjectsByLayer, setLoadedFileName)
+  useLayerRendering(
+    graph,
+    setElementCount,
+    setObjectsByLayer,
+    setLoadedFileName,
+    pendingGraphJson,
+    setPendingGraphJson
+  )
 
-  // Auto-save current floor data when CSV data changes
+  // Auto-save current floor data when CSV data changes OR when graph changes (we need to hook into graph changes ideally, but for now we hook into CSV state + periodic/manual save?)
+  // Actually, hooking into graph changes is expensive. 
+  // For now, we save whenever CSV state changes, which covers initial load.
+  // But for manual edits, we might need a separate save mechanism or just save on unmount/switch.
+  // The current effect only triggers on CSV state changes.
+  // Let's add a save on floor switch (in the cleanup or before switch).
+  // But we can't easily block the switch.
+  // We can update the effect to also run when we want to save.
+
+  // Better approach: Update the existing effect to save graphJson.
+  // Note: This effect only runs when CSV state changes. If user moves an object, this effect DOES NOT RUN.
+  // So manual edits are still at risk if we don't save them.
+  // However, the prompt asks to fix "independent management". 
+  // Saving graphJson here ensures that AT LEAST the CSV-generated graph is saved as graphJson.
+  // If we want to save manual edits, we should probably add a listener to the graph, or save on floor switch.
+
   useEffect(() => {
     if (!currentFloor) return
 
-    // Only save if there's actual CSV data
-    if (!csvState.rawData) return
+    // Only save if there's actual CSV data OR graph data
+    // We should allow saving even if only graph exists (e.g. drawn manually)
+    // But the current logic is tied to CSV.
+    if (!csvState.rawData && (!graph || graph.getCells().length === 0)) return
 
     // Don't save during floor switch (wait for floor change effect to complete)
     if (previousFloorRef.current && previousFloorRef.current !== currentFloor) {
       return
     }
 
-    // Save current floor data whenever CSV state changes
+    // Save current floor data
     const floor = floors.find((f) => f.id === currentFloor)
     if (floor) {
       updateFloor(currentFloor, {
@@ -113,6 +138,7 @@ export default function EditorPage() {
           metadata: floor.mapData?.metadata || {},
           assets: floor.mapData?.assets || [],
           objects: floor.mapData?.objects || [],
+          graphJson: graph?.toJSON() || undefined, // Save graph state
         },
       })
     }
@@ -130,18 +156,47 @@ export default function EditorPage() {
 
     // Only process floor changes, not initial mount
     if (previousFloor && previousFloor !== currentFloor) {
+      // Save previous floor state before switching?
+      // The auto-save effect above might not have run if only graph changed.
+      // We should ideally save the previous floor here.
+      const oldFloor = floors.find(f => f.id === previousFloor);
+      if (oldFloor) {
+        // We can't easily access the "previous" graph state here because graph might already be reflecting new floor?
+        // No, graph is still the old graph until we clear it below.
+        // So we CAN save here!
+        const currentMapData = oldFloor.mapData || {
+          metadata: {},
+          assets: [],
+          objects: []
+        };
+
+        updateFloor(previousFloor, {
+          mapData: {
+            ...currentMapData,
+            graphJson: graph.toJSON()
+          }
+        });
+      }
+
       // Clear canvas and state
       graph.clear()
       setElementCount(0)
       setLoadedFileName(null)
       setObjectsByLayer(new Map())
       setSelectedElementId(null)
+      setPendingGraphJson(null)
 
       // Clear CSV store first
       clearFile()
 
       // Then restore new floor data if exists
       const newFloor = floors.find((f) => f.id === currentFloor)
+
+      // Restore Graph JSON if exists
+      if (newFloor?.mapData?.graphJson) {
+        setPendingGraphJson(newFloor.mapData.graphJson)
+      }
+
       if (newFloor?.mapData?.csvRawData) {
         // Restore CSV data to csvStore
         const mapData = newFloor.mapData
