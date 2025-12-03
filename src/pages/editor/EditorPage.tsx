@@ -37,8 +37,6 @@ export default function EditorPage() {
   const updateFloor = useFloorStore((state) => state.updateFloor)
   const floors = useFloorStore((state) => state.floors)
   const clearFile = useCSVStore((state) => state.clearFile)
-  const setFile = useCSVStore((state) => state.setFile)
-  const setUploadState = useCSVStore((state) => state.setUploadState)
   const csvState = useCSVStore()
 
   // State
@@ -89,10 +87,33 @@ export default function EditorPage() {
   // Layer rendering - handles selected layer rendering to canvas
   useLayerRendering(graph, setElementCount, setObjectsByLayer, setLoadedFileName)
 
+  // Auto-save current floor data when CSV data changes
+  useEffect(() => {
+    if (!currentFloor) return
+
+    // Save current floor data whenever CSV state changes
+    const floor = floors.find((f) => f.id === currentFloor)
+    if (floor) {
+      updateFloor(currentFloor, {
+        mapData: {
+          ...(floor.mapData || {}),
+          csvRawData: csvState.rawData || undefined,
+          csvFileName: loadedFileName || undefined,
+          csvParsedData: csvState.parsedData || undefined,
+          csvGroupedLayers: csvState.groupedLayers || undefined,
+          csvSelectedLayers: csvState.selectedLayers.size > 0 ? Array.from(csvState.selectedLayers) : undefined,
+          metadata: floor.mapData?.metadata || {},
+          assets: floor.mapData?.assets || [],
+          objects: floor.mapData?.objects || [],
+        },
+      })
+    }
+  }, [currentFloor, floors, updateFloor, csvState.rawData, csvState.parsedData, csvState.groupedLayers, csvState.selectedLayers, loadedFileName])
+
   // Drag and drop mapping
   useDragAndDropMapping(paper, graph)
 
-  // Save/restore floor data when switching floors
+  // Load floor data when switching floors
   useEffect(() => {
     if (!graph || !currentFloor) return
 
@@ -100,24 +121,6 @@ export default function EditorPage() {
 
     // Only process floor changes, not initial mount
     if (previousFloor && previousFloor !== currentFloor) {
-      // Save previous floor data before switching
-      const floor = floors.find((f) => f.id === previousFloor)
-      if (floor) {
-        updateFloor(previousFloor, {
-          mapData: {
-            ...(floor.mapData || {}),
-            csvRawData: csvState.rawData || undefined,
-            csvFileName: loadedFileName || undefined,
-            csvParsedData: csvState.parsedData || undefined,
-            csvGroupedLayers: csvState.groupedLayers || undefined,
-            csvSelectedLayers: csvState.selectedLayers.size > 0 ? Array.from(csvState.selectedLayers) : undefined,
-            metadata: floor.mapData?.metadata || {},
-            assets: floor.mapData?.assets || [],
-            objects: floor.mapData?.objects || [],
-          },
-        })
-      }
-
       // Clear canvas and state
       graph.clear()
       setElementCount(0)
@@ -128,19 +131,19 @@ export default function EditorPage() {
       // Clear CSV store first
       clearFile()
 
-      // Then restore new floor data if exists (after a small delay to ensure clearFile completes)
-      setTimeout(() => {
-        const newFloor = floors.find((f) => f.id === currentFloor)
-        if (newFloor?.mapData?.csvRawData) {
-          // Restore CSV data to csvStore
-          const mapData = newFloor.mapData
-          const rawData = mapData.csvRawData!
+      // Then restore new floor data if exists
+      const newFloor = floors.find((f) => f.id === currentFloor)
+      if (newFloor?.mapData?.csvRawData) {
+        // Restore CSV data to csvStore
+        const mapData = newFloor.mapData
+        const rawData = mapData.csvRawData!
 
-          // Create a File object from saved data
-          const blob = new Blob([rawData], { type: 'text/csv' })
-          const file = new File([blob], mapData.csvFileName || 'restored.csv', { type: 'text/csv' })
+        // Create a File object from saved data
+        const blob = new Blob([rawData], { type: 'text/csv' })
+        const file = new File([blob], mapData.csvFileName || 'restored.csv', { type: 'text/csv' })
 
-          // Restore all CSV store state at once
+        // Restore all CSV store state at once
+        setTimeout(() => {
           useCSVStore.setState({
             file,
             rawData: mapData.csvRawData,
@@ -155,8 +158,8 @@ export default function EditorPage() {
           })
 
           setLoadedFileName(mapData.csvFileName || null)
-        }
-      }, 0)
+        }, 0)
+      }
     }
 
     // Update previous floor ref
