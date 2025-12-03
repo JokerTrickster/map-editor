@@ -164,7 +164,7 @@ export default function EditorPage() {
 
       <main className={styles.main}>
         {/* Left Sidebar */}
-        <ResizablePanel side="left" defaultWidth={300} minWidth={200} maxWidth={500} defaultCollapsed={true}>
+        <ResizablePanel side="left" defaultWidth={360} minWidth={200} maxWidth={500} defaultCollapsed={true}>
           <ObjectTypeSidebar
             selectedTypeId={selectedObjectType?.id}
             onSelectType={setSelectedObjectType}

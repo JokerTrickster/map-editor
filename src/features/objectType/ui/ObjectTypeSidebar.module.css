@@ -325,12 +325,15 @@
 
 .editButton,
 .deleteButton {
-  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 11px;
-  font-weight: 600;
   transition: all 0.2s ease;
 }
 
