@@ -91,6 +91,14 @@ export default function EditorPage() {
   useEffect(() => {
     if (!currentFloor) return
 
+    // Only save if there's actual CSV data
+    if (!csvState.rawData) return
+
+    // Don't save during floor switch (wait for floor change effect to complete)
+    if (previousFloorRef.current && previousFloorRef.current !== currentFloor) {
+      return
+    }
+
     // Save current floor data whenever CSV state changes
     const floor = floors.find((f) => f.id === currentFloor)
     if (floor) {
@@ -108,7 +116,8 @@ export default function EditorPage() {
         },
       })
     }
-  }, [currentFloor, floors, updateFloor, csvState.rawData, csvState.parsedData, csvState.groupedLayers, csvState.selectedLayers, loadedFileName])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [csvState.rawData, csvState.parsedData, csvState.groupedLayers, csvState.selectedLayers, loadedFileName])
 
   // Drag and drop mapping
   useDragAndDropMapping(paper, graph)

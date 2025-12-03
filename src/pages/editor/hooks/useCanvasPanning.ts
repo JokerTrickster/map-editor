@@ -41,7 +41,7 @@ export function useCanvasPanning(
       let newTx = currentTranslate.tx + dx
       let newTy = currentTranslate.ty + dy
 
-      // Fixed canvas bounds (3000x3000)
+      // Fixed canvas bounds (3000x3000) - same as minimap
       // Allow panning from -1500 to +1500 in both directions
       const CANVAS_MIN_X = -1500
       const CANVAS_MAX_X = 1500

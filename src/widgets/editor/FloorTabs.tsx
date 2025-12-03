@@ -9,7 +9,7 @@ export function FloorTabs() {
     currentLot ? state.getFloorsByLotId(currentLot) : []
   );
   const currentFloor = useFloorStore((state) => state.currentFloor);
-  const { addFloor, deleteFloor, setCurrentFloor, updateFloor } = useFloorStore();
+  const { addFloor, setCurrentFloor, updateFloor } = useFloorStore();
 
   // State for inline editing
   const [editingFloorId, setEditingFloorId] = useState<string | null>(null);
@@ -41,30 +41,7 @@ export function FloorTabs() {
     addFloor(currentLot, { order: newOrder });
   };
 
-  // Handle delete floor
-  const handleDeleteFloor = (floorId: string, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent tab selection when clicking delete
-
-    // Don't allow deleting the last floor
-    if (floors.length <= 1) {
-      alert('Cannot delete the last floor. At least one floor is required.');
-      return;
-    }
-
-    const floor = floors.find((f) => f.id === floorId);
-    if (!floor) return;
-
-    // Show confirmation if floor has data
-    const hasObjects = floor.mapData?.objects && floor.mapData.objects.length > 0;
-    if (hasObjects) {
-      const confirmed = window.confirm(
-        `Delete ${floor.name}? This will remove all objects on this floor.`
-      );
-      if (!confirmed) return;
-    }
-
-    deleteFloor(floorId);
-  };
+  // Floor deletion is completely disabled and removed
 
   // Handle floor selection
   const handleSelectFloor = (floorId: string) => {
@@ -116,10 +93,8 @@ export function FloorTabs() {
     } else if (event.key === 'ArrowRight' && currentIndex < floors.length - 1) {
       event.preventDefault();
       setCurrentFloor(floors[currentIndex + 1].id);
-    } else if (event.key === 'Delete' && floors.length > 1) {
-      event.preventDefault();
-      handleDeleteFloor(floorId, event as any);
     }
+    // Delete key is disabled
   };
 
   // Don't render if no current lot
@@ -163,28 +138,7 @@ export function FloorTabs() {
               ) : (
                 <span className={styles.tabName}>{floor.name}</span>
               )}
-              {!isEditing && floors.length > 1 && (
-                <button
-                  className={styles.deleteBtn}
-                  onClick={(e) => handleDeleteFloor(floor.id, e)}
-                  title={`Delete ${floor.name}`}
-                  aria-label={`Delete ${floor.name}`}
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              )}
+              {/* Delete button is disabled */}
             </div>
           );
         })}
