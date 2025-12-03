@@ -41,19 +41,25 @@ export function useCanvasPanning(
       let newTx = currentTranslate.tx + dx
       let newTy = currentTranslate.ty + dy
 
-      // Restrict Panning Area
-      const contentBBox = graph?.getBBox() || { x: 0, y: 0, width: 1000, height: 1000 }
+      // Fixed canvas bounds (3000x3000)
+      // Allow panning from -1500 to +1500 in both directions
+      const CANVAS_MIN_X = -1500
+      const CANVAS_MAX_X = 1500
+      const CANVAS_MIN_Y = -1500
+      const CANVAS_MAX_Y = 1500
       const viewportWidth = paper.el.parentElement?.clientWidth || 800
       const viewportHeight = paper.el.parentElement?.clientHeight || 600
-      const PAN_PADDING = 2000
 
       // Calculate min/max translation values
-      const minTx = -(contentBBox.x + contentBBox.width + PAN_PADDING) * currentScale.sx + viewportWidth
-      const maxTx = -(contentBBox.x - PAN_PADDING) * currentScale.sx
-      const minTy = -(contentBBox.y + contentBBox.height + PAN_PADDING) * currentScale.sy + viewportHeight
-      const maxTy = -(contentBBox.y - PAN_PADDING) * currentScale.sy
+      // Max translation is when we show the left/top edge
+      const maxTx = -(CANVAS_MIN_X * currentScale.sx)
+      // Min translation is when we show the right/bottom edge
+      const minTx = -(CANVAS_MAX_X * currentScale.sx) + viewportWidth
 
-      // Clamp values
+      const maxTy = -(CANVAS_MIN_Y * currentScale.sy)
+      const minTy = -(CANVAS_MAX_Y * currentScale.sy) + viewportHeight
+
+      // Clamp values to prevent panning beyond canvas bounds
       newTx = Math.min(Math.max(newTx, minTx), maxTx)
       newTy = Math.min(Math.max(newTy, minTy), maxTy)
 

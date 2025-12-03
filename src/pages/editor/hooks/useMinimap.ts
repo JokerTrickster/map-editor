@@ -33,10 +33,16 @@ export function useMinimap(
     const viewportWidth = viewportEl.clientWidth
     const viewportHeight = viewportEl.clientHeight
 
-    // Calculate content center and extent
-    const contentBBox = graph.getBBox() || { x: 0, y: 0, width: 1000, height: 1000 }
-    const contentCenterX = contentBBox.x + contentBBox.width / 2
-    const contentCenterY = contentBBox.y + contentBBox.height / 2
+    // Use fixed canvas bounds (3000x3000, same as panning bounds)
+    const CANVAS_MIN_X = -1500
+    const CANVAS_MAX_X = 1500
+    const CANVAS_MIN_Y = -1500
+    const CANVAS_MAX_Y = 1500
+
+    const contentCenterX = (CANVAS_MIN_X + CANVAS_MAX_X) / 2  // 0
+    const contentCenterY = (CANVAS_MIN_Y + CANVAS_MAX_Y) / 2  // 0
+    const requiredWidth = CANVAS_MAX_X - CANVAS_MIN_X  // 3000
+    const requiredHeight = CANVAS_MAX_Y - CANVAS_MIN_Y  // 3000
 
     // Calculate visible viewport in graph coordinates
     const visibleRect = {
@@ -45,27 +51,6 @@ export function useMinimap(
       width: viewportWidth / mainScale.sx,
       height: viewportHeight / mainScale.sy,
     }
-
-    // Calculate max distance from center
-    const points = [
-      { x: contentBBox.x, y: contentBBox.y },
-      { x: contentBBox.x + contentBBox.width, y: contentBBox.y + contentBBox.height },
-      { x: visibleRect.x, y: visibleRect.y },
-      { x: visibleRect.x + visibleRect.width, y: visibleRect.y + visibleRect.height },
-    ]
-
-    let maxDistX = 0
-    let maxDistY = 0
-
-    points.forEach((p) => {
-      const dx = Math.abs(p.x - contentCenterX)
-      const dy = Math.abs(p.y - contentCenterY)
-      maxDistX = Math.max(maxDistX, dx)
-      maxDistY = Math.max(maxDistY, dy)
-    })
-
-    const requiredWidth = maxDistX * 2
-    const requiredHeight = maxDistY * 2
 
     // Scale minimap to fit required area
     const minimapContainer = minimapContainerRef.current

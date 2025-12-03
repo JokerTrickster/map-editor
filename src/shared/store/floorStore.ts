@@ -7,6 +7,14 @@ import { create } from 'zustand';
 import { generateId, getCurrentTimestamp, storage } from '../lib/utils';
 
 export interface MapData {
+  // CSV data
+  csvRawData?: string;
+  csvFileName?: string;
+  csvParsedData?: any;
+  csvGroupedLayers?: any[];
+  csvSelectedLayers?: string[];
+
+  // Map data
   metadata: Record<string, any>;
   assets: any[];
   objects: any[];

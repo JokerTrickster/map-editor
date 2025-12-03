@@ -18,6 +18,7 @@ interface EditorHeaderProps {
   onClearCanvas: () => void
   onThemeToggle: () => void
   onLogout: () => void
+  onBackToProjects: () => void
 }
 
 export function EditorHeader({
@@ -32,10 +33,16 @@ export function EditorHeader({
   onClearCanvas,
   onThemeToggle,
   onLogout,
+  onBackToProjects,
 }: EditorHeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.logo}>
+        <button onClick={onBackToProjects} className={styles.backButton} title="Back to Projects">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+        </button>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z" />
         </svg>

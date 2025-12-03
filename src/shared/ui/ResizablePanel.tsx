@@ -11,6 +11,7 @@ interface ResizablePanelProps {
   defaultWidth?: number
   minWidth?: number
   maxWidth?: number
+  defaultCollapsed?: boolean
   children: ReactNode
   onWidthChange?: (width: number) => void
 }
@@ -20,11 +21,12 @@ export function ResizablePanel({
   defaultWidth = 300,
   minWidth = 200,
   maxWidth = 600,
+  defaultCollapsed = false,
   children,
   onWidthChange,
 }: ResizablePanelProps) {
   const [width, setWidth] = useState(defaultWidth)
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
   const [isResizing, setIsResizing] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
 

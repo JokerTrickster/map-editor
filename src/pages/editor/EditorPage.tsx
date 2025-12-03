@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dia } from '@joint/core'
 import { useTheme } from '@/shared/context/ThemeContext'
+import { useFloorStore } from '@/shared/store/floorStore'
 import { FloorTabs } from '@/widgets/editor/FloorTabs'
 import { CSVUploader, LayerGroupSelector, useCSVStore } from '@/features/csv'
 import { ObjectTypeSidebar } from '@/features/objectType'
@@ -19,7 +20,6 @@ import { useCanvasZoom } from './hooks/useCanvasZoom'
 import { useUndoRedo } from './hooks/useUndoRedo'
 import { useMinimap } from './hooks/useMinimap'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
-import { useCSVProcessing } from './hooks/useCSVProcessing'
 import { useThemeSync } from './hooks/useThemeSync'
 import { useElementSelection } from './hooks/useElementSelection'
 import { useLayerRendering } from './hooks/useLayerRendering'
@@ -33,11 +33,15 @@ import styles from './EditorPage.module.css'
 export default function EditorPage() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
-  const csvUploadState = useCSVStore((state) => state.uploadState)
-  const csvRawData = useCSVStore((state) => state.rawData)
+  const currentFloor = useFloorStore((state) => state.currentFloor)
+  const updateFloor = useFloorStore((state) => state.updateFloor)
+  const floors = useFloorStore((state) => state.floors)
+  const clearFile = useCSVStore((state) => state.clearFile)
+  const setFile = useCSVStore((state) => state.setFile)
+  const setUploadState = useCSVStore((state) => state.setUploadState)
+  const csvState = useCSVStore()
 
   // State
-  const [isLoading, setIsLoading] = useState(false)
   const [loadedFileName, setLoadedFileName] = useState<string | null>(null)
   const [zoom, setZoom] = useState(1)
   const [elementCount, setElementCount] = useState(0)
@@ -49,6 +53,7 @@ export default function EditorPage() {
   const canvasRef = useRef<HTMLDivElement>(null)
   const minimapContainerRef = useRef<HTMLDivElement>(null)
   const viewportRectRef = useRef<HTMLDivElement>(null)
+  const previousFloorRef = useRef<string | null>(null)
 
   // Initialize canvas
   const { graph, paper } = useJointJSCanvas(canvasRef)
@@ -68,13 +73,7 @@ export default function EditorPage() {
 
   const { undo, redo } = useUndoRedo(graph, setElementCount)
 
-  const { updateMinimapViewport } = useMinimap(
-    paper,
-    graph,
-    minimapContainerRef,
-    viewportRectRef,
-    loadedFileName
-  )
+  useMinimap(paper, graph, minimapContainerRef, viewportRectRef, loadedFileName)
 
   useThemeSync(paper, theme)
 
@@ -93,37 +92,72 @@ export default function EditorPage() {
   // Drag and drop mapping
   useDragAndDropMapping(paper, graph)
 
-  // CSV processing
-  const { processCSVData } = useCSVProcessing(
-    graph,
-    paper,
-    (count, grouped) => {
-      setElementCount(count)
-      setObjectsByLayer(grouped)
-
-      // Update minimap after content is loaded
-      setTimeout(() => {
-        if (paper && graph) {
-          updateMinimapViewport()
-        }
-      }, 200)
-    },
-    (error) => {
-      console.error('CSV processing error:', error)
-      alert('Error loading CSV file. Check console for details.')
-    }
-  )
-
-  // Process CSV when uploaded
+  // Save/restore floor data when switching floors
   useEffect(() => {
-    if (csvUploadState.status === 'parsed' && csvRawData) {
-      setIsLoading(true)
-      processCSVData(csvRawData, csvUploadState.fileName).finally(() => {
-        setIsLoading(false)
-        setLoadedFileName(csvUploadState.fileName)
-      })
+    if (!graph || !currentFloor) return
+
+    const previousFloor = previousFloorRef.current
+
+    // Save previous floor data before switching
+    if (previousFloor && previousFloor !== currentFloor) {
+      const floor = floors.find((f) => f.id === previousFloor)
+      if (floor) {
+        updateFloor(previousFloor, {
+          mapData: {
+            ...(floor.mapData || {}),
+            csvRawData: csvState.rawData || undefined,
+            csvFileName: loadedFileName || undefined,
+            csvParsedData: csvState.parsedData || undefined,
+            csvGroupedLayers: csvState.groupedLayers || undefined,
+            csvSelectedLayers: csvState.selectedLayers.size > 0 ? Array.from(csvState.selectedLayers) : undefined,
+            metadata: floor.mapData?.metadata || {},
+            assets: floor.mapData?.assets || [],
+            objects: floor.mapData?.objects || [],
+          },
+        })
+      }
     }
-  }, [csvUploadState, csvRawData, processCSVData])
+
+    // Clear canvas
+    graph.clear()
+    setElementCount(0)
+    setLoadedFileName(null)
+    setObjectsByLayer(new Map())
+    setSelectedElementId(null)
+    clearFile()
+
+    // Restore new floor data if exists
+    const newFloor = floors.find((f) => f.id === currentFloor)
+    if (newFloor?.mapData?.csvRawData) {
+      // Restore CSV data to csvStore
+      const mapData = newFloor.mapData
+      const rawData = mapData.csvRawData!
+
+      // Create a File object from saved data
+      const blob = new Blob([rawData], { type: 'text/csv' })
+      const file = new File([blob], mapData.csvFileName || 'restored.csv', { type: 'text/csv' })
+
+      setFile(file)
+      setUploadState({
+        status: 'parsed',
+        fileName: mapData.csvFileName || 'restored.csv',
+        rowCount: mapData.csvParsedData?.rowCount || 0,
+      })
+
+      // Restore parsed data and selections
+      useCSVStore.setState({
+        rawData: mapData.csvRawData,
+        parsedData: mapData.csvParsedData,
+        groupedLayers: mapData.csvGroupedLayers,
+        selectedLayers: new Set(mapData.csvSelectedLayers || []),
+      })
+
+      setLoadedFileName(mapData.csvFileName || null)
+    }
+
+    // Update previous floor ref
+    previousFloorRef.current = currentFloor
+  }, [currentFloor, graph])
 
   // Handlers
   const handleLogout = () => {
@@ -159,13 +193,14 @@ export default function EditorPage() {
         onClearCanvas={handleClearCanvas}
         onThemeToggle={toggleTheme}
         onLogout={handleLogout}
+        onBackToProjects={() => navigate('/dashboard')}
       />
 
       <FloorTabs />
 
       <main className={styles.main}>
         {/* Left Sidebar */}
-        <ResizablePanel side="left" defaultWidth={300} minWidth={200} maxWidth={500}>
+        <ResizablePanel side="left" defaultWidth={300} minWidth={200} maxWidth={500} defaultCollapsed={true}>
           <LayerGroupSelector />
           <ObjectTypeSidebar />
         </ResizablePanel>
@@ -183,17 +218,10 @@ export default function EditorPage() {
               <div className={styles.minimapViewport} ref={viewportRectRef} />
             </div>
           )}
-
-          {/* Loading Indicator */}
-          {isLoading && (
-            <div className={styles.loadingOverlay}>
-              <div className={styles.loadingBox}>Loading map data...</div>
-            </div>
-          )}
         </div>
 
         {/* Right Sidebar */}
-        <ResizablePanel side="right" defaultWidth={320} minWidth={250} maxWidth={500}>
+        <ResizablePanel side="right" defaultWidth={320} minWidth={250} maxWidth={500} defaultCollapsed={true}>
           <EditorSidebar
             loadedFileName={loadedFileName}
             elementCount={elementCount}

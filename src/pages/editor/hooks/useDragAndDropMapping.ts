@@ -33,7 +33,9 @@ export function useDragAndDropMapping(
         y: e.clientY,
       })
 
-      const elementView = paper.findViewAtPoint(point)
+      const views = paper.findViewsFromPoint(point)
+      const elementView = views.find((view) => view.model.isElement())
+
       if (elementView && elementView.model.isElement()) {
         const elementId = elementView.model.id as string
         setDragOverElementId(elementId)
@@ -47,7 +49,7 @@ export function useDragAndDropMapping(
     }
 
     // Handle dragleave
-    const handleDragLeave = (e: DragEvent) => {
+    const handleDragLeave = () => {
       if (dragOverElementId) {
         const element = graph?.getCell(dragOverElementId)
         if (element && element.isElement()) {
@@ -79,7 +81,9 @@ export function useDragAndDropMapping(
         y: e.clientY,
       })
 
-      const elementView = paper.findViewAtPoint(point)
+      const views = paper.findViewsFromPoint(point)
+      const elementView = views.find((view) => view.model.isElement())
+
       if (elementView && elementView.model.isElement()) {
         const elementId = elementView.model.id as string
 
