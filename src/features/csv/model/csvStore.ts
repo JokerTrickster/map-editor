@@ -15,12 +15,16 @@ interface CSVState {
   rawData: string | null
   parsedData: ParseResult | null
   groupedLayers: GroupedLayer[] | null
+  selectedLayers: Set<string> // Track selected layer names
 
   // Actions
   setFile: (file: File) => void
   setUploadState: (state: UploadState) => void
   clearFile: () => void
   parseFile: () => Promise<void>
+  toggleLayer: (layerName: string) => void
+  selectAllLayers: () => void
+  deselectAllLayers: () => void
 }
 
 export const useCSVStore = create<CSVState>((set, get) => ({
@@ -29,6 +33,7 @@ export const useCSVStore = create<CSVState>((set, get) => ({
   rawData: null,
   parsedData: null,
   groupedLayers: null,
+  selectedLayers: new Set<string>(),
 
   setFile: (file: File) => {
     set({ file })
@@ -45,7 +50,33 @@ export const useCSVStore = create<CSVState>((set, get) => ({
       rawData: null,
       parsedData: null,
       groupedLayers: null,
+      selectedLayers: new Set<string>(),
     })
+  },
+
+  toggleLayer: (layerName: string) => {
+    const { selectedLayers } = get()
+    const newSelected = new Set(selectedLayers)
+
+    if (newSelected.has(layerName)) {
+      newSelected.delete(layerName)
+    } else {
+      newSelected.add(layerName)
+    }
+
+    set({ selectedLayers: newSelected })
+  },
+
+  selectAllLayers: () => {
+    const { groupedLayers } = get()
+    if (!groupedLayers) return
+
+    const allLayers = new Set(groupedLayers.map(layer => layer.layer))
+    set({ selectedLayers: allLayers })
+  },
+
+  deselectAllLayers: () => {
+    set({ selectedLayers: new Set<string>() })
   },
 
   parseFile: async () => {

@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { dia } from '@joint/core'
 import { useTheme } from '@/shared/context/ThemeContext'
 import { FloorTabs } from '@/widgets/editor/FloorTabs'
-import { CSVUploader, useCSVStore } from '@/features/csv'
+import { CSVUploader, LayerGroupSelector, useCSVStore } from '@/features/csv'
 import '@/shared/lib/testHelpers'
 
 import { useJointJSCanvas } from './hooks/useJointJSCanvas'
@@ -20,6 +20,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useCSVProcessing } from './hooks/useCSVProcessing'
 import { useThemeSync } from './hooks/useThemeSync'
 import { useElementSelection } from './hooks/useElementSelection'
+import { useLayerRendering } from './hooks/useLayerRendering'
 
 import { EditorHeader } from './components/EditorHeader'
 import { EditorSidebar } from './components/EditorSidebar'
@@ -82,6 +83,9 @@ export default function EditorPage() {
     () => setSelectedElementId(null),
     setElementCount
   )
+
+  // Layer rendering - handles selected layer rendering to canvas
+  useLayerRendering(graph, setElementCount, setObjectsByLayer, setLoadedFileName)
 
   // CSV processing
   const { processCSVData } = useCSVProcessing(
@@ -157,7 +161,7 @@ export default function EditorPage() {
         {/* Left Sidebar */}
         <aside className={styles.leftSidebar}>
           <div className={styles.leftSidebarContent}>
-            {elementCount > 0 ? `${elementCount} elements` : 'No data'}
+            <LayerGroupSelector />
           </div>
         </aside>
 
