@@ -1,0 +1,102 @@
+/**
+ * Resizable Panel Styles
+ */
+
+.panel {
+  position: relative;
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.panel.left {
+  border-right: 1px solid var(--color-border);
+}
+
+.panel.right {
+  border-left: 1px solid var(--color-border);
+}
+
+.panel.collapsed {
+  width: 0 !important;
+  min-width: 0;
+  border: none;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Resize Handle */
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 100;
+  transition: background-color 0.2s ease;
+}
+
+.resizeHandle:hover,
+.resizeHandle.resizing {
+  background-color: var(--color-primary);
+}
+
+.handle-left {
+  right: -3px;
+}
+
+.handle-right {
+  left: -3px;
+}
+
+/* Collapse Button */
+.collapseButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 48px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 101;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.collapseButton:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.collapse-left {
+  right: -12px;
+}
+
+.collapse-right {
+  left: -12px;
+}
+
+/* User select prevention during resize */
+.panel:has(.resizeHandle.resizing) {
+  user-select: none;
+}
+
+.resizing ~ .content {
+  pointer-events: none;
+  user-select: none;
+}

@@ -10,6 +10,7 @@ import { useTheme } from '@/shared/context/ThemeContext'
 import { FloorTabs } from '@/widgets/editor/FloorTabs'
 import { CSVUploader, LayerGroupSelector, useCSVStore } from '@/features/csv'
 import { ObjectTypeSidebar } from '@/features/objectType'
+import { ResizablePanel } from '@/shared/ui/ResizablePanel'
 import '@/shared/lib/testHelpers'
 
 import { useJointJSCanvas } from './hooks/useJointJSCanvas'
@@ -164,12 +165,10 @@ export default function EditorPage() {
 
       <main className={styles.main}>
         {/* Left Sidebar */}
-        <aside className={styles.leftSidebar}>
-          <div className={styles.leftSidebarContent}>
-            <LayerGroupSelector />
-            <ObjectTypeSidebar />
-          </div>
-        </aside>
+        <ResizablePanel side="left" defaultWidth={300} minWidth={200} maxWidth={500}>
+          <LayerGroupSelector />
+          <ObjectTypeSidebar />
+        </ResizablePanel>
 
         {/* Canvas Area */}
         <div className={styles.canvasArea}>
@@ -194,14 +193,16 @@ export default function EditorPage() {
         </div>
 
         {/* Right Sidebar */}
-        <EditorSidebar
-          loadedFileName={loadedFileName}
-          elementCount={elementCount}
-          zoom={zoom}
-          objectsByLayer={objectsByLayer}
-          selectedElementId={selectedElementId}
-          onObjectClick={handleElementClick}
-        />
+        <ResizablePanel side="right" defaultWidth={320} minWidth={250} maxWidth={500}>
+          <EditorSidebar
+            loadedFileName={loadedFileName}
+            elementCount={elementCount}
+            zoom={zoom}
+            objectsByLayer={objectsByLayer}
+            selectedElementId={selectedElementId}
+            onObjectClick={handleElementClick}
+          />
+        </ResizablePanel>
       </main>
     </div>
   )
