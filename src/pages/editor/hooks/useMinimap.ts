@@ -85,17 +85,17 @@ export function useMinimap(
 
     const viewport = viewportRectRef.current
 
-    // Visual adjustment: reduce indicator size by 50%
-    const visualScale = 0.5
-    const visualWidth = viewportRect.width * visualScale
-    const visualHeight = viewportRect.height * visualScale
-    const visualX = viewportRect.x + (viewportRect.width - visualWidth) / 2
-    const visualY = viewportRect.y + (viewportRect.height - visualHeight) / 2
+    // Clamp viewport rect to minimap container bounds to prevent overflow
+    const clampedX = Math.max(0, Math.min(viewportRect.x, containerWidth))
+    const clampedY = Math.max(0, Math.min(viewportRect.y, containerHeight))
+    const clampedWidth = Math.min(viewportRect.width, containerWidth - clampedX)
+    const clampedHeight = Math.min(viewportRect.height, containerHeight - clampedY)
 
-    viewport.style.left = `${visualX}px`
-    viewport.style.top = `${visualY}px`
-    viewport.style.width = `${visualWidth}px`
-    viewport.style.height = `${visualHeight}px`
+    // Show exact viewport position and size (clamped to minimap bounds)
+    viewport.style.left = `${clampedX}px`
+    viewport.style.top = `${clampedY}px`
+    viewport.style.width = `${clampedWidth}px`
+    viewport.style.height = `${clampedHeight}px`
     viewport.style.pointerEvents = 'none'
   }, [paper, graph, minimapContainerRef, viewportRectRef])
 

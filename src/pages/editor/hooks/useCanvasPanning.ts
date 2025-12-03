@@ -42,7 +42,7 @@ export function useCanvasPanning(
       let newTy = currentTranslate.ty + dy
 
       // Fixed canvas bounds (3000x3000) - same as minimap
-      // Allow panning from -1500 to +1500 in both directions
+      // Allow panning from -1500 to +1500 in both directions at ANY zoom level
       const CANVAS_MIN_X = -1500
       const CANVAS_MAX_X = 1500
       const CANVAS_MIN_Y = -1500
@@ -50,18 +50,35 @@ export function useCanvasPanning(
       const viewportWidth = paper.el.parentElement?.clientWidth || 800
       const viewportHeight = paper.el.parentElement?.clientHeight || 600
 
+      // Calculate the scaled canvas size
+      // const canvasWidthScaled = (CANVAS_MAX_X - CANVAS_MIN_X) * currentScale.sx
+      // const canvasHeightScaled = (CANVAS_MAX_Y - CANVAS_MIN_Y) * currentScale.sy
+
       // Calculate min/max translation values
-      // Max translation is when we show the left/top edge
-      const maxTx = -(CANVAS_MIN_X * currentScale.sx)
-      // Min translation is when we show the right/bottom edge
-      const minTx = -(CANVAS_MAX_X * currentScale.sx) + viewportWidth
+      // For X axis:
+      // maxTx: when showing left edge (CANVAS_MIN_X at left of viewport)
+      // minTx: when showing right edge (CANVAS_MAX_X at right of viewport)
+      // const maxTx = -(CANVAS_MIN_X * currentScale.sx)
+      // const minTx = -(CANVAS_MAX_X * currentScale.sx) + viewportWidth
 
-      const maxTy = -(CANVAS_MIN_Y * currentScale.sy)
-      const minTy = -(CANVAS_MAX_Y * currentScale.sy) + viewportHeight
+      // For Y axis:
+      // maxTy: when showing top edge (CANVAS_MIN_Y at top of viewport)
+      // minTy: when showing bottom edge (CANVAS_MAX_Y at bottom of viewport)
+      // const maxTy = -(CANVAS_MIN_Y * currentScale.sy)
+      // const minTy = -(CANVAS_MAX_Y * currentScale.sy) + viewportHeight
 
-      // Clamp values to prevent panning beyond canvas bounds
-      newTx = Math.min(Math.max(newTx, minTx), maxTx)
-      newTy = Math.min(Math.max(newTy, minTy), maxTy)
+      // Always use center-based clamping to allow full freedom of movement
+      // This matches the minimap behavior where you can center on any point within bounds
+
+      // X Axis
+      const centerX = -newTx / currentScale.sx + viewportWidth / (2 * currentScale.sx)
+      const clampedCenterX = Math.max(CANVAS_MIN_X, Math.min(CANVAS_MAX_X, centerX))
+      newTx = -(clampedCenterX * currentScale.sx) + viewportWidth / 2
+
+      // Y Axis
+      const centerY = -newTy / currentScale.sy + viewportHeight / (2 * currentScale.sy)
+      const clampedCenterY = Math.max(CANVAS_MIN_Y, Math.min(CANVAS_MAX_Y, centerY))
+      newTy = -(clampedCenterY * currentScale.sy) + viewportHeight / 2
 
       paper.translate(newTx, newTy)
       lastMousePosition.current = { x: e.clientX, y: e.clientY }

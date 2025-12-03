@@ -251,6 +251,29 @@ export default function EditorPage() {
     }
   }
 
+  const handleSave = () => {
+    if (!currentFloor || !graph) return
+
+    const floor = floors.find((f) => f.id === currentFloor)
+    if (floor) {
+      updateFloor(currentFloor, {
+        mapData: {
+          ...(floor.mapData || {}),
+          csvRawData: csvState.rawData || undefined,
+          csvFileName: loadedFileName || undefined,
+          csvParsedData: csvState.parsedData || undefined,
+          csvGroupedLayers: csvState.groupedLayers || undefined,
+          csvSelectedLayers: csvState.selectedLayers.size > 0 ? Array.from(csvState.selectedLayers) : undefined,
+          metadata: floor.mapData?.metadata || {},
+          assets: floor.mapData?.assets || [],
+          objects: floor.mapData?.objects || [],
+          graphJson: graph.toJSON(),
+        },
+      })
+      alert('Map saved successfully!')
+    }
+  }
+
   return (
     <div className={styles.container}>
       <EditorHeader
@@ -262,6 +285,7 @@ export default function EditorPage() {
         onZoomReset={zoomHandlers.handleZoomReset}
         onFitToScreen={zoomHandlers.handleFitToScreen}
         onUploadClick={triggerFileInput}
+        onSave={handleSave}
         onClearCanvas={handleClearCanvas}
         onThemeToggle={toggleTheme}
         onLogout={handleLogout}
