@@ -28,6 +28,8 @@ import { useDragAndDropMapping } from './hooks/useDragAndDropMapping'
 import { EditorHeader } from './components/EditorHeader'
 import { EditorSidebar } from './components/EditorSidebar'
 
+import { Modal } from '@/shared/ui/Modal'
+import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
 import styles from './EditorPage.module.css'
 
 export default function EditorPage() {
@@ -46,6 +48,8 @@ export default function EditorPage() {
   const [objectsByLayer, setObjectsByLayer] = useState<Map<string, dia.Element[]>>(new Map())
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
   const [pendingGraphJson, setPendingGraphJson] = useState<any | null>(null)
+  const [isRestoring, setIsRestoring] = useState(false)
+  const [showSaveModal, setShowSaveModal] = useState(false)
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -92,7 +96,8 @@ export default function EditorPage() {
     setObjectsByLayer,
     setLoadedFileName,
     pendingGraphJson,
-    setPendingGraphJson
+    setPendingGraphJson,
+    isRestoring // Pass isRestoring flag
   )
 
   // Auto-save current floor data when CSV data changes OR when graph changes (we need to hook into graph changes ideally, but for now we hook into CSV state + periodic/manual save?)
@@ -156,29 +161,24 @@ export default function EditorPage() {
 
     // Only process floor changes, not initial mount
     if (previousFloor && previousFloor !== currentFloor) {
-      // Save previous floor state before switching?
-      // The auto-save effect above might not have run if only graph changed.
-      // We should ideally save the previous floor here.
-      const oldFloor = floors.find(f => f.id === previousFloor);
+      // 1. Save previous floor state explicitly
+      const oldFloor = floors.find(f => f.id === previousFloor)
       if (oldFloor) {
-        // We can't easily access the "previous" graph state here because graph might already be reflecting new floor?
-        // No, graph is still the old graph until we clear it below.
-        // So we CAN save here!
         const currentMapData = oldFloor.mapData || {
           metadata: {},
           assets: [],
           objects: []
-        };
+        }
 
         updateFloor(previousFloor, {
           mapData: {
             ...currentMapData,
             graphJson: graph.toJSON()
           }
-        });
+        })
       }
 
-      // Clear canvas and state
+      // 2. Clear canvas and state
       graph.clear()
       setElementCount(0)
       setLoadedFileName(null)
@@ -186,43 +186,55 @@ export default function EditorPage() {
       setSelectedElementId(null)
       setPendingGraphJson(null)
 
-      // Clear CSV store first
+      // Start restoration mode
+      setIsRestoring(true)
+
+      // 3. Clear CSV store first
       clearFile()
 
-      // Then restore new floor data if exists
+      // 4. Restore new floor data
       const newFloor = floors.find((f) => f.id === currentFloor)
 
-      // Restore Graph JSON if exists
-      if (newFloor?.mapData?.graphJson) {
-        setPendingGraphJson(newFloor.mapData.graphJson)
-      }
-
-      if (newFloor?.mapData?.csvRawData) {
-        // Restore CSV data to csvStore
+      if (newFloor?.mapData) {
         const mapData = newFloor.mapData
-        const rawData = mapData.csvRawData!
 
-        // Create a File object from saved data
-        const blob = new Blob([rawData], { type: 'text/csv' })
-        const file = new File([blob], mapData.csvFileName || 'restored.csv', { type: 'text/csv' })
+        // Restore Graph JSON if exists
+        if (mapData.graphJson) {
+          setPendingGraphJson(mapData.graphJson)
+        }
 
-        // Restore all CSV store state at once
-        setTimeout(() => {
-          useCSVStore.setState({
-            file,
-            rawData: mapData.csvRawData,
-            parsedData: mapData.csvParsedData,
-            groupedLayers: mapData.csvGroupedLayers,
-            selectedLayers: new Set(mapData.csvSelectedLayers || []),
-            uploadState: {
-              status: 'parsed',
-              fileName: mapData.csvFileName || 'restored.csv',
-              rowCount: mapData.csvParsedData?.rowCount || 0,
-            },
-          })
+        // Restore CSV data if exists
+        if (mapData.csvRawData) {
+          const blob = new Blob([mapData.csvRawData], { type: 'text/csv' })
+          const file = new File([blob], mapData.csvFileName || 'restored.csv', { type: 'text/csv' })
 
-          setLoadedFileName(mapData.csvFileName || null)
-        }, 0)
+          // Restore CSV store state
+          setTimeout(() => {
+            useCSVStore.setState({
+              file,
+              rawData: mapData.csvRawData,
+              parsedData: mapData.csvParsedData,
+              groupedLayers: mapData.csvGroupedLayers,
+              selectedLayers: new Set(mapData.csvSelectedLayers || []),
+              uploadState: {
+                status: 'parsed',
+                fileName: mapData.csvFileName || 'restored.csv',
+                rowCount: mapData.csvParsedData?.rowCount || 0,
+              },
+            })
+
+            setLoadedFileName(mapData.csvFileName || null)
+
+            // End restoration mode after a short delay to allow effects to settle
+            setTimeout(() => {
+              setIsRestoring(false)
+            }, 500)
+          }, 10)
+        } else {
+          setIsRestoring(false)
+        }
+      } else {
+        setIsRestoring(false)
       }
     }
 
@@ -270,7 +282,7 @@ export default function EditorPage() {
           graphJson: graph.toJSON(),
         },
       })
-      alert('Map saved successfully!')
+      setShowSaveModal(true)
     }
   }
 
@@ -314,6 +326,9 @@ export default function EditorPage() {
               <div className={styles.minimapViewport} ref={viewportRectRef} />
             </div>
           )}
+
+          {/* Loading Overlay */}
+          {isRestoring && <LoadingOverlay message="Loading floor..." />}
         </div>
 
         {/* Right Sidebar */}
@@ -328,6 +343,20 @@ export default function EditorPage() {
           />
         </ResizablePanel>
       </main>
+
+      {/* Save Success Modal */}
+      <Modal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        title="Success"
+        footer={
+          <button className={styles.primaryButton} onClick={() => setShowSaveModal(false)}>
+            OK
+          </button>
+        }
+      >
+        <p>Map saved successfully!</p>
+      </Modal>
     </div>
   )
 }
