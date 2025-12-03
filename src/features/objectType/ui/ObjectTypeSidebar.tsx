@@ -3,11 +3,17 @@
  * Manages object type definitions (CCTV, Charger, ParkingSpot, etc.)
  */
 
-import { useState } from 'react'
+import { useState, useRef, ChangeEvent } from 'react'
 import { useObjectTypeStore, type ObjectType, type Property } from '@/shared/store/objectTypeStore'
 import styles from './ObjectTypeSidebar.module.css'
 
-export function ObjectTypeSidebar() {
+interface ObjectTypeSidebarProps {
+  onObjectCreate?: (data: any) => void // Keeping generic for now or remove if unused
+  onSelectType?: (type: ObjectType | null) => void
+  selectedTypeId?: string | null
+}
+
+export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSidebarProps) {
   const types = useObjectTypeStore(state => state.types)
   const addType = useObjectTypeStore(state => state.addType)
   const updateType = useObjectTypeStore(state => state.updateType)
@@ -15,12 +21,42 @@ export function ObjectTypeSidebar() {
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    icon: string
+    properties: { key: string; type: Property['type']; required: boolean }[]
+  }>({
     name: '',
     icon: '',
-    properties: [] as Property[],
+    properties: [
+      { key: 'position', type: 'string', required: false },
+      { key: 'description', type: 'string', required: false },
+      { key: 'points', type: 'array', required: false },
+    ],
   })
+  const [assetFile, setAssetFile] = useState<File | undefined>(undefined)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [showJson, setShowJson] = useState(false)
+
   const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setAssetFile(file)
+      setPreviewUrl(URL.createObjectURL(file))
+      setFormData(prev => ({ ...prev, icon: URL.createObjectURL(file) }))
+    }
+  }
+
+  const removeFile = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setAssetFile(undefined)
+    setPreviewUrl(null)
+    setFormData(prev => ({ ...prev, icon: '' }))
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   const handleAdd = () => {
     try {
@@ -36,8 +72,9 @@ export function ObjectTypeSidebar() {
         properties: formData.properties,
       })
 
-      // Reset form
       setFormData({ name: '', icon: '', properties: [] })
+      setAssetFile(undefined)
+      setPreviewUrl(null)
       setShowAddForm(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : '타입 추가 실패')
@@ -60,6 +97,8 @@ export function ObjectTypeSidebar() {
 
       setEditingId(null)
       setFormData({ name: '', icon: '', properties: [] })
+      setAssetFile(undefined)
+      setPreviewUrl(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : '타입 수정 실패')
     }
@@ -78,6 +117,12 @@ export function ObjectTypeSidebar() {
       icon: type.icon || '',
       properties: [...type.properties],
     })
+    if (type.icon) {
+      setPreviewUrl(type.icon)
+    } else {
+      setPreviewUrl(null)
+    }
+    setAssetFile(undefined)
     setShowAddForm(false)
     setError(null)
   }
@@ -86,6 +131,8 @@ export function ObjectTypeSidebar() {
     setEditingId(null)
     setShowAddForm(false)
     setFormData({ name: '', icon: '', properties: [] })
+    setAssetFile(undefined)
+    setPreviewUrl(null)
     setError(null)
   }
 
@@ -112,6 +159,180 @@ export function ObjectTypeSidebar() {
     })
   }
 
+  const getZeroValue = (type: Property['type']) => {
+    switch (type) {
+      case 'string': return ""
+      case 'number': return 0
+      case 'boolean': return false
+      case 'array': return []
+      default: return null
+    }
+  }
+
+  const getPreviewData = () => {
+    const preview: Record<string, any> = {
+      name: formData.name,
+      icon: formData.icon ? '(Asset URL)' : '',
+    }
+
+    formData.properties.forEach(prop => {
+      if (prop.key) {
+        preview[prop.key] = getZeroValue(prop.type)
+      }
+    })
+
+    return preview
+  }
+
+  const renderForm = (isEditing: boolean) => (
+    <div className={styles.form}>
+      {/* ... (existing inputs) ... */}
+      <input
+        type="text"
+        placeholder="타입명 (예: CCTV)"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        className={styles.input}
+      />
+
+      {/* Asset Upload Area */}
+      <div
+        className={styles.fileUploadArea}
+        onClick={() => fileInputRef.current?.click()}
+        style={{ marginBottom: '16px', border: '2px dashed var(--local-border)', borderRadius: '12px', padding: '20px', textAlign: 'center', cursor: 'pointer', background: 'var(--local-surface)' }}
+      >
+        <input
+          type="file"
+          ref={fileInputRef}
+          className={styles.fileInput}
+          onChange={handleFileChange}
+          accept="image/*"
+          style={{ display: 'none' }}
+        />
+        {previewUrl ? (
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100px', borderRadius: '6px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '12px' }}>
+              <span style={{ color: 'white', fontSize: '11px' }}>{assetFile?.name || '이미지'}</span>
+              <button
+                onClick={removeFile}
+                style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ color: 'var(--local-text-secondary)', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '20px' }}>📁</span>
+            <span>클릭하여 아이콘/이미지 업로드</span>
+          </div>
+        )}
+      </div>
+
+      {/* Properties */}
+      <div className={styles.properties}>
+        <div className={styles.propertiesHeader}>
+          <span>속성</span>
+          <button onClick={addProperty} className={styles.smallButton}>
+            + 속성 추가
+          </button>
+        </div>
+
+        {formData.properties.map((prop, index) => (
+          <div key={index} className={styles.property}>
+            <input
+              type="text"
+              placeholder="키"
+              value={prop.key}
+              onChange={(e) =>
+                updateProperty(index, { key: e.target.value })
+              }
+              className={styles.propertyInput}
+            />
+            <select
+              value={prop.type}
+              onChange={(e) =>
+                updateProperty(index, {
+                  type: e.target.value as Property['type'],
+                })
+              }
+              className={styles.propertySelect}
+            >
+              <option value="string">String</option>
+              <option value="number">Number</option>
+              <option value="boolean">Boolean</option>
+              <option value="array">Array</option>
+            </select>
+            <button
+              onClick={() => removeProperty(index)}
+              className={styles.removeButton}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className={styles.formActions}>
+        <button onClick={isEditing ? () => handleUpdate(editingId!) : handleAdd} className={styles.saveButton}>
+          저장
+        </button>
+        <button onClick={cancelEdit} className={styles.cancelButton}>
+          취소
+        </button>
+      </div>
+
+      {/* JSON Preview Toggle */}
+      <div style={{ marginTop: '16px' }}>
+        <button
+          onClick={() => setShowJson(!showJson)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--local-primary)',
+            fontSize: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '0'
+          }}
+        >
+          {showJson ? '▼' : '▶'} JSON 미리보기
+        </button>
+
+        {showJson && (
+          <div className={styles.jsonPreview}>
+            <pre className={styles.jsonContent}>
+              {JSON.stringify(getPreviewData(), null, 2)}
+            </pre>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  // ... (inside ObjectTypeSidebar)
+
+  const handleShowAddForm = () => {
+    setFormData({
+      name: '',
+      icon: '',
+      properties: [
+        { key: 'position', type: 'string', required: false },
+        { key: 'description', type: 'string', required: false },
+        { key: 'points', type: 'array', required: false },
+      ],
+    })
+    setAssetFile(undefined)
+    setPreviewUrl(null)
+    setShowAddForm(true)
+    setError(null)
+  }
+
+  // ... (keep other handlers)
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -119,7 +340,7 @@ export function ObjectTypeSidebar() {
         {!showAddForm && !editingId && (
           <button
             className={styles.addButton}
-            onClick={() => setShowAddForm(true)}
+            onClick={handleShowAddForm}
           >
             + 추가
           </button>
@@ -131,222 +352,47 @@ export function ObjectTypeSidebar() {
       )}
 
       {/* Add Form */}
-      {showAddForm && (
-        <div className={styles.form}>
-          <input
-            type="text"
-            placeholder="타입명 (예: CCTV)"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className={styles.input}
-          />
-          <input
-            type="text"
-            placeholder="아이콘 (선택사항)"
-            value={formData.icon}
-            onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-            className={styles.input}
-          />
-
-          {/* Properties */}
-          <div className={styles.properties}>
-            <div className={styles.propertiesHeader}>
-              <span>속성</span>
-              <button onClick={addProperty} className={styles.smallButton}>
-                + 속성 추가
-              </button>
-            </div>
-
-            {formData.properties.map((prop, index) => (
-              <div key={index} className={styles.property}>
-                <input
-                  type="text"
-                  placeholder="키"
-                  value={prop.key}
-                  onChange={(e) =>
-                    updateProperty(index, { key: e.target.value })
-                  }
-                  className={styles.propertyInput}
-                />
-                <select
-                  value={prop.type}
-                  onChange={(e) =>
-                    updateProperty(index, {
-                      type: e.target.value as Property['type'],
-                    })
-                  }
-                  className={styles.propertySelect}
-                >
-                  <option value="string">String</option>
-                  <option value="number">Number</option>
-                  <option value="boolean">Boolean</option>
-                  <option value="array">Array</option>
-                </select>
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={prop.required}
-                    onChange={(e) =>
-                      updateProperty(index, { required: e.target.checked })
-                    }
-                  />
-                  필수
-                </label>
-                <button
-                  onClick={() => removeProperty(index)}
-                  className={styles.removeButton}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className={styles.formActions}>
-            <button onClick={handleAdd} className={styles.saveButton}>
-              저장
-            </button>
-            <button onClick={cancelEdit} className={styles.cancelButton}>
-              취소
-            </button>
-          </div>
-        </div>
-      )}
+      {showAddForm && renderForm(false)}
 
       {/* Type List */}
       <div className={styles.typeList}>
         {types.map((type) => (
-          <div key={type.id} className={styles.typeItem}>
+          <div
+            key={type.id}
+            className={`${styles.typeItem} ${selectedTypeId === type.id ? styles.selected : ''}`}
+            onClick={() => onSelectType?.(type)}
+            style={{ cursor: 'pointer', borderColor: selectedTypeId === type.id ? 'var(--local-primary)' : undefined }}
+          >
             {editingId === type.id ? (
-              /* Edit Form */
-              <div className={styles.form}>
-                <input
-                  type="text"
-                  placeholder="타입명"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className={styles.input}
-                />
-                <input
-                  type="text"
-                  placeholder="아이콘"
-                  value={formData.icon}
-                  onChange={(e) =>
-                    setFormData({ ...formData, icon: e.target.value })
-                  }
-                  className={styles.input}
-                />
-
-                {/* Properties */}
-                <div className={styles.properties}>
-                  <div className={styles.propertiesHeader}>
-                    <span>속성</span>
-                    <button onClick={addProperty} className={styles.smallButton}>
-                      + 속성 추가
-                    </button>
-                  </div>
-
-                  {formData.properties.map((prop, index) => (
-                    <div key={index} className={styles.property}>
-                      <input
-                        type="text"
-                        placeholder="키"
-                        value={prop.key}
-                        onChange={(e) =>
-                          updateProperty(index, { key: e.target.value })
-                        }
-                        className={styles.propertyInput}
-                      />
-                      <select
-                        value={prop.type}
-                        onChange={(e) =>
-                          updateProperty(index, {
-                            type: e.target.value as Property['type'],
-                          })
-                        }
-                        className={styles.propertySelect}
-                      >
-                        <option value="string">String</option>
-                        <option value="number">Number</option>
-                        <option value="boolean">Boolean</option>
-                        <option value="array">Array</option>
-                      </select>
-                      <label className={styles.checkboxLabel}>
-                        <input
-                          type="checkbox"
-                          checked={prop.required}
-                          onChange={(e) =>
-                            updateProperty(index, { required: e.target.checked })
-                          }
-                        />
-                        필수
-                      </label>
-                      <button
-                        onClick={() => removeProperty(index)}
-                        className={styles.removeButton}
-                      >
-                        ×
-                      </button>
+              renderForm(true)
+            ) : (
+              /* View Mode */
+              <div className={styles.typeHeader} style={{ marginBottom: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {type.icon ? (
+                    <img src={type.icon} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover', background: '#000' }} />
+                  ) : (
+                    <div style={{ width: '24px', height: '24px', borderRadius: '4px', background: 'var(--local-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>
+                      T
                     </div>
-                  ))}
+                  )}
+                  <span className={styles.typeName}>{type.name}</span>
                 </div>
-
-                <div className={styles.formActions}>
+                <div className={styles.typeActions} onClick={(e) => e.stopPropagation()}>
                   <button
-                    onClick={() => handleUpdate(type.id)}
-                    className={styles.saveButton}
+                    onClick={() => startEdit(type)}
+                    className={styles.editButton}
                   >
-                    저장
+                    수정
                   </button>
-                  <button onClick={cancelEdit} className={styles.cancelButton}>
-                    취소
+                  <button
+                    onClick={() => handleDelete(type.id)}
+                    className={styles.deleteButton}
+                  >
+                    삭제
                   </button>
                 </div>
               </div>
-            ) : (
-              /* View Mode */
-              <>
-                <div
-                  className={styles.typeHeader}
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('objectTypeId', type.id)
-                    e.dataTransfer.setData('objectTypeName', type.name)
-                    e.dataTransfer.effectAllowed = 'copy'
-                  }}
-                >
-                  <span className={styles.typeName}>{type.name}</span>
-                  <div className={styles.typeActions}>
-                    <button
-                      onClick={() => startEdit(type)}
-                      className={styles.editButton}
-                    >
-                      수정
-                    </button>
-                    <button
-                      onClick={() => handleDelete(type.id)}
-                      className={styles.deleteButton}
-                    >
-                      삭제
-                    </button>
-                  </div>
-                </div>
-                {type.properties.length > 0 && (
-                  <div className={styles.propertyList}>
-                    {type.properties.map((prop, index) => (
-                      <div key={index} className={styles.propertyItem}>
-                        <span className={styles.propertyKey}>{prop.key}</span>
-                        <span className={styles.propertyType}>
-                          ({prop.type}
-                          {prop.required && ', 필수'})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
             )}
           </div>
         ))}
