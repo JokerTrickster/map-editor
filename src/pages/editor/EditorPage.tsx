@@ -9,6 +9,7 @@ import { dia } from '@joint/core'
 import { useTheme } from '@/shared/context/ThemeContext'
 import { FloorTabs } from '@/widgets/editor/FloorTabs'
 import { CSVUploader, LayerGroupSelector, useCSVStore } from '@/features/csv'
+import { ObjectTypeSidebar } from '@/features/objectType'
 import '@/shared/lib/testHelpers'
 
 import { useJointJSCanvas } from './hooks/useJointJSCanvas'
@@ -162,6 +163,7 @@ export default function EditorPage() {
         <aside className={styles.leftSidebar}>
           <div className={styles.leftSidebarContent}>
             <LayerGroupSelector />
+            <ObjectTypeSidebar />
           </div>
         </aside>
 
