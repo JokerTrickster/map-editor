@@ -290,6 +290,13 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
     return [...properties, ...missingProps]
   }
 
+  const convertValueToPropertyType = (value: any): 'string' | 'number' | 'boolean' | 'array' => {
+    if (Array.isArray(value)) return 'array'
+    if (typeof value === 'number') return 'number'
+    if (typeof value === 'boolean') return 'boolean'
+    return 'string'
+  }
+
   const handleJsonUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -314,8 +321,22 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
               // Use object key as name if name is not provided
               const name = value.name || key
 
-              // Ensure properties array exists
-              const properties = Array.isArray(value.properties) ? value.properties : []
+              let properties: any[] = []
+
+              // Check if value has a 'properties' array (explicit type definition)
+              if (Array.isArray(value.properties)) {
+                properties = value.properties
+              }
+              // Otherwise, infer properties from object fields (implicit type definition)
+              else if (typeof value === 'object' && !Array.isArray(value)) {
+                properties = Object.entries(value)
+                  .filter(([fieldKey]) => fieldKey !== 'name' && fieldKey !== 'icon' && fieldKey !== 'color')
+                  .map(([fieldKey, fieldValue]) => ({
+                    key: fieldKey,
+                    type: convertValueToPropertyType(fieldValue),
+                    required: false
+                  }))
+              }
 
               // Add default properties if missing
               const completeProperties = ensureDefaultProperties(properties)
@@ -345,8 +366,22 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
               // For array format, use index as fallback name
               const name = item.name || `Object_${index + 1}`
 
-              // Ensure properties array exists
-              const properties = Array.isArray(item.properties) ? item.properties : []
+              let properties: any[] = []
+
+              // Check if item has a 'properties' array (explicit type definition)
+              if (Array.isArray(item.properties)) {
+                properties = item.properties
+              }
+              // Otherwise, infer properties from object fields (implicit type definition)
+              else if (typeof item === 'object' && !Array.isArray(item)) {
+                properties = Object.entries(item)
+                  .filter(([fieldKey]) => fieldKey !== 'name' && fieldKey !== 'icon' && fieldKey !== 'color')
+                  .map(([fieldKey, fieldValue]) => ({
+                    key: fieldKey,
+                    type: convertValueToPropertyType(fieldValue),
+                    required: false
+                  }))
+              }
 
               // Add default properties if missing
               const completeProperties = ensureDefaultProperties(properties)
