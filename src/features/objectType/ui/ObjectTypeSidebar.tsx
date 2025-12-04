@@ -273,17 +273,73 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
 
   // ... (keep other handlers)
 
+  const jsonInputRef = useRef<HTMLInputElement>(null)
+
+  const handleJsonUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string)
+        if (Array.isArray(json)) {
+          let addedCount = 0
+          json.forEach(item => {
+            if (item.name && Array.isArray(item.properties)) {
+              addType({
+                name: item.name,
+                icon: item.icon || '',
+                color: item.color,
+                properties: item.properties
+              })
+              addedCount++
+            }
+          })
+          if (addedCount > 0) {
+            alert(`${addedCount} types imported successfully`)
+          } else {
+            setError('No valid types found in JSON')
+          }
+        } else {
+          setError('Invalid JSON format: Expected an array')
+        }
+      } catch (err) {
+        setError('Failed to parse JSON')
+      }
+      if (jsonInputRef.current) jsonInputRef.current.value = ''
+    }
+    reader.readAsText(file)
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h3 className={styles.title}>객체 타입</h3>
         {!showAddForm && !editingId && (
-          <button
-            className={styles.addButton}
-            onClick={handleShowAddForm}
-          >
-            + 추가
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="file"
+              ref={jsonInputRef}
+              onChange={handleJsonUpload}
+              accept=".json"
+              style={{ display: 'none' }}
+            />
+            <button
+              className={styles.addButton}
+              onClick={() => jsonInputRef.current?.click()}
+              style={{ backgroundColor: 'var(--local-surface-hover)', color: 'var(--local-text)' }}
+              title="JSON 가져오기"
+            >
+              Import
+            </button>
+            <button
+              className={styles.addButton}
+              onClick={handleShowAddForm}
+            >
+              + 추가
+            </button>
+          </div>
         )}
       </div>
 

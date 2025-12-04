@@ -15,9 +15,9 @@ export interface MapData {
   csvSelectedLayers?: string[];
 
   // Map data
-  metadata: Record<string, any>;
-  assets: any[];
-  objects: any[];
+  metadata?: Record<string, any>;
+  assets?: any[];
+  objects?: any[];
   graphJson?: any;
 }
 
@@ -41,6 +41,8 @@ interface FloorState {
   setCurrentFloor: (id: string | null) => void;
   getFloorsByLotId: (lotId: string) => Floor[];
   updateFloor: (id: string, updates: Partial<Floor>) => void;
+  updateFloorMapData: (id: string, mapData: Partial<MapData>) => void;
+  getCurrentFloorData: () => Floor | undefined;
 }
 
 const STORAGE_KEY = 'map-editor-floors';
@@ -89,6 +91,12 @@ const initializeMapData = (): MapData => ({
   metadata: {},
   assets: [],
   objects: [],
+  csvRawData: undefined,
+  csvFileName: undefined,
+  csvParsedData: undefined,
+  csvGroupedLayers: undefined,
+  csvSelectedLayers: undefined,
+  graphJson: undefined,
 });
 
 export const useFloorStore = create<FloorState>((set, get) => {
@@ -203,6 +211,40 @@ export const useFloorStore = create<FloorState>((set, get) => {
       });
 
       set({ floors: newFloors });
+    },
+
+    updateFloorMapData: (id, mapData) => {
+      const state = get();
+      const floor = state.floors.find((f) => f.id === id);
+
+      if (!floor) {
+        throw new Error(`Floor with id "${id}" not found`);
+      }
+
+      const updatedFloor: Floor = {
+        ...floor,
+        mapData: {
+          ...floor.mapData,
+          ...mapData,
+        },
+        modified: getCurrentTimestamp(),
+      };
+
+      const newFloors = state.floors.map((f) => (f.id === id ? updatedFloor : f));
+
+      // Persist to localStorage
+      storage.set(STORAGE_KEY, {
+        floors: newFloors,
+        currentFloor: state.currentFloor,
+      });
+
+      set({ floors: newFloors });
+    },
+
+    getCurrentFloorData: () => {
+      const state = get();
+      if (!state.currentFloor) return undefined;
+      return state.floors.find((f) => f.id === state.currentFloor);
     },
   };
 });

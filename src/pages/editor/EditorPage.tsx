@@ -3,11 +3,13 @@
  * Main map editor page - refactored with custom hooks and components
  */
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dia } from '@joint/core'
 import { useTheme } from '@/shared/context/ThemeContext'
 import { useFloorStore } from '@/shared/store/floorStore'
+import { useObjectTypeStore } from '@/shared/store/objectTypeStore'
+import { useCSVStore } from '@/features/csv/model/csvStore'
 import { FloorTabs } from '@/widgets/editor/FloorTabs'
 import { CSVUploader } from '@/features/csv'
 import { ObjectTypeSidebar } from '@/features/objectType'
@@ -33,14 +35,18 @@ import '@/shared/lib/testHelpers'
 export default function EditorPage() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
-  const { currentFloor, updateFloor, floors } = useFloorStore()
+  const { currentFloor, updateFloor, floors, updateFloorMapData } = useFloorStore()
 
   // Refs
   const canvasRef = useRef<HTMLDivElement>(null)
   const minimapContainerRef = useRef<HTMLDivElement>(null)
   const viewportRectRef = useRef<HTMLDivElement>(null)
+  const previousFloorRef = useRef<string | null>(null)
+  const csvInputRef = useRef<HTMLInputElement>(null)
 
   // State
+  const types = useObjectTypeStore(state => state.types)
+  const { setFile, setUploadState, parseFile } = useCSVStore()
   const [selectedObjectType, setSelectedObjectType] = useState<ObjectType | null>(null)
   const [zoom, setZoom] = useState(1)
   const [elementCount, setElementCount] = useState(0)
@@ -107,7 +113,153 @@ export default function EditorPage() {
     () => setSelectedObjectType(null)
   )
 
+  // Auto-save current floor when switching floors
+  useEffect(() => {
+    if (!currentFloor) return
+
+    // Skip if this is the initial load (no previous floor)
+    const isInitialLoad = previousFloorRef.current === null
+
+    // Get latest floors data
+    const latestFloors = useFloorStore.getState().floors
+
+    // Save previous floor's data before switching
+    if (!isInitialLoad && previousFloorRef.current !== currentFloor && graph) {
+      const prevFloorData = latestFloors.find(f => f.id === previousFloorRef.current)
+      if (prevFloorData) {
+        // Get current CSV store state (snapshot)
+        const currentCSVState = useCSVStore.getState()
+
+        // Save graph JSON
+        const json = graph.toJSON()
+
+        console.log(`💾 Saving floor ${prevFloorData.name}:`, {
+          hasGraph: json.cells.length > 0,
+          hasCSV: !!currentCSVState.rawData,
+        })
+
+        // Save CSV data from snapshot
+        updateFloorMapData(prevFloorData.id, {
+          graphJson: json,
+          csvRawData: currentCSVState.rawData || undefined,
+          csvFileName: currentCSVState.file?.name,
+          csvParsedData: currentCSVState.parsedData,
+          csvGroupedLayers: currentCSVState.groupedLayers || undefined,
+          csvSelectedLayers: Array.from(currentCSVState.selectedLayers),
+        })
+      }
+    }
+
+    // Update previous floor reference BEFORE loading new floor
+    previousFloorRef.current = currentFloor
+
+    // Load current floor's data
+    const currentFloorData = latestFloors.find(f => f.id === currentFloor)
+
+    console.log(`📂 Loading floor ${currentFloorData?.name}:`, {
+      hasMapData: !!currentFloorData?.mapData,
+      hasGraph: !!currentFloorData?.mapData?.graphJson,
+      hasCSV: !!currentFloorData?.mapData?.csvRawData,
+    })
+
+    if (currentFloorData?.mapData) {
+      const mapData = currentFloorData.mapData
+
+      // Restore CSV data to csvStore
+      if (mapData.csvRawData && mapData.csvParsedData && mapData.csvGroupedLayers) {
+        console.log(`✅ Restoring CSV for floor ${currentFloorData.name}`)
+
+        // Use internal state update to restore data (no re-render trigger)
+        useCSVStore.setState({
+          uploadState: {
+            status: 'parsed',
+            fileName: mapData.csvFileName || 'unknown.csv',
+            rowCount: mapData.csvParsedData.rowCount || 0,
+          },
+          rawData: mapData.csvRawData,
+          parsedData: mapData.csvParsedData,
+          groupedLayers: mapData.csvGroupedLayers,
+          selectedLayers: new Set(mapData.csvSelectedLayers || []),
+          file: null, // File object cannot be persisted
+        })
+
+        setLoadedFileName(mapData.csvFileName || null)
+      } else {
+        console.log(`🆕 New floor ${currentFloorData.name} - clearing CSV`)
+
+        // Clear CSV state for new floor (using setState to avoid re-render)
+        useCSVStore.setState({
+          uploadState: { status: 'idle' },
+          file: null,
+          rawData: null,
+          parsedData: null,
+          groupedLayers: null,
+          selectedLayers: new Set<string>(),
+        })
+        setLoadedFileName(null)
+      }
+
+      // Restore graph JSON
+      if (graph && mapData.graphJson) {
+        console.log(`🎨 Restoring graph for floor ${currentFloorData.name}`)
+        setPendingGraphJson(mapData.graphJson)
+      } else if (graph) {
+        console.log(`🧹 Clearing canvas for floor ${currentFloorData.name}`)
+        // Clear canvas for new floor
+        graph.clear()
+        setElementCount(0)
+        setObjectsByLayer(new Map())
+      }
+    } else if (graph) {
+      console.log(`🆕 New floor - clearing everything`)
+
+      // New floor with no data - clear CSV state
+      useCSVStore.setState({
+        uploadState: { status: 'idle' },
+        file: null,
+        rawData: null,
+        parsedData: null,
+        groupedLayers: null,
+        selectedLayers: new Set<string>(),
+      })
+      setLoadedFileName(null)
+      graph.clear()
+      setElementCount(0)
+      setObjectsByLayer(new Map())
+    }
+  }, [currentFloor, graph, updateFloorMapData])
+
   // Handlers
+  const handleUploadClick = () => {
+    if (types.length === 0) {
+      alert('객체 타입이 없습니다. 먼저 객체 타입을 생성해주세요.')
+      return
+    }
+    csvInputRef.current?.click()
+  }
+
+  const handleCsvFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.name.endsWith('.csv')) {
+      alert('CSV 파일만 업로드 가능합니다.')
+      return
+    }
+
+    setFile(file)
+    setUploadState({ status: 'uploading', progress: 0 })
+
+    // Simulate upload progress
+    await new Promise(resolve => setTimeout(resolve, 300))
+    setUploadState({ status: 'uploading', progress: 50 })
+    await new Promise(resolve => setTimeout(resolve, 300))
+    setUploadState({ status: 'uploading', progress: 100 })
+
+    await parseFile()
+    if (csvInputRef.current) csvInputRef.current.value = ''
+  }
+
   const handleSave = () => {
     if (graph && currentFloor) {
       const json = graph.toJSON()
@@ -146,6 +298,13 @@ export default function EditorPage() {
 
   return (
     <div className={styles.container}>
+      <input
+        type="file"
+        ref={csvInputRef}
+        onChange={handleCsvFileChange}
+        accept=".csv"
+        style={{ display: 'none' }}
+      />
       <EditorHeader
         loadedFileName={loadedFileName}
         zoom={zoom}
@@ -154,7 +313,7 @@ export default function EditorPage() {
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
         onFitToScreen={handleFitToScreen}
-        onUploadClick={() => { }} // TODO: Implement upload click if needed
+        onUploadClick={handleUploadClick}
         onSave={handleSave}
         onClearCanvas={handleClearCanvas}
         onThemeToggle={toggleTheme}
@@ -173,13 +332,14 @@ export default function EditorPage() {
 
         {/* Canvas Area */}
         <div className={styles.canvasArea}>
-          {!loadedFileName && <CSVUploader />}
+          {/* Show CSV uploader only if no loaded file AND graph is empty */}
+          {!loadedFileName && elementCount === 0 && <CSVUploader />}
 
           {/* JointJS Canvas Container */}
           <div ref={canvasRef} className={styles.canvas} />
 
           {/* Minimap Container */}
-          {loadedFileName && (
+          {(loadedFileName || elementCount > 0) && (
             <div className={styles.minimapContainer} ref={minimapContainerRef}>
               <div className={styles.minimapViewport} ref={viewportRectRef} />
             </div>

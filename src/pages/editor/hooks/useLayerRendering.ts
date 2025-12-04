@@ -3,7 +3,7 @@
  * Handles rendering of selected CSV layers to canvas
  */
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { dia } from '@joint/core'
 import { useCSVStore } from '@/features/csv'
 import { createElementsFromCSV } from '../lib/csvRenderer'
@@ -21,29 +21,70 @@ export function useLayerRendering(
   const selectedLayers = useCSVStore(state => state.selectedLayers)
   const uploadState = useCSVStore(state => state.uploadState)
 
+  // Track if we just uploaded a new CSV file
+  const lastUploadStateRef = useRef<string>('idle')
+
   useEffect(() => {
     if (!graph) return
 
     // Priority 1: Restore pending graph JSON (from floor switch)
     if (pendingGraphJson) {
-      graph.fromJSON(pendingGraphJson)
-      setPendingGraphJson(null)
+      console.log('🔄 Restoring graph from pendingGraphJson')
+      try {
+        graph.fromJSON(pendingGraphJson)
+        setPendingGraphJson(null)
 
-      // Update element count
-      setElementCount(graph.getCells().length)
+        // Update element count and objects by layer
+        const cells = graph.getCells()
+        setElementCount(cells.length)
+
+        // Reconstruct objectsByLayer from restored graph
+        const layerMap = new Map<string, dia.Element[]>()
+        cells.forEach((cell) => {
+          if (cell.isElement()) {
+            const element = cell as dia.Element
+            const layer = element.get('layer') || 'default'
+            if (!layerMap.has(layer)) {
+              layerMap.set(layer, [])
+            }
+            layerMap.get(layer)!.push(element)
+          }
+        })
+        setObjectsByLayer(layerMap)
+        console.log(`✅ Graph restored: ${cells.length} cells`)
+      } catch (error) {
+        console.error('Failed to restore graph from JSON:', error)
+        setPendingGraphJson(null)
+      }
       return
     }
 
-    // Priority 2: Render from CSV
+    // Check if CSV was just uploaded (status changed to 'parsed')
+    const currentStatus = uploadState.status
+    const wasJustUploaded = lastUploadStateRef.current !== 'parsed' && currentStatus === 'parsed'
+    lastUploadStateRef.current = currentStatus
+
+    // Priority 2: Render from CSV only if:
+    // 1. CSV was just uploaded (new file)
+    // 2. Graph is empty (no saved work)
     if (!groupedLayers || groupedLayers.length === 0) {
+      return
+    }
+
+    // Skip CSV rendering if graph already has content AND it's not a fresh upload
+    const existingCells = graph.getCells()
+    if (existingCells.length > 0 && !wasJustUploaded) {
+      console.log('⏭️ Skipping CSV render - graph has saved content')
       return
     }
 
     // If we are in the middle of a floor restoration, skip CSV rendering
     // to prevent overwriting the graph data we just restored from JSON.
-    if (isRestoring && graph.getCells().length > 0) {
+    if (isRestoring && existingCells.length > 0) {
       return
     }
+
+    console.log('🎨 Rendering from CSV', { wasJustUploaded, existingCells: existingCells.length })
 
     // Clear current elements
     graph.clear()

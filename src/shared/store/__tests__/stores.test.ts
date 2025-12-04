@@ -203,7 +203,7 @@ describe('FloorStore', () => {
 
     const store = useFloorStore.getState();
     const updatedFloor = store.floors[0];
-    expect(updatedFloor.mapData?.metadata.test).toBe('data');
+    expect(updatedFloor.mapData?.metadata?.test).toBe('data');
   });
 
   it('should persist to localStorage', () => {
