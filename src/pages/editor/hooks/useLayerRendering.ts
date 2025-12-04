@@ -1,11 +1,14 @@
 /**
  * Layer Rendering Hook
  * Handles rendering of selected CSV layers to canvas
+ * Only renders layers that are mapped to object types
  */
 
 import { useEffect, useRef } from 'react'
 import { dia } from '@joint/core'
 import { useCSVStore } from '@/features/csv'
+import { useFloorStore } from '@/shared/store/floorStore'
+import { useObjectTypeStore } from '@/shared/store/objectTypeStore'
 import { createElementsFromCSV } from '../lib/csvRenderer'
 
 export function useLayerRendering(
@@ -20,6 +23,8 @@ export function useLayerRendering(
   const groupedLayers = useCSVStore(state => state.groupedLayers)
   const selectedLayers = useCSVStore(state => state.selectedLayers)
   const uploadState = useCSVStore(state => state.uploadState)
+  const currentFloor = useFloorStore(state => state.currentFloor)
+  const getMappingsByFloorId = useObjectTypeStore(state => state.getMappingsByFloorId)
 
   // Track if we just uploaded a new CSV file
   const lastUploadStateRef = useRef<string>('idle')
@@ -86,19 +91,34 @@ export function useLayerRendering(
 
     console.log('🎨 Rendering from CSV', { wasJustUploaded, existingCells: existingCells.length })
 
+    // Get mappings for current floor
+    const mappings = currentFloor ? getMappingsByFloorId(currentFloor) : []
+    const mappedEntityHandles = new Set(mappings.map(m => m.entityHandle))
+
+    console.log(`📋 Mappings: ${mappings.length} entities mapped to object types`)
+
     // Clear current elements
     graph.clear()
 
-    // Filter only selected layers
-    const layersToRender = groupedLayers.filter(layer =>
-      selectedLayers.has(layer.layer)
-    )
+    // Filter only selected layers AND entities that are mapped to object types
+    const layersToRender = groupedLayers
+      .map(layer => ({
+        ...layer,
+        // Filter entities: must be in selected layers AND mapped to object type
+        entities: layer.entities.filter(entity =>
+          selectedLayers.has(layer.layer) && mappedEntityHandles.has(entity.entityHandle)
+        )
+      }))
+      .filter(layer => layer.entities.length > 0) // Remove layers with no mapped entities
 
     if (layersToRender.length === 0) {
+      console.log('⚠️ No mapped entities to render')
       setElementCount(0)
       setObjectsByLayer(new Map())
       return
     }
+
+    console.log(`✅ Rendering ${layersToRender.length} layers with mapped entities`)
 
 
     // Calculate global bounds from all entities in selected layers

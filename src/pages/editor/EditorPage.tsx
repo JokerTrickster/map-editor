@@ -13,7 +13,7 @@ import { useProjectStore } from '@/shared/store/projectStore'
 import { useCSVStore } from '@/features/csv/model/csvStore'
 import { FloorTabs } from '@/widgets/editor/FloorTabs'
 import { CSVUploader } from '@/features/csv'
-import { ObjectTypeSidebar } from '@/features/objectType'
+import { ObjectTypeSidebar, LayerMappingModal } from '@/features/objectType'
 import { ResizablePanel } from '@/shared/ui/ResizablePanel'
 import { Modal } from '@/shared/ui/Modal'
 import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
@@ -59,6 +59,7 @@ export default function EditorPage() {
   const [pendingGraphJson, setPendingGraphJson] = useState<any | null>(null)
   const [isRestoring] = useState(false)
   const [showSaveModal, setShowSaveModal] = useState(false)
+  const [showMappingModal, setShowMappingModal] = useState(false)
 
   // Hooks
   const { graph, paper } = useJointJSCanvas(canvasRef)
@@ -264,6 +265,10 @@ export default function EditorPage() {
     setUploadState({ status: 'uploading', progress: 100 })
 
     await parseFile()
+
+    // Open mapping modal after successful CSV parse
+    setShowMappingModal(true)
+
     if (csvInputRef.current) csvInputRef.current.value = ''
   }
 
@@ -371,6 +376,13 @@ export default function EditorPage() {
       </main>
 
       <FloorTabs />
+
+      {/* Layer Mapping Modal */}
+      <LayerMappingModal
+        isOpen={showMappingModal}
+        onClose={() => setShowMappingModal(false)}
+        onConfirm={() => setShowMappingModal(false)}
+      />
 
       {/* Save Success Modal */}
       <Modal
