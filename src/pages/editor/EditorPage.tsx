@@ -300,7 +300,7 @@ export default function EditorPage() {
   }
 
   const handleBackToProjects = () => {
-    navigate('/projects')
+    navigate('/dashboard')
   }
 
   return (
