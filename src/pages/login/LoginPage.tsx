@@ -1,13 +1,16 @@
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import styles from './LoginPage.module.css'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const [error, setError] = useState<string | null>(null)
 
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       console.log('Login Success:', tokenResponse)
+      setError(null)
 
       // 액세스 토큰을 localStorage에 저장
       localStorage.setItem('accessToken', tokenResponse.access_token)
@@ -17,7 +20,7 @@ export default function LoginPage() {
     },
     onError: (error) => {
       console.error('Login Failed:', error)
-      alert('로그인 실패: ' + error.error_description)
+      setError('로그인 실패: ' + error.error_description)
     },
   })
 
@@ -33,6 +36,21 @@ export default function LoginPage() {
           <p className={styles.description}>
             Sign in to access your dashboard and manage your maps.
           </p>
+
+          {error && (
+            <div style={{
+              padding: '12px',
+              marginBottom: '16px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: '#ef4444',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: '6px',
+              fontSize: '13px',
+              textAlign: 'center'
+            }}>
+              {error}
+            </div>
+          )}
 
           <button
             onClick={() => login()}

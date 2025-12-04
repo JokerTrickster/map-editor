@@ -149,8 +149,6 @@ export function useCSVProcessing(
         console.error('Error processing CSV:', error)
         if (onError) {
           onError(error as Error)
-        } else {
-          alert('Error loading CSV file. Check console for details.')
         }
       }
     },

@@ -29,6 +29,8 @@ import { useThemeSync } from './hooks/useThemeSync'
 import { useElementSelection } from './hooks/useElementSelection'
 import { useLayerRendering } from './hooks/useLayerRendering'
 import { useObjectCreation } from './hooks/useObjectCreation'
+import { useCSVProcessing } from './hooks/useCSVProcessing'
+import { useDragAndDropMapping } from './hooks/useDragAndDropMapping'
 import { ObjectType } from '@/shared/store/objectTypeStore'
 import styles from './EditorPage.module.css'
 import '@/shared/lib/testHelpers'
@@ -49,7 +51,7 @@ export default function EditorPage() {
 
   // State
   const types = useObjectTypeStore(state => state.types)
-  const { setFile, setUploadState, parseFile } = useCSVStore()
+  const { setFile, setUploadState } = useCSVStore()
   const [selectedObjectType, setSelectedObjectType] = useState<ObjectType | null>(null)
   const [zoom, setZoom] = useState(1)
   const [elementCount, setElementCount] = useState(0)
@@ -61,6 +63,11 @@ export default function EditorPage() {
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showNoTypesModal, setShowNoTypesModal] = useState(false)
   const [showMappingModal, setShowMappingModal] = useState(false)
+  const [errorModal, setErrorModal] = useState<{ show: boolean; message: string }>({ show: false, message: '' })
+
+  const handleError = (error: Error) => {
+    setErrorModal({ show: true, message: error.message })
+  }
 
   // Debug: log when showMappingModal changes
   useEffect(() => {
@@ -69,6 +76,11 @@ export default function EditorPage() {
 
   // Hooks
   const { graph, paper } = useJointJSCanvas(canvasRef)
+
+  // CSV Processing
+  const { processCSVData } = useCSVProcessing(graph, paper, undefined, handleError)
+
+  useDragAndDropMapping(paper, graph, currentFloor || 'default', handleError)
 
   const { handleElementClick, handleBlankClick } = useElementSelection(
     graph,
@@ -255,38 +267,25 @@ export default function EditorPage() {
     csvInputRef.current?.click()
   }
 
-  const handleCsvFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (!file) return
 
     if (!file.name.endsWith('.csv')) {
-      alert('CSV 파일만 업로드 가능합니다.')
+      setErrorModal({ show: true, message: 'CSV 파일만 업로드 가능합니다.' })
       return
     }
 
     setFile(file)
     setUploadState({ status: 'uploading', progress: 0 })
 
-    // Simulate upload progress
-    await new Promise(resolve => setTimeout(resolve, 300))
-    setUploadState({ status: 'uploading', progress: 50 })
-    await new Promise(resolve => setTimeout(resolve, 300))
-    setUploadState({ status: 'uploading', progress: 100 })
-
-    await parseFile()
-
-    // Check if parse was successful before opening modal
-    const currentUploadState = useCSVStore.getState().uploadState
-    console.log('📤 CSV Upload State:', currentUploadState)
-
-    if (currentUploadState.status === 'parsed') {
-      console.log('✅ Opening mapping modal')
-      setShowMappingModal(true)
-    } else {
-      console.log('❌ CSV parsing failed:', currentUploadState.status, currentUploadState)
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const text = e.target?.result as string
+      await processCSVData(text, file.name)
+      setUploadState({ status: 'idle' })
     }
-
-    if (csvInputRef.current) csvInputRef.current.value = ''
+    reader.readAsText(file)
   }
 
   const handleSave = () => {
@@ -310,9 +309,11 @@ export default function EditorPage() {
 
   const handleClearCanvas = () => {
     if (graph) {
-      graph.clear()
-      setElementCount(0)
-      setObjectsByLayer(new Map())
+      if (confirm('정말 초기화 하시겠습니까?')) {
+        graph.clear()
+        setElementCount(0)
+        setObjectsByLayer(new Map())
+      }
     }
   }
 
@@ -330,7 +331,7 @@ export default function EditorPage() {
       <input
         type="file"
         ref={csvInputRef}
-        onChange={handleCsvFileChange}
+        onChange={handleFileChange}
         accept=".csv"
         style={{ display: 'none' }}
       />
@@ -359,6 +360,86 @@ export default function EditorPage() {
             onSelectType={setSelectedObjectType}
           />
         </ResizablePanel>
+
+        {/* No Types Warning Modal */}
+        <Modal
+          isOpen={showNoTypesModal}
+          onClose={() => setShowNoTypesModal(false)}
+          title="객체 타입 필요"
+          footer={
+            <button
+              className={styles.primaryButton}
+              onClick={() => setShowNoTypesModal(false)}
+            >
+              확인
+            </button>
+          }
+        >
+          <div style={{ padding: '10px 0' }}>
+            <p style={{ marginBottom: '10px' }}>CSV 파일을 업로드하기 전에 먼저 객체 타입을 생성해야 합니다.</p>
+            <p style={{ color: 'var(--local-text-secondary)', fontSize: '14px' }}>
+              좌측 사이드바에서 객체 타입을 추가하거나 JSON 파일을 임포트해주세요.
+            </p>
+          </div>
+        </Modal>
+
+        {/* Save Success Modal */}
+        <Modal
+          isOpen={showSaveModal}
+          onClose={() => setShowSaveModal(false)}
+          title="Success"
+          footer={
+            <button className={styles.primaryButton} onClick={() => setShowSaveModal(false)}>
+              OK
+            </button>
+          }
+        >
+          <p>Map saved successfully!</p>
+        </Modal>
+
+        {/* Error Modal */}
+        {errorModal.show && (
+          <Modal
+            isOpen={errorModal.show}
+            title="오류 발생"
+            onClose={() => setErrorModal({ show: false, message: '' })}
+          >
+            <div style={{ padding: '20px', textAlign: 'center' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px auto'
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <p style={{ marginBottom: '24px', color: '#e2e8f0', whiteSpace: 'pre-wrap' }}>
+                {errorModal.message}
+              </p>
+              <button
+                onClick={() => setErrorModal({ show: false, message: '' })}
+                style={{
+                  padding: '8px 16px',
+                  background: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                확인
+              </button>
+            </div>
+          </Modal>
+        )}
 
         {/* Canvas Area */}
         <div className={styles.canvasArea}>
@@ -402,42 +483,6 @@ export default function EditorPage() {
         onClose={() => setShowMappingModal(false)}
         onConfirm={() => setShowMappingModal(false)}
       />
-
-      {/* No Types Warning Modal */}
-      <Modal
-        isOpen={showNoTypesModal}
-        onClose={() => setShowNoTypesModal(false)}
-        title="객체 타입 필요"
-        footer={
-          <button
-            className={styles.primaryButton}
-            onClick={() => setShowNoTypesModal(false)}
-          >
-            확인
-          </button>
-        }
-      >
-        <div style={{ padding: '10px 0' }}>
-          <p style={{ marginBottom: '10px' }}>CSV 파일을 업로드하기 전에 먼저 객체 타입을 생성해야 합니다.</p>
-          <p style={{ color: 'var(--local-text-secondary)', fontSize: '14px' }}>
-            좌측 사이드바에서 객체 타입을 추가하거나 JSON 파일을 임포트해주세요.
-          </p>
-        </div>
-      </Modal>
-
-      {/* Save Success Modal */}
-      <Modal
-        isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        title="Success"
-        footer={
-          <button className={styles.primaryButton} onClick={() => setShowSaveModal(false)}>
-            OK
-          </button>
-        }
-      >
-        <p>Map saved successfully!</p>
-      </Modal>
     </div>
   )
 }

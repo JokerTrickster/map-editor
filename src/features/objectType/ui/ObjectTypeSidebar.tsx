@@ -42,6 +42,7 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
   const [showJson, setShowJson] = useState(false)
 
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -408,7 +409,8 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
           const errorMsg = `${addedCount}개 생성됨, ${errors.length}개 실패:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? `\n...외 ${errors.length - 5}개` : ''}`
           setError(errorMsg)
         } else if (addedCount > 0) {
-          alert(`✅ ${addedCount}개의 객체 타입이 생성되었습니다`)
+          setSuccessMessage(`✅ ${addedCount}개의 객체 타입이 생성되었습니다`)
+          setTimeout(() => setSuccessMessage(null), 3000)
         } else {
           setError('유효한 객체 타입을 찾을 수 없습니다')
         }
@@ -453,6 +455,23 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
 
       {error && (
         <div className={styles.error}>{error}</div>
+      )}
+
+      {successMessage && (
+        <div style={{
+          padding: '12px',
+          marginBottom: '16px',
+          background: 'rgba(34, 197, 94, 0.1)',
+          color: '#4ade80',
+          border: '1px solid rgba(34, 197, 94, 0.2)',
+          borderRadius: '6px',
+          fontSize: '13px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          {successMessage}
+        </div>
       )}
 
       {/* Add Form */}

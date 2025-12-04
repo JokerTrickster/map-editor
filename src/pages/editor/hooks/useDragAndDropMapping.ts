@@ -10,7 +10,8 @@ import { useObjectTypeStore } from '@/shared/store/objectTypeStore'
 export function useDragAndDropMapping(
   paper: dia.Paper | null,
   graph: dia.Graph | null,
-  floorId: string = 'default'
+  floorId: string = 'default',
+  onError?: (error: Error) => void
 ) {
   const [dragOverElementId, setDragOverElementId] = useState<string | null>(null)
   const addMapping = useObjectTypeStore((state) => state.addMapping)
@@ -106,7 +107,11 @@ export function useDragAndDropMapping(
           console.log(`Mapped ${typeName} to element ${elementId}`)
         } catch (error) {
           console.error('Failed to create mapping:', error)
-          alert(error instanceof Error ? error.message : 'Failed to create mapping')
+          if (onError) {
+            onError(error instanceof Error ? error : new Error('Failed to create mapping'))
+          } else {
+            console.warn('Mapping error (no handler):', error)
+          }
         }
       }
 
@@ -122,7 +127,7 @@ export function useDragAndDropMapping(
       paperEl.removeEventListener('dragleave', handleDragLeave as EventListener)
       paperEl.removeEventListener('drop', handleDrop as EventListener)
     }
-  }, [paper, graph, floorId, dragOverElementId, addMapping, removeMappingByEntity, getMappingByEntity])
+  }, [paper, graph, floorId, dragOverElementId, addMapping, removeMappingByEntity, getMappingByEntity, onError])
 
   return {
     dragOverElementId,
