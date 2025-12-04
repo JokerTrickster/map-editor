@@ -61,6 +61,11 @@ export default function EditorPage() {
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showMappingModal, setShowMappingModal] = useState(false)
 
+  // Debug: log when showMappingModal changes
+  useEffect(() => {
+    console.log('🔔 showMappingModal changed:', showMappingModal)
+  }, [showMappingModal])
+
   // Hooks
   const { graph, paper } = useJointJSCanvas(canvasRef)
 
@@ -268,9 +273,13 @@ export default function EditorPage() {
 
     // Check if parse was successful before opening modal
     const currentUploadState = useCSVStore.getState().uploadState
+    console.log('📤 CSV Upload State:', currentUploadState)
+
     if (currentUploadState.status === 'parsed') {
-      // Open mapping modal after successful CSV parse
+      console.log('✅ Opening mapping modal')
       setShowMappingModal(true)
+    } else {
+      console.log('❌ CSV parsing failed:', currentUploadState.status, currentUploadState)
     }
 
     if (csvInputRef.current) csvInputRef.current.value = ''
