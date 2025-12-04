@@ -156,9 +156,10 @@
 }
 
 .propertyInput {
-  width: 120px;
-  /* Fixed smaller width for key */
-  flex-shrink: 0;
+  flex: 2;
+  /* Name field takes 2x space */
+  min-width: 0;
+  /* Allow text truncation */
   padding: 8px;
   border: 1px solid var(--local-border);
   border-radius: 6px;
@@ -174,10 +175,11 @@
 
 .propertySelect {
   flex: 1;
-  /* Allow select to take remaining space */
+  /* Type field takes 1x space */
   min-width: 0;
   /* Allow shrinking */
-  padding: 8px;
+  padding: 8px 24px 8px 8px;
+  /* Extra right padding for dropdown arrow */
   border: 1px solid var(--local-border);
   border-radius: 6px;
   font-size: 12px;
@@ -185,6 +187,12 @@
   color: var(--local-text);
   cursor: pointer;
   text-overflow: ellipsis;
+  appearance: none;
+  /* Remove default browser dropdown arrow */
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 5L6 8L9 5' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
 }
 
 .propertySelect:focus {
