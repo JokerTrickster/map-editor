@@ -24,7 +24,7 @@ export function useLayerRendering(
   const selectedLayers = useCSVStore(state => state.selectedLayers)
   const uploadState = useCSVStore(state => state.uploadState)
   const currentFloor = useFloorStore(state => state.currentFloor)
-  const getMappingsByFloorId = useObjectTypeStore(state => state.getMappingsByFloorId)
+  const mappings = useObjectTypeStore(state => state.mappings)
 
   // Track if we just uploaded a new CSV file
   const lastUploadStateRef = useRef<string>('idle')
@@ -92,10 +92,10 @@ export function useLayerRendering(
     console.log('🎨 Rendering from CSV', { wasJustUploaded, existingCells: existingCells.length })
 
     // Get mappings for current floor
-    const mappings = currentFloor ? getMappingsByFloorId(currentFloor) : []
-    const mappedEntityHandles = new Set(mappings.map(m => m.entityHandle))
+    const floorMappings = currentFloor ? mappings.filter(m => m.floorId === currentFloor) : []
+    const mappedEntityHandles = new Set(floorMappings.map(m => m.entityHandle))
 
-    console.log(`📋 Mappings: ${mappings.length} entities mapped to object types`)
+    console.log(`📋 Mappings: ${floorMappings.length} entities mapped to object types`)
 
     // Clear current elements
     graph.clear()
@@ -158,10 +158,12 @@ export function useLayerRendering(
     groupedLayers,
     selectedLayers,
     uploadState,
-    pendingGraphJson, // Add dependency
+    pendingGraphJson,
     setElementCount,
     setObjectsByLayer,
     setLoadedFileName,
-    setPendingGraphJson, // Add dependency
+    setPendingGraphJson,
+    currentFloor,
+    mappings // Trigger re-render when mappings change
   ])
 }

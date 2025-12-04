@@ -266,8 +266,12 @@ export default function EditorPage() {
 
     await parseFile()
 
-    // Open mapping modal after successful CSV parse
-    setShowMappingModal(true)
+    // Check if parse was successful before opening modal
+    const currentUploadState = useCSVStore.getState().uploadState
+    if (currentUploadState.status === 'parsed') {
+      // Open mapping modal after successful CSV parse
+      setShowMappingModal(true)
+    }
 
     if (csvInputRef.current) csvInputRef.current.value = ''
   }
@@ -345,8 +349,8 @@ export default function EditorPage() {
 
         {/* Canvas Area */}
         <div className={styles.canvasArea}>
-          {/* Show CSV uploader only if no loaded file AND graph is empty */}
-          {!loadedFileName && elementCount === 0 && <CSVUploader />}
+          {/* Show CSV uploader only if no loaded file AND graph is empty AND mapping modal is closed */}
+          {!loadedFileName && elementCount === 0 && !showMappingModal && <CSVUploader />}
 
           {/* JointJS Canvas Container */}
           <div ref={canvasRef} className={styles.canvas} />
