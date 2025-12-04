@@ -120,6 +120,17 @@ export function useLayerRendering(
 
     console.log(`✅ Rendering ${layersToRender.length} layers with mapped entities`)
 
+    // Build type mappings for rendering
+    const typeMappings = floorMappings
+      .map(mapping => {
+        const type = useObjectTypeStore.getState().types.find(t => t.id === mapping.typeId)
+        if (!type) return null
+        return {
+          entityHandle: mapping.entityHandle,
+          type
+        }
+      })
+      .filter((m): m is { entityHandle: string; type: any } => m !== null)
 
     // Calculate global bounds from all entities in selected layers
     const allEntities = layersToRender.flatMap(layer => layer.entities)
@@ -136,10 +147,11 @@ export function useLayerRendering(
       maxY: Math.max(...allEntities.flatMap(e => e.points.map(p => p.y))),
     }
 
-    // Render elements from selected layers
+    // Render elements from selected layers with type mappings
     const { elements, objectsByLayer } = createElementsFromCSV(
       layersToRender,
-      bounds
+      bounds,
+      typeMappings
     )
 
     // Add elements to graph

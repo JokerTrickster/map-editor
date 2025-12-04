@@ -31,6 +31,7 @@ import { useLayerRendering } from './hooks/useLayerRendering'
 import { useObjectCreation } from './hooks/useObjectCreation'
 import { useCSVProcessing } from './hooks/useCSVProcessing'
 import { useDragAndDropMapping } from './hooks/useDragAndDropMapping'
+import { useObjectTypeSync } from './hooks/useObjectTypeSync'
 import { ObjectType } from '@/shared/store/objectTypeStore'
 import styles from './EditorPage.module.css'
 import '@/shared/lib/testHelpers'
@@ -67,6 +68,27 @@ export default function EditorPage() {
 
   const handleError = (error: Error) => {
     setErrorModal({ show: true, message: error.message })
+  }
+
+  const handleObjectUpdate = (id: string, updates: Partial<any>) => {
+    if (!graph) return
+
+    const cell = graph.getCell(id)
+    if (!cell || !cell.isElement()) return
+
+    const element = cell as dia.Element
+
+    if (updates.position) {
+      element.position(updates.position.x, updates.position.y)
+    }
+
+    if (updates.size) {
+      element.resize(updates.size.width, updates.size.height)
+    }
+
+    if (updates.data) {
+      element.set('data', updates.data)
+    }
   }
 
   // Debug: log when showMappingModal changes
@@ -134,6 +156,8 @@ export default function EditorPage() {
     selectedObjectType,
     () => setSelectedObjectType(null)
   )
+
+  useObjectTypeSync(graph)
 
   // Set current lot in objectTypeStore when project loads
   useEffect(() => {
@@ -471,6 +495,8 @@ export default function EditorPage() {
             objectsByLayer={objectsByLayer}
             selectedElementId={selectedElementId}
             onObjectClick={handleElementClick}
+            onObjectUpdate={handleObjectUpdate}
+            graph={graph}
           />
         </ResizablePanel>
       </main>

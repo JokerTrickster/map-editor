@@ -1,0 +1,138 @@
+.container {
+    padding: 16px;
+    color: #e2e8f0;
+}
+
+.section {
+    margin-bottom: 24px;
+}
+
+.title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: center;
+}
+
+.group {
+    margin-bottom: 16px;
+}
+
+.groupLabel {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.field {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.field label {
+    font-size: 12px;
+    color: #64748b;
+    width: 12px;
+}
+
+.input {
+    width: 100%;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #f1f5f9;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input:focus {
+    border-color: #3b82f6;
+}
+
+.input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.textarea {
+    width: 100%;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 8px;
+    color: #f1f5f9;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.2s;
+}
+
+.textarea:focus {
+    border-color: #3b82f6;
+}
+
+.textarea.error {
+    border-color: #ef4444;
+}
+
+.select {
+    width: 100%;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #f1f5f9;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 8px;
+}
+
+.select:focus {
+    border-color: #3b82f6;
+}
+
+.propertyRow {
+    margin-bottom: 8px;
+}
+
+.propertyLabel {
+    display: block;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+}
+
+.required {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
+.emptyProperties {
+    font-size: 12px;
+    color: #64748b;
+    font-style: italic;
+    padding: 8px 0;
+}
+
+.errorMessage {
+    color: #ef4444;
+    font-size: 12px;
+    margin-top: 4px;
+}

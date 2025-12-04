@@ -5,10 +5,16 @@
 
 import { dia, shapes } from '@joint/core'
 import type { GroupedLayer } from '@/features/csv'
+import type { ObjectType } from '@/shared/store/objectTypeStore'
 
 interface RenderResult {
   elements: dia.Element[]
   objectsByLayer: Map<string, dia.Element[]>
+}
+
+interface TypeMapping {
+  entityHandle: string
+  type: ObjectType
 }
 
 /**
@@ -47,14 +53,23 @@ function getLayerStrokeColor(layer: string): string {
 }
 
 /**
- * Create elements from grouped layers
+ * Create elements from grouped layers with type mappings
  */
 export function createElementsFromCSV(
   groupedLayers: GroupedLayer[],
-  bounds: { minX: number; maxX: number; minY: number; maxY: number }
+  bounds: { minX: number; maxX: number; minY: number; maxY: number },
+  typeMappings?: TypeMapping[]
 ): RenderResult {
   const elements: dia.Element[] = []
   const objectsByLayer = new Map<string, dia.Element[]>()
+
+  // Create mapping lookup map
+  const mappingMap = new Map<string, ObjectType>()
+  if (typeMappings) {
+    typeMappings.forEach(mapping => {
+      mappingMap.set(mapping.entityHandle, mapping.type)
+    })
+  }
 
   // Calculate scale factor to fit in canvas (1000px target width)
   const dataWidth = bounds.maxX - bounds.minX
@@ -65,7 +80,8 @@ export function createElementsFromCSV(
     const layerElements: dia.Element[] = []
 
     layer.entities.forEach(entity => {
-      const element = createElementFromEntity(entity, bounds, scale, layer.layer)
+      const mappedType = mappingMap.get(entity.entityHandle)
+      const element = createElementFromEntity(entity, bounds, scale, layer.layer, mappedType)
 
       if (element) {
         elements.push(element)
@@ -88,7 +104,8 @@ function createElementFromEntity(
   entity: any,
   bounds: { minX: number; minY: number },
   scale: number,
-  layer: string
+  layer: string,
+  mappedType?: ObjectType
 ): dia.Element | null {
   const { points, entityHandle } = entity
 
@@ -112,6 +129,42 @@ function createElementFromEntity(
   const width = maxX - minX || 1
   const height = maxY - minY || 1
 
+  // Use mapped type color/icon if available
+  const fillColor = mappedType?.color || getLayerFillColor(layer)
+  const strokeColor = mappedType?.color || getLayerStrokeColor(layer)
+  const labelText = mappedType?.name || ''
+
+  // If type has icon, create Image element instead
+  if (mappedType?.icon) {
+    const image = new shapes.standard.Image({
+      id: `${layer}_${entityHandle}`,
+      position: { x: minX, y: minY },
+      size: { width, height },
+      attrs: {
+        image: { xlinkHref: mappedType.icon },
+        label: {
+          text: labelText,
+          fill: '#ffffff',
+          fontSize: 12,
+          refY: '100%',
+          refY2: 5
+        }
+      },
+      data: {
+        layer,
+        entityHandle,
+        type: 'csv-entity',
+      }
+    })
+
+    // Store type ID for sync updates
+    if (mappedType) {
+      image.prop('objectTypeId', mappedType.id)
+    }
+
+    return image
+  }
+
   // Convert to relative coordinates for SVG path
   const relativePoints = transformedPoints.map((p: { x: number; y: number }) => ({
     x: p.x - minX,
@@ -125,21 +178,21 @@ function createElementFromEntity(
     )
     .join(' ')
 
-  // Create element
-  return new shapes.standard.Path({
+  // Create path element
+  const element = new shapes.standard.Path({
     id: `${layer}_${entityHandle}`,
     position: { x: minX, y: minY },
     size: { width, height },
     attrs: {
       body: {
         d: pathData,
-        fill: getLayerFillColor(layer),
-        stroke: getLayerStrokeColor(layer),
+        fill: fillColor,
+        stroke: strokeColor,
         strokeWidth: 2,
         opacity: 0.8,
       },
       label: {
-        text: '',
+        text: labelText,
         fill: '#ffffff',
         fontSize: 12,
       },
@@ -150,4 +203,11 @@ function createElementFromEntity(
       type: 'csv-entity',
     },
   })
+
+  // Store type ID for sync updates
+  if (mappedType) {
+    element.prop('objectTypeId', mappedType.id)
+  }
+
+  return element
 }
