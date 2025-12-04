@@ -59,6 +59,7 @@ export default function EditorPage() {
   const [pendingGraphJson, setPendingGraphJson] = useState<any | null>(null)
   const [isRestoring] = useState(false)
   const [showSaveModal, setShowSaveModal] = useState(false)
+  const [showNoTypesModal, setShowNoTypesModal] = useState(false)
   const [showMappingModal, setShowMappingModal] = useState(false)
 
   // Debug: log when showMappingModal changes
@@ -247,7 +248,10 @@ export default function EditorPage() {
 
   // Handlers
   const handleUploadClick = () => {
-    // Button is disabled when no object types, so this will only be called when types exist
+    if (types.length === 0) {
+      setShowNoTypesModal(true)
+      return
+    }
     csvInputRef.current?.click()
   }
 
@@ -359,7 +363,9 @@ export default function EditorPage() {
         {/* Canvas Area */}
         <div className={styles.canvasArea}>
           {/* Show CSV uploader only if no loaded file AND graph is empty AND mapping modal is closed */}
-          {!loadedFileName && elementCount === 0 && !showMappingModal && <CSVUploader />}
+          {!loadedFileName && elementCount === 0 && !showMappingModal && (
+            <CSVUploader onMappingRequired={() => setShowMappingModal(true)} />
+          )}
 
           {/* JointJS Canvas Container */}
           <div ref={canvasRef} className={styles.canvas} />
@@ -396,6 +402,28 @@ export default function EditorPage() {
         onClose={() => setShowMappingModal(false)}
         onConfirm={() => setShowMappingModal(false)}
       />
+
+      {/* No Types Warning Modal */}
+      <Modal
+        isOpen={showNoTypesModal}
+        onClose={() => setShowNoTypesModal(false)}
+        title="객체 타입 필요"
+        footer={
+          <button
+            className={styles.primaryButton}
+            onClick={() => setShowNoTypesModal(false)}
+          >
+            확인
+          </button>
+        }
+      >
+        <div style={{ padding: '10px 0' }}>
+          <p style={{ marginBottom: '10px' }}>CSV 파일을 업로드하기 전에 먼저 객체 타입을 생성해야 합니다.</p>
+          <p style={{ color: 'var(--local-text-secondary)', fontSize: '14px' }}>
+            좌측 사이드바에서 객체 타입을 추가하거나 JSON 파일을 임포트해주세요.
+          </p>
+        </div>
+      </Modal>
 
       {/* Save Success Modal */}
       <Modal

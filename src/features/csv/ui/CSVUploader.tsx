@@ -15,7 +15,11 @@ function validateFile(file: File): { valid: boolean; error?: string } {
   return { valid: true }
 }
 
-export function CSVUploader() {
+interface CSVUploaderProps {
+  onMappingRequired?: () => void
+}
+
+export function CSVUploader({ onMappingRequired }: CSVUploaderProps = {}) {
   const { uploadState, setFile, setUploadState, clearFile, parseFile } = useCSVStore()
   const types = useObjectTypeStore(state => state.types)
   const hasObjectTypes = types.length > 0
@@ -52,6 +56,13 @@ export function CSVUploader() {
 
     // Parse file
     await parseFile()
+
+    // Open mapping modal after successful parse
+    const currentState = useCSVStore.getState().uploadState
+    if (currentState.status === 'parsed' && onMappingRequired) {
+      console.log('✅ CSV parsed, opening mapping modal from CSVUploader')
+      onMappingRequired()
+    }
   }
 
   const handleClear = () => {
