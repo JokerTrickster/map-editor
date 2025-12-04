@@ -277,16 +277,17 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
 
   const ensureDefaultProperties = (properties: any[]): any[] => {
     const defaultProps = [
-      { key: 'name', label: '이름', type: 'text', required: true },
-      { key: 'position', label: '위치', type: 'text', required: true },
-      { key: 'points', label: '좌표', type: 'text', required: true },
-      { key: 'description', label: '설명', type: 'text', required: false }
+      { key: 'name', type: 'string', required: true },
+      { key: 'position', type: 'string', required: true },
+      { key: 'points', type: 'array', required: true },
+      { key: 'description', type: 'string', required: false }
     ]
 
     const existingKeys = new Set(properties.map(p => p.key))
     const missingProps = defaultProps.filter(p => !existingKeys.has(p.key))
 
-    return [...missingProps, ...properties]
+    // User properties first, then add missing default properties
+    return [...properties, ...missingProps]
   }
 
   const handleJsonUpload = (e: ChangeEvent<HTMLInputElement>) => {
