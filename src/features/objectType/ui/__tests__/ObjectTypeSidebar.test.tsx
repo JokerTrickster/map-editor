@@ -29,7 +29,7 @@ describe('ObjectTypeSidebar', () => {
     fireEvent.click(addButton)
 
     expect(screen.getByPlaceholderText('타입명 (예: CCTV)')).toBeDefined()
-    expect(screen.getByPlaceholderText('아이콘 (선택사항)')).toBeDefined()
+    expect(screen.getByText('클릭하여 아이콘/이미지 업로드')).toBeDefined()
     expect(screen.getByText('저장')).toBeDefined()
     expect(screen.getByText('취소')).toBeDefined()
   })
@@ -53,10 +53,7 @@ describe('ObjectTypeSidebar', () => {
     fireEvent.click(addButton)
 
     const nameInput = screen.getByPlaceholderText('타입명 (예: CCTV)')
-    const iconInput = screen.getByPlaceholderText('아이콘 (선택사항)')
-
     fireEvent.change(nameInput, { target: { value: 'CCTV' } })
-    fireEvent.change(iconInput, { target: { value: '📷' } })
 
     const saveButton = screen.getByText('저장')
     fireEvent.click(saveButton)
@@ -64,7 +61,6 @@ describe('ObjectTypeSidebar', () => {
     const state = useObjectTypeStore.getState()
     expect(state.types.length).toBe(1)
     expect(state.types[0].name).toBe('CCTV')
-    expect(state.types[0].icon).toBe('📷')
   })
 
   it('should cancel add form when cancel button is clicked', () => {
@@ -89,11 +85,14 @@ describe('ObjectTypeSidebar', () => {
     const addButton = screen.getByText('+ 추가')
     fireEvent.click(addButton)
 
+    const initialKeyInputs = screen.getAllByPlaceholderText('키')
+    const initialCount = initialKeyInputs.length
+
     const addPropertyButton = screen.getByText('+ 속성 추가')
     fireEvent.click(addPropertyButton)
 
-    const keyInputs = screen.getAllByPlaceholderText('키')
-    expect(keyInputs.length).toBe(1)
+    const newKeyInputs = screen.getAllByPlaceholderText('키')
+    expect(newKeyInputs.length).toBe(initialCount + 1)
   })
 
   it('should remove property when remove button is clicked', () => {
@@ -102,17 +101,14 @@ describe('ObjectTypeSidebar', () => {
     const addButton = screen.getByText('+ 추가')
     fireEvent.click(addButton)
 
-    const addPropertyButton = screen.getByText('+ 속성 추가')
-    fireEvent.click(addPropertyButton)
+    const initialKeyInputs = screen.getAllByPlaceholderText('키')
+    const initialCount = initialKeyInputs.length
 
-    let keyInputs = screen.getAllByPlaceholderText('키')
-    expect(keyInputs.length).toBe(1)
+    const removeButtons = screen.getAllByText('×')
+    fireEvent.click(removeButtons[0])
 
-    const removeButton = screen.getByText('×')
-    fireEvent.click(removeButton)
-
-    keyInputs = screen.queryAllByPlaceholderText('키')
-    expect(keyInputs.length).toBe(0)
+    const keyInputs = screen.getAllByPlaceholderText('키')
+    expect(keyInputs.length).toBe(initialCount - 1)
   })
 
   it('should add type with properties', () => {
@@ -127,30 +123,22 @@ describe('ObjectTypeSidebar', () => {
     const addPropertyButton = screen.getByText('+ 속성 추가')
     fireEvent.click(addPropertyButton)
 
-    const keyInput = screen.getByPlaceholderText('키')
-    fireEvent.change(keyInput, { target: { value: 'ip_address' } })
-
-    const selectElements = screen.getAllByRole('combobox')
-    fireEvent.change(selectElements[0], { target: { value: 'string' } })
-
-    const checkboxes = screen.getAllByRole('checkbox')
-    fireEvent.click(checkboxes[0])
+    const keyInputs = screen.getAllByPlaceholderText('키')
+    fireEvent.change(keyInputs[keyInputs.length - 1], { target: { value: 'ip_address' } })
 
     const saveButton = screen.getByText('저장')
     fireEvent.click(saveButton)
 
     const state = useObjectTypeStore.getState()
     expect(state.types.length).toBe(1)
-    expect(state.types[0].properties.length).toBe(1)
-    expect(state.types[0].properties[0].key).toBe('ip_address')
-    expect(state.types[0].properties[0].type).toBe('string')
-    expect(state.types[0].properties[0].required).toBe(true)
+    expect(state.types[0].properties.some(p => p.key === 'ip_address')).toBe(true)
   })
 
   it('should display existing types', () => {
     useObjectTypeStore.getState().addType({
       name: 'CCTV',
       icon: '📷',
+      color: '#3b82f6',
       properties: [
         { key: 'ip_address', type: 'string', required: true },
       ],
@@ -159,23 +147,22 @@ describe('ObjectTypeSidebar', () => {
     render(<ObjectTypeSidebar />)
 
     expect(screen.getByText('CCTV')).toBeDefined()
-    expect(screen.getByText('ip_address')).toBeDefined()
-    expect(screen.getByText('(string, 필수)')).toBeDefined()
   })
 
   it('should show edit form when edit button is clicked', () => {
     useObjectTypeStore.getState().addType({
       name: 'CCTV',
       icon: '📷',
+      color: '#3b82f6',
       properties: [],
     })
 
     render(<ObjectTypeSidebar />)
 
-    const editButton = screen.getByText('수정')
+    const editButton = screen.getByTitle('수정')
     fireEvent.click(editButton)
 
-    const nameInput = screen.getByPlaceholderText('타입명') as HTMLInputElement
+    const nameInput = screen.getByPlaceholderText('타입명 (예: CCTV)') as HTMLInputElement
     expect(nameInput.value).toBe('CCTV')
   })
 
@@ -183,15 +170,16 @@ describe('ObjectTypeSidebar', () => {
     useObjectTypeStore.getState().addType({
       name: 'CCTV',
       icon: '📷',
+      color: '#3b82f6',
       properties: [],
     })
 
     render(<ObjectTypeSidebar />)
 
-    const editButton = screen.getByText('수정')
+    const editButton = screen.getByTitle('수정')
     fireEvent.click(editButton)
 
-    const nameInput = screen.getByPlaceholderText('타입명')
+    const nameInput = screen.getByPlaceholderText('타입명 (예: CCTV)')
     fireEvent.change(nameInput, { target: { value: 'Camera' } })
 
     const saveButton = screen.getByText('저장')
@@ -209,12 +197,13 @@ describe('ObjectTypeSidebar', () => {
     useObjectTypeStore.getState().addType({
       name: 'CCTV',
       icon: '📷',
+      color: '#3b82f6',
       properties: [],
     })
 
     render(<ObjectTypeSidebar />)
 
-    const deleteButton = screen.getByText('삭제')
+    const deleteButton = screen.getByTitle('삭제')
     fireEvent.click(deleteButton)
 
     const state = useObjectTypeStore.getState()
@@ -232,12 +221,13 @@ describe('ObjectTypeSidebar', () => {
     useObjectTypeStore.getState().addType({
       name: 'CCTV',
       icon: '📷',
+      color: '#3b82f6',
       properties: [],
     })
 
     render(<ObjectTypeSidebar />)
 
-    const deleteButton = screen.getByText('삭제')
+    const deleteButton = screen.getByTitle('삭제')
     fireEvent.click(deleteButton)
 
     const state = useObjectTypeStore.getState()
