@@ -1,0 +1,38 @@
+{
+    "lightCctv": {
+        "ipAddress": "",
+        "linkedParkingLocationIds": [],
+        "linkedEmergencyBellIds": [],
+        "rightCctvIds": [],
+        "leftCctvIds": []
+    },
+    "warningCctv": {
+        "ipAddress": ""
+    },
+    "guideBoard": {
+        "ipAddress": "",
+        "leftDirectionIds": [],
+        "rightDirectionIds": []
+    },
+    "zone": {
+        "includedParkingLocationIds": []
+    },
+    "parkingLocation": {
+        "type": "",
+        "angle": 0
+    },
+    "arrow": {},
+    "column": {
+        "label": ""
+    },
+    "outLine": {},
+    "elevator": {},
+    "entrance": {},
+    "innerLine": {},
+    "carCharger": {},
+    "emergencyBell": {
+        "linkedCctvId": ""
+    },
+    "onePassReader": {},
+    "lights": {}
+}

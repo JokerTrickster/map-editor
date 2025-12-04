@@ -10,6 +10,7 @@ interface EditorHeaderProps {
   loadedFileName: string | null
   zoom: number
   theme: 'light' | 'dark'
+  hasObjectTypes: boolean
   onZoomIn: () => void
   onZoomOut: () => void
   onZoomReset: () => void
@@ -26,6 +27,7 @@ export function EditorHeader({
   loadedFileName,
   zoom,
   theme,
+  hasObjectTypes,
   onZoomIn,
   onZoomOut,
   onZoomReset,
@@ -74,7 +76,16 @@ export function EditorHeader({
           Save
         </button>
 
-        <button onClick={onUploadClick} className={styles.toolButton} title="Upload CSV">
+        <button
+          onClick={onUploadClick}
+          className={styles.toolButton}
+          title={hasObjectTypes ? "Upload CSV" : "객체 타입을 먼저 생성해주세요"}
+          disabled={!hasObjectTypes}
+          style={{
+            opacity: hasObjectTypes ? 1 : 0.5,
+            cursor: hasObjectTypes ? 'pointer' : 'not-allowed'
+          }}
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="17 8 12 3 7 8" />

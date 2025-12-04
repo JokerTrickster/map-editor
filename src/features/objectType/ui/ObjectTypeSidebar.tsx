@@ -275,6 +275,20 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
 
   const jsonInputRef = useRef<HTMLInputElement>(null)
 
+  const ensureDefaultProperties = (properties: any[]): any[] => {
+    const defaultProps = [
+      { key: 'name', label: '이름', type: 'text', required: true },
+      { key: 'position', label: '위치', type: 'text', required: true },
+      { key: 'points', label: '좌표', type: 'text', required: true },
+      { key: 'description', label: '설명', type: 'text', required: false }
+    ]
+
+    const existingKeys = new Set(properties.map(p => p.key))
+    const missingProps = defaultProps.filter(p => !existingKeys.has(p.key))
+
+    return [...missingProps, ...properties]
+  }
+
   const handleJsonUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -283,29 +297,87 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target?.result as string)
-        if (Array.isArray(json)) {
-          let addedCount = 0
-          json.forEach(item => {
-            if (item.name && Array.isArray(item.properties)) {
+        let addedCount = 0
+        const errors: string[] = []
+
+        // Check if it's an object with keys (new format)
+        if (typeof json === 'object' && json !== null && !Array.isArray(json)) {
+          Object.entries(json).forEach(([key, value]: [string, any]) => {
+            try {
+              // Skip null/undefined values
+              if (value === null || value === undefined) {
+                errors.push(`"${key}": 값이 null 또는 undefined입니다`)
+                return
+              }
+
+              // Use object key as name if name is not provided
+              const name = value.name || key
+
+              // Ensure properties array exists
+              const properties = Array.isArray(value.properties) ? value.properties : []
+
+              // Add default properties if missing
+              const completeProperties = ensureDefaultProperties(properties)
+
               addType({
-                name: item.name,
-                icon: item.icon || '',
-                color: item.color,
-                properties: item.properties
+                name: name,
+                icon: value.icon || '',
+                color: value.color || '#3b82f6',
+                properties: completeProperties
               })
               addedCount++
+            } catch (err) {
+              errors.push(`"${key}": ${err instanceof Error ? err.message : 'Unknown error'}`)
             }
           })
-          if (addedCount > 0) {
-            alert(`${addedCount} types imported successfully`)
-          } else {
-            setError('No valid types found in JSON')
-          }
+        }
+        // Support legacy array format
+        else if (Array.isArray(json)) {
+          json.forEach((item, index) => {
+            try {
+              // Skip null/undefined items
+              if (item === null || item === undefined) {
+                errors.push(`Object ${index + 1}: 값이 null 또는 undefined입니다`)
+                return
+              }
+
+              // For array format, use index as fallback name
+              const name = item.name || `Object_${index + 1}`
+
+              // Ensure properties array exists
+              const properties = Array.isArray(item.properties) ? item.properties : []
+
+              // Add default properties if missing
+              const completeProperties = ensureDefaultProperties(properties)
+
+              addType({
+                name: name,
+                icon: item.icon || '',
+                color: item.color || '#3b82f6',
+                properties: completeProperties
+              })
+              addedCount++
+            } catch (err) {
+              errors.push(`Object ${index + 1}: ${err instanceof Error ? err.message : 'Unknown error'}`)
+            }
+          })
         } else {
-          setError('Invalid JSON format: Expected an array')
+          setError('Invalid JSON format: Expected an object or array')
+          if (jsonInputRef.current) jsonInputRef.current.value = ''
+          return
+        }
+
+        // Show results
+        if (errors.length > 0) {
+          const errorMsg = `${addedCount}개 생성됨, ${errors.length}개 실패:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? `\n...외 ${errors.length - 5}개` : ''}`
+          setError(errorMsg)
+        } else if (addedCount > 0) {
+          alert(`✅ ${addedCount}개의 객체 타입이 생성되었습니다`)
+        } else {
+          setError('유효한 객체 타입을 찾을 수 없습니다')
         }
       } catch (err) {
-        setError('Failed to parse JSON')
+        setError('Failed to parse JSON: ' + (err instanceof Error ? err.message : 'Unknown error'))
       }
       if (jsonInputRef.current) jsonInputRef.current.value = ''
     }

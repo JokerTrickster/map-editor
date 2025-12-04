@@ -9,6 +9,7 @@ import { dia } from '@joint/core'
 import { useTheme } from '@/shared/context/ThemeContext'
 import { useFloorStore } from '@/shared/store/floorStore'
 import { useObjectTypeStore } from '@/shared/store/objectTypeStore'
+import { useProjectStore } from '@/shared/store/projectStore'
 import { useCSVStore } from '@/features/csv/model/csvStore'
 import { FloorTabs } from '@/widgets/editor/FloorTabs'
 import { CSVUploader } from '@/features/csv'
@@ -36,6 +37,8 @@ export default function EditorPage() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
   const { currentFloor, updateFloor, floors, updateFloorMapData } = useFloorStore()
+  const currentLot = useProjectStore(state => state.currentLot)
+  const setCurrentLot = useObjectTypeStore(state => state.setCurrentLot)
 
   // Refs
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -112,6 +115,13 @@ export default function EditorPage() {
     selectedObjectType,
     () => setSelectedObjectType(null)
   )
+
+  // Set current lot in objectTypeStore when project loads
+  useEffect(() => {
+    if (currentLot) {
+      setCurrentLot(currentLot)
+    }
+  }, [currentLot, setCurrentLot])
 
   // Auto-save current floor when switching floors
   useEffect(() => {
@@ -231,10 +241,7 @@ export default function EditorPage() {
 
   // Handlers
   const handleUploadClick = () => {
-    if (types.length === 0) {
-      alert('객체 타입이 없습니다. 먼저 객체 타입을 생성해주세요.')
-      return
-    }
+    // Button is disabled when no object types, so this will only be called when types exist
     csvInputRef.current?.click()
   }
 
@@ -309,6 +316,7 @@ export default function EditorPage() {
         loadedFileName={loadedFileName}
         zoom={zoom}
         theme={theme}
+        hasObjectTypes={types.length > 0}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}

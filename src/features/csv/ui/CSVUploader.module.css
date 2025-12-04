@@ -48,6 +48,11 @@
   background-color: var(--color-surface);
 }
 
+.warningCard {
+  border-color: #f59e0b;
+  background-color: var(--color-surface);
+}
+
 /* Spinner */
 .spinner {
   width: 48px;
@@ -74,6 +79,13 @@
 
 .errorIcon {
   color: var(--color-error);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.warningIcon {
+  color: #f59e0b;
   display: flex;
   align-items: center;
   justify-content: center;

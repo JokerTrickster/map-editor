@@ -1,4 +1,5 @@
 import { useCSVStore } from '../model/csvStore'
+import { useObjectTypeStore } from '@/shared/store/objectTypeStore'
 import { UploadDropzone } from './UploadDropzone'
 import styles from './CSVUploader.module.css'
 
@@ -16,8 +17,19 @@ function validateFile(file: File): { valid: boolean; error?: string } {
 
 export function CSVUploader() {
   const { uploadState, setFile, setUploadState, clearFile, parseFile } = useCSVStore()
+  const types = useObjectTypeStore(state => state.types)
+  const hasObjectTypes = types.length > 0
 
   const handleFileSelect = async (file: File) => {
+    // Check if object types exist
+    if (!hasObjectTypes) {
+      setUploadState({
+        status: 'error',
+        message: '객체 타입을 먼저 생성해주세요. 좌측 사이드바에서 객체 타입을 추가하거나 Import할 수 있습니다.',
+      })
+      return
+    }
+
     // Validate file
     const validation = validateFile(file)
     if (!validation.valid) {
@@ -50,8 +62,32 @@ export function CSVUploader() {
     setUploadState({ status: 'idle' })
   }
 
-  // Idle state - show dropzone
+  // Idle state - show dropzone or warning
   if (uploadState.status === 'idle') {
+    if (!hasObjectTypes) {
+      return (
+        <div className={styles.container}>
+          <div className={`${styles.statusCard} ${styles.warningCard}`}>
+            <div className={styles.warningIcon}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <div className={styles.statusText}>
+              <p className={styles.statusTitle}>객체 타입이 필요합니다</p>
+              <p className={styles.statusDescription}>
+                CSV 파일을 업로드하기 전에 먼저 객체 타입을 생성해주세요.
+                <br />
+                좌측 사이드바에서 객체 타입을 추가하거나 Import할 수 있습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className={styles.container}>
         <UploadDropzone onFileSelect={handleFileSelect} />

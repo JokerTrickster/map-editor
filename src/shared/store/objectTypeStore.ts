@@ -1,6 +1,7 @@
 /**
  * Object Type Store - Manages object type definitions and mappings
- * Persists to localStorage: map-editor-object-types
+ * Persists to localStorage: map-editor-object-types-{lotId}
+ * Object types are now scoped per project (parking lot)
  */
 
 import { create } from 'zustand';
@@ -32,8 +33,12 @@ export interface Mapping {
 }
 
 interface ObjectTypeState {
+  currentLotId: string | null;
   types: ObjectType[];
   mappings: Mapping[];
+
+  // Lot management
+  setCurrentLot: (lotId: string | null) => void;
 
   // Type actions
   addType: (type: Omit<ObjectType, 'id' | 'created' | 'modified'>) => void;
@@ -49,22 +54,47 @@ interface ObjectTypeState {
   getMappingByEntity: (floorId: string, entityHandle: string) => Mapping | undefined;
 }
 
-const STORAGE_KEY = 'map-editor-object-types';
+const getStorageKey = (lotId: string | null): string => {
+  return lotId ? `map-editor-object-types-${lotId}` : 'map-editor-object-types-global';
+};
 
-// Load initial state from localStorage
-const loadInitialState = (): Pick<ObjectTypeState, 'types' | 'mappings'> => {
+// Load initial state from localStorage for a specific lot
+const loadInitialState = (lotId: string | null): Pick<ObjectTypeState, 'types' | 'mappings'> => {
   const stored = storage.get<{ types: ObjectType[]; mappings: Mapping[] }>(
-    STORAGE_KEY,
+    getStorageKey(lotId),
     { types: [], mappings: [] }
   );
   return stored;
 };
 
 export const useObjectTypeStore = create<ObjectTypeState>((set, get) => {
-  const initialState = loadInitialState();
+  const initialState = loadInitialState(null);
 
   return {
+    currentLotId: null,
     ...initialState,
+
+    setCurrentLot: (lotId) => {
+      const state = get();
+
+      // Save current lot's data before switching
+      if (state.currentLotId) {
+        const currentState = {
+          types: state.types,
+          mappings: state.mappings,
+        };
+        storage.set(getStorageKey(state.currentLotId), currentState);
+      }
+
+      // Load new lot's data
+      const newState = loadInitialState(lotId);
+
+      set({
+        currentLotId: lotId,
+        types: newState.types,
+        mappings: newState.mappings,
+      });
+    },
 
     addType: (type) => {
       const state = get();
@@ -92,8 +122,8 @@ export const useObjectTypeStore = create<ObjectTypeState>((set, get) => {
         mappings: state.mappings,
       };
 
-      // Persist to localStorage
-      storage.set(STORAGE_KEY, newState);
+      // Persist to localStorage with current lot ID
+      storage.set(getStorageKey(state.currentLotId), newState);
 
       set({ types: newTypes });
     },
@@ -129,8 +159,8 @@ export const useObjectTypeStore = create<ObjectTypeState>((set, get) => {
         mappings: state.mappings,
       };
 
-      // Persist to localStorage
-      storage.set(STORAGE_KEY, newState);
+      // Persist to localStorage with current lot ID
+      storage.set(getStorageKey(state.currentLotId), newState);
 
       set({ types: newTypes });
     },
@@ -151,8 +181,8 @@ export const useObjectTypeStore = create<ObjectTypeState>((set, get) => {
         mappings: state.mappings,
       };
 
-      // Persist to localStorage
-      storage.set(STORAGE_KEY, newState);
+      // Persist to localStorage with current lot ID
+      storage.set(getStorageKey(state.currentLotId), newState);
 
       set({ types: newTypes });
     },
@@ -183,8 +213,8 @@ export const useObjectTypeStore = create<ObjectTypeState>((set, get) => {
         mappings: newMappings,
       };
 
-      // Persist to localStorage
-      storage.set(STORAGE_KEY, newState);
+      // Persist to localStorage with current lot ID
+      storage.set(getStorageKey(state.currentLotId), newState);
 
       set({ mappings: newMappings });
     },
@@ -197,8 +227,8 @@ export const useObjectTypeStore = create<ObjectTypeState>((set, get) => {
         mappings: newMappings,
       };
 
-      // Persist to localStorage
-      storage.set(STORAGE_KEY, newState);
+      // Persist to localStorage with current lot ID
+      storage.set(getStorageKey(state.currentLotId), newState);
 
       set({ mappings: newMappings });
     },
