@@ -24,6 +24,20 @@ function SearchableTypeSelect({ value, options, onChange, placeholder = "매핑 
 
   const selectedOption = options.find(o => o.id === value)
 
+  // Check if icon is URL or color code
+  const getIconDisplay = (option: ObjectType) => {
+    if (!option.icon) return null
+    const isUrl = option.icon.startsWith('/') || option.icon.startsWith('http')
+    const isColor = option.icon.startsWith('#')
+
+    if (isUrl) {
+      return <img src={option.icon} alt="" style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover' }} />
+    } else if (isColor) {
+      return <div style={{ width: 20, height: 20, borderRadius: 4, background: option.icon, border: '1px solid rgba(255,255,255,0.2)' }} />
+    }
+    return null
+  }
+
   // Sync input with selection when closed
   useEffect(() => {
     if (!isOpen) {
@@ -55,18 +69,22 @@ function SearchableTypeSelect({ value, options, onChange, placeholder = "매핑 
 
   return (
     <div className={styles.searchableSelect} ref={containerRef}>
-      <input
-        type="text"
-        className={styles.searchInput}
-        value={isOpen ? searchTerm : (selectedOption?.name || '')}
-        placeholder={placeholder}
-        onFocus={handleFocus}
-        onChange={(e) => {
-          setSearchTerm(e.target.value)
-          if (!isOpen) setIsOpen(true)
-        }}
-        onClick={() => setIsOpen(true)}
-      />
+      <div className={styles.selectTrigger}>
+        {selectedOption && getIconDisplay(selectedOption)}
+        <input
+          type="text"
+          className={styles.searchInput}
+          value={isOpen ? searchTerm : (selectedOption?.name || '')}
+          placeholder={placeholder}
+          onFocus={handleFocus}
+          onChange={(e) => {
+            setSearchTerm(e.target.value)
+            if (!isOpen) setIsOpen(true)
+          }}
+          onClick={() => setIsOpen(true)}
+          style={{ paddingLeft: selectedOption ? '32px' : '12px' }}
+        />
+      </div>
       {isOpen && (
         <div className={styles.dropdownList}>
           <div
@@ -88,7 +106,10 @@ function SearchableTypeSelect({ value, options, onChange, placeholder = "매핑 
                   setIsOpen(false)
                 }}
               >
-                {option.name}
+                <div className={styles.dropdownItemContent}>
+                  {getIconDisplay(option)}
+                  <span>{option.name}</span>
+                </div>
               </div>
             ))
           ) : (
