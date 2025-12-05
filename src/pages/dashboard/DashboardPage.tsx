@@ -4,16 +4,19 @@ import { useProjectStore, type ParkingLot } from '@/shared/store'
 import ParkingLotCard from '@/widgets/dashboard/ParkingLotCard'
 import CreateLotModal from '@/widgets/dashboard/CreateLotModal'
 import DeleteConfirmModal from '@/widgets/dashboard/DeleteConfirmModal'
+import { TemplateSelectModal, loadTemplate, type TemplateId } from '@/features/template'
 import styles from './DashboardPage.module.css'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const { lots, createLot, updateLot, deleteLot, setCurrentLot } = useProjectStore()
+  const { lots, createLot, updateLot, deleteLot, setCurrentLot, applyTemplate } = useProjectStore()
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [editingLot, setEditingLot] = useState<ParkingLot | null>(null)
   const [deletingLotId, setDeletingLotId] = useState<string | null>(null)
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleLogout = () => {
@@ -61,13 +64,18 @@ export default function DashboardPage() {
       if (editingLot) {
         // Update existing lot
         updateLot(editingLot.id, data)
+        setIsCreateModalOpen(false)
+        setEditingLot(null)
+        setError(null)
       } else {
-        // Create new lot
-        createLot(data)
+        // Create new lot and open template selection
+        const newLot = createLot(data)
+        setCreatedProjectId(newLot.id)
+        setIsCreateModalOpen(false)
+        setError(null)
+        // Open template selection modal
+        setIsTemplateModalOpen(true)
       }
-      setIsCreateModalOpen(false)
-      setEditingLot(null)
-      setError(null)
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message)
@@ -75,6 +83,37 @@ export default function DashboardPage() {
         setError('An unexpected error occurred')
       }
     }
+  }
+
+  const handleTemplateSelect = async (templateId: string) => {
+    if (!createdProjectId) return
+
+    try {
+      // Load template
+      const template = await loadTemplate(templateId as TemplateId)
+
+      // Apply template to project
+      applyTemplate(createdProjectId, template)
+
+      // Navigate to editor
+      setCurrentLot(createdProjectId)
+      setIsTemplateModalOpen(false)
+      setCreatedProjectId(null)
+      navigate('/editor')
+    } catch (err) {
+      console.error('Failed to apply template:', err)
+      setError('Failed to apply template. Please try again.')
+      setIsTemplateModalOpen(false)
+    }
+  }
+
+  const handleTemplateModalClose = () => {
+    // If user closes template modal without selecting, delete the created project
+    if (createdProjectId) {
+      deleteLot(createdProjectId)
+      setCreatedProjectId(null)
+    }
+    setIsTemplateModalOpen(false)
   }
 
   const handleSelectLot = (lotId: string) => {
@@ -220,6 +259,12 @@ export default function DashboardPage() {
         editingLot={editingLot}
         onSubmit={handleSubmit}
         error={error}
+      />
+
+      <TemplateSelectModal
+        isOpen={isTemplateModalOpen}
+        onClose={handleTemplateModalClose}
+        onSelect={handleTemplateSelect}
       />
 
       <DeleteConfirmModal

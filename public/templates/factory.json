@@ -1,0 +1,12 @@
+{
+  "id": "factory",
+  "name": "공장",
+  "description": "스마트 공장 관리를 위한 템플릿 (준비중)",
+  "version": "0.1.0",
+  "category": "factory",
+  "thumbnail": "/assets/templates/factory-thumb.svg",
+  "status": "coming-soon",
+  "objectTypes": {},
+  "relationTypes": {},
+  "assets": []
+}

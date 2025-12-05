@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import * as schemas from './mapSchema';
+import * as templateSchemas from './templateSchema';
 
 /**
  * TypeScript types inferred from Zod schemas
@@ -74,3 +75,11 @@ export interface SensorProperties {
   range?: number;
   [key: string]: unknown;
 }
+
+/**
+ * Template types
+ */
+export type Template = z.infer<typeof templateSchemas.TemplateSchema>;
+export type TemplateObjectType = z.infer<typeof templateSchemas.TemplateObjectTypeSchema>;
+export type TemplateRelationType = z.infer<typeof templateSchemas.TemplateRelationTypeSchema>;
+export type TemplateAsset = z.infer<typeof templateSchemas.TemplateAssetSchema>;

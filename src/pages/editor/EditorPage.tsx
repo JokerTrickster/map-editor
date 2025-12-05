@@ -41,6 +41,7 @@ export default function EditorPage() {
   const { theme, toggleTheme } = useTheme()
   const { currentFloor, updateFloor, floors, updateFloorMapData } = useFloorStore()
   const currentLot = useProjectStore(state => state.currentLot)
+  const currentLotData = useProjectStore(state => state.getLotById(state.currentLot || ''))
   const setCurrentLot = useObjectTypeStore(state => state.setCurrentLot)
 
   // Refs
@@ -378,7 +379,13 @@ export default function EditorPage() {
 
       <main className={styles.main}>
         {/* Left Sidebar */}
-        <ResizablePanel side="left" defaultWidth={360} minWidth={200} maxWidth={500} defaultCollapsed={true}>
+        <ResizablePanel
+          side="left"
+          defaultWidth={360}
+          minWidth={200}
+          maxWidth={500}
+          defaultCollapsed={!currentLotData?.templateId}
+        >
           <ObjectTypeSidebar
             selectedTypeId={selectedObjectType?.id}
             onSelectType={setSelectedObjectType}

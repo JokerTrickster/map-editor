@@ -1,0 +1,237 @@
+{
+  "id": "construction",
+  "name": "공사현장",
+  "description": "건설 현장 안전 관리를 위한 템플릿 - CCTV, 위험구역, 안전 장비, 출입구 등 공사현장 관리에 필요한 객체 타입을 제공합니다.",
+  "version": "1.0.0",
+  "category": "construction",
+  "thumbnail": "/assets/templates/construction-thumb.svg",
+  "status": "available",
+  "objectTypes": {
+    "safetyCctv": {
+      "displayName": "안전 CCTV",
+      "icon": "cctv-safety",
+      "category": "security",
+      "defaultProperties": {
+        "ipAddress": "",
+        "monitoringArea": "",
+        "recordingEnabled": true
+      },
+      "defaultStyle": {
+        "color": "#3B82F6",
+        "size": 32,
+        "icon": "cctv"
+      }
+    },
+    "hazardZone": {
+      "displayName": "위험 구역",
+      "icon": "warning",
+      "category": "safety",
+      "defaultProperties": {
+        "hazardLevel": "high",
+        "hazardType": "falling",
+        "description": ""
+      },
+      "defaultStyle": {
+        "color": "#EF4444",
+        "fillOpacity": 0.3,
+        "strokeWidth": 3,
+        "strokeColor": "#DC2626"
+      }
+    },
+    "safetyZone": {
+      "displayName": "안전 구역",
+      "icon": "shield",
+      "category": "safety",
+      "defaultProperties": {
+        "capacity": 0,
+        "emergencyExit": true
+      },
+      "defaultStyle": {
+        "color": "#10B981",
+        "fillOpacity": 0.2,
+        "strokeWidth": 2,
+        "strokeColor": "#059669"
+      }
+    },
+    "safetyCone": {
+      "displayName": "안전 콘",
+      "icon": "cone",
+      "category": "equipment",
+      "defaultProperties": {
+        "height": 70
+      },
+      "defaultStyle": {
+        "color": "#F59E0B",
+        "size": 24,
+        "icon": "cone"
+      }
+    },
+    "barrier": {
+      "displayName": "바리케이드",
+      "icon": "barrier",
+      "category": "equipment",
+      "defaultProperties": {
+        "length": 0,
+        "type": "fixed"
+      },
+      "defaultStyle": {
+        "color": "#FBBF24",
+        "strokeWidth": 4,
+        "strokeColor": "#F59E0B"
+      }
+    },
+    "constructionEntrance": {
+      "displayName": "출입구",
+      "icon": "gate",
+      "category": "navigation",
+      "defaultProperties": {
+        "accessControl": true,
+        "workerOnly": false
+      },
+      "defaultStyle": {
+        "color": "#14B8A6",
+        "size": 36,
+        "icon": "gate"
+      }
+    },
+    "crane": {
+      "displayName": "크레인",
+      "icon": "crane",
+      "category": "equipment",
+      "defaultProperties": {
+        "model": "",
+        "maxLoad": 0,
+        "operatingRadius": 0
+      },
+      "defaultStyle": {
+        "color": "#F59E0B",
+        "size": 48,
+        "icon": "crane"
+      }
+    },
+    "scaffold": {
+      "displayName": "비계",
+      "icon": "scaffold",
+      "category": "structure",
+      "defaultProperties": {
+        "height": 0,
+        "inspectionDate": ""
+      },
+      "defaultStyle": {
+        "color": "#6B7280",
+        "fillOpacity": 0.4,
+        "strokeWidth": 2
+      }
+    },
+    "emergencyAssembly": {
+      "displayName": "비상 집결지",
+      "icon": "assembly",
+      "category": "safety",
+      "defaultProperties": {
+        "capacity": 0
+      },
+      "defaultStyle": {
+        "color": "#10B981",
+        "size": 40,
+        "icon": "assembly"
+      }
+    },
+    "fireExtinguisher": {
+      "displayName": "소화기",
+      "icon": "extinguisher",
+      "category": "safety",
+      "defaultProperties": {
+        "type": "ABC",
+        "expirationDate": ""
+      },
+      "defaultStyle": {
+        "color": "#DC2626",
+        "size": 28,
+        "icon": "extinguisher"
+      }
+    },
+    "firstAidKit": {
+      "displayName": "구급함",
+      "icon": "medkit",
+      "category": "safety",
+      "defaultProperties": {
+        "lastChecked": ""
+      },
+      "defaultStyle": {
+        "color": "#EF4444",
+        "size": 30,
+        "icon": "medkit"
+      }
+    },
+    "materialStorage": {
+      "displayName": "자재 보관소",
+      "icon": "storage",
+      "category": "facility",
+      "defaultProperties": {
+        "materialType": "",
+        "capacity": 0
+      },
+      "defaultStyle": {
+        "color": "#8B5CF6",
+        "fillOpacity": 0.2,
+        "strokeWidth": 2
+      }
+    }
+  },
+  "relationTypes": {
+    "monitors": {
+      "displayName": "감시",
+      "description": "CCTV가 특정 구역을 감시함",
+      "allowedPairs": [
+        ["safetyCctv", "hazardZone"],
+        ["safetyCctv", "constructionEntrance"]
+      ]
+    },
+    "protects": {
+      "displayName": "보호",
+      "description": "안전 장비가 구역을 보호함",
+      "allowedPairs": [
+        ["barrier", "hazardZone"],
+        ["safetyCone", "hazardZone"]
+      ]
+    },
+    "accessTo": {
+      "displayName": "접근",
+      "description": "출입구에서 접근 가능한 구역",
+      "allowedPairs": [
+        ["constructionEntrance", "safetyZone"],
+        ["constructionEntrance", "hazardZone"]
+      ]
+    }
+  },
+  "assets": [
+    {
+      "id": "cone-icon",
+      "name": "안전 콘 아이콘",
+      "type": "icon",
+      "url": "/assets/icons/cone.svg",
+      "category": "equipment"
+    },
+    {
+      "id": "warning-icon",
+      "name": "경고 아이콘",
+      "type": "icon",
+      "url": "/assets/icons/warning.svg",
+      "category": "safety"
+    },
+    {
+      "id": "crane-icon",
+      "name": "크레인 아이콘",
+      "type": "icon",
+      "url": "/assets/icons/crane.svg",
+      "category": "equipment"
+    },
+    {
+      "id": "extinguisher-icon",
+      "name": "소화기 아이콘",
+      "type": "icon",
+      "url": "/assets/icons/extinguisher.svg",
+      "category": "safety"
+    }
+  ]
+}

@@ -3,11 +3,101 @@
  * Maps CSV layers to Object Types
  */
 
-import { useState, useEffect } from 'react'
-import { useObjectTypeStore } from '@/shared/store/objectTypeStore'
+import { useState, useEffect, useRef } from 'react'
+import { useObjectTypeStore, ObjectType } from '@/shared/store/objectTypeStore'
 import { useCSVStore } from '@/features/csv/model/csvStore'
 import { useFloorStore } from '@/shared/store/floorStore'
 import styles from './LayerMappingModal.module.css'
+
+interface SearchableTypeSelectProps {
+  value: string
+  options: ObjectType[]
+  onChange: (value: string) => void
+  placeholder?: string
+}
+
+function SearchableTypeSelect({ value, options, onChange, placeholder = "매핑 안함" }: SearchableTypeSelectProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const selectedOption = options.find(o => o.id === value)
+
+  // Sync input with selection when closed
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm(selectedOption?.name || '')
+    }
+  }, [isOpen, selectedOption])
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+        // Revert search term to selected name is handled by the other useEffect
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const filteredOptions = options.filter(option =>
+    option.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const handleFocus = () => {
+    setIsOpen(true)
+    // Optional: Select all text on focus for easier replacement
+    // e.target.select()
+  }
+
+  return (
+    <div className={styles.searchableSelect} ref={containerRef}>
+      <input
+        type="text"
+        className={styles.searchInput}
+        value={isOpen ? searchTerm : (selectedOption?.name || '')}
+        placeholder={placeholder}
+        onFocus={handleFocus}
+        onChange={(e) => {
+          setSearchTerm(e.target.value)
+          if (!isOpen) setIsOpen(true)
+        }}
+        onClick={() => setIsOpen(true)}
+      />
+      {isOpen && (
+        <div className={styles.dropdownList}>
+          <div
+            className={`${styles.dropdownItem} ${!value ? styles.selected : ''}`}
+            onClick={() => {
+              onChange('')
+              setIsOpen(false)
+            }}
+          >
+            {placeholder}
+          </div>
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map(option => (
+              <div
+                key={option.id}
+                className={`${styles.dropdownItem} ${option.id === value ? styles.selected : ''}`}
+                onClick={() => {
+                  onChange(option.id)
+                  setIsOpen(false)
+                }}
+              >
+                {option.name}
+              </div>
+            ))
+          ) : (
+            <div className={styles.noResults}>검색 결과 없음</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface LayerMappingModalProps {
   isOpen: boolean
@@ -121,18 +211,11 @@ export function LayerMappingModal({ isOpen, onClose, onConfirm }: LayerMappingMo
                 <div className={styles.layerName}>{layer.layer}</div>
                 <div className={styles.layerCount}>{layer.entities.length}개 엔티티</div>
               </div>
-              <select
+              <SearchableTypeSelect
                 value={layerMappings[layer.layer] || ''}
-                onChange={(e) => handleMappingChange(layer.layer, e.target.value)}
-                className={styles.typeSelect}
-              >
-                <option value="">매핑 안함</option>
-                {types.map(type => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
+                options={types}
+                onChange={(value) => handleMappingChange(layer.layer, value)}
+              />
             </div>
           ))}
         </div>

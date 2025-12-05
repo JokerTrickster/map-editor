@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { generateId, getCurrentTimestamp, storage } from '../lib/utils';
+import type { Template } from '@/entities/schema/types';
 
 export interface ParkingLot {
   id: string;
@@ -12,6 +13,11 @@ export interface ParkingLot {
   description?: string;
   created: string;
   modified: string;
+  templateId?: string;
+  templateVersion?: string;
+  availableObjectTypes?: Template['objectTypes'];
+  relationTypes?: Template['relationTypes'];
+  assets?: Template['assets'];
 }
 
 interface ProjectState {
@@ -19,11 +25,12 @@ interface ProjectState {
   currentLot: string | null;
 
   // Actions
-  createLot: (lot: Omit<ParkingLot, 'id' | 'created' | 'modified'>) => void;
+  createLot: (lot: Omit<ParkingLot, 'id' | 'created' | 'modified'>) => ParkingLot;
   updateLot: (id: string, updates: Partial<ParkingLot>) => void;
   deleteLot: (id: string) => void;
   setCurrentLot: (id: string | null) => void;
   getLotById: (id: string) => ParkingLot | undefined;
+  applyTemplate: (id: string, template: Template) => void;
 }
 
 const STORAGE_KEY = 'map-editor-projects';
@@ -73,6 +80,8 @@ export const useProjectStore = create<ProjectState>((set, get) => {
       storage.set(STORAGE_KEY, newState);
 
       set(newState);
+
+      return newLot;
     },
 
     updateLot: (id, updates) => {
@@ -149,6 +158,36 @@ export const useProjectStore = create<ProjectState>((set, get) => {
 
     getLotById: (id) => {
       return get().lots.find((l) => l.id === id);
+    },
+
+    applyTemplate: (id, template) => {
+      const state = get();
+      const lot = state.lots.find((l) => l.id === id);
+
+      if (!lot) {
+        throw new Error(`Parking lot with id "${id}" not found`);
+      }
+
+      const updatedLot: ParkingLot = {
+        ...lot,
+        templateId: template.id,
+        templateVersion: template.version,
+        availableObjectTypes: template.objectTypes,
+        relationTypes: template.relationTypes,
+        assets: template.assets,
+        modified: getCurrentTimestamp(),
+      };
+
+      const newLots = state.lots.map((l) => (l.id === id ? updatedLot : l));
+      const newState = { ...state, lots: newLots };
+
+      // Persist to localStorage
+      storage.set(STORAGE_KEY, {
+        lots: newState.lots,
+        currentLot: newState.currentLot,
+      });
+
+      set({ lots: newLots });
     },
   };
 });

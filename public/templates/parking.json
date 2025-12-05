@@ -1,0 +1,267 @@
+{
+  "id": "parking",
+  "name": "주차장",
+  "description": "주차장 도면 편집을 위한 템플릿 - CCTV, 주차구역, 기둥, 엘리베이터 등 주차장 관리에 필요한 모든 객체 타입을 제공합니다.",
+  "version": "1.0.0",
+  "category": "parking",
+  "thumbnail": "/assets/templates/parking-thumb.svg",
+  "status": "available",
+  "objectTypes": {
+    "lightCctv": {
+      "displayName": "조명 CCTV",
+      "icon": "cctv-light",
+      "category": "security",
+      "defaultProperties": {
+        "ipAddress": "",
+        "linkedParkingLocationIds": [],
+        "linkedEmergencyBellIds": [],
+        "rightCctvIds": [],
+        "leftCctvIds": []
+      },
+      "defaultStyle": {
+        "color": "#3B82F6",
+        "size": 32,
+        "icon": "cctv"
+      }
+    },
+    "warningCctv": {
+      "displayName": "경고 CCTV",
+      "icon": "cctv-warning",
+      "category": "security",
+      "defaultProperties": {
+        "ipAddress": ""
+      },
+      "defaultStyle": {
+        "color": "#EF4444",
+        "size": 32,
+        "icon": "cctv-warning"
+      }
+    },
+    "guideBoard": {
+      "displayName": "안내판",
+      "icon": "sign",
+      "category": "navigation",
+      "defaultProperties": {
+        "ipAddress": "",
+        "leftDirectionIds": [],
+        "rightDirectionIds": []
+      },
+      "defaultStyle": {
+        "color": "#10B981",
+        "size": 40,
+        "icon": "sign"
+      }
+    },
+    "zone": {
+      "displayName": "존",
+      "icon": "zone",
+      "category": "area",
+      "defaultProperties": {
+        "includedParkingLocationIds": []
+      },
+      "defaultStyle": {
+        "color": "#8B5CF6",
+        "fillOpacity": 0.2,
+        "strokeWidth": 2,
+        "strokeColor": "#8B5CF6"
+      }
+    },
+    "parkingLocation": {
+      "displayName": "주차 구역",
+      "icon": "parking",
+      "category": "parking",
+      "defaultProperties": {
+        "type": "regular",
+        "angle": 0,
+        "number": ""
+      },
+      "defaultStyle": {
+        "color": "#10B981",
+        "fillOpacity": 0.3,
+        "strokeWidth": 2,
+        "strokeColor": "#059669"
+      }
+    },
+    "arrow": {
+      "displayName": "화살표",
+      "icon": "arrow",
+      "category": "navigation",
+      "defaultProperties": {},
+      "defaultStyle": {
+        "color": "#F59E0B",
+        "strokeWidth": 3
+      }
+    },
+    "column": {
+      "displayName": "기둥",
+      "icon": "column",
+      "category": "structure",
+      "defaultProperties": {
+        "label": ""
+      },
+      "defaultStyle": {
+        "color": "#6B7280",
+        "fillOpacity": 0.8
+      }
+    },
+    "outLine": {
+      "displayName": "외곽선",
+      "icon": "border",
+      "category": "structure",
+      "defaultProperties": {},
+      "defaultStyle": {
+        "color": "#1F2937",
+        "strokeWidth": 3
+      }
+    },
+    "innerLine": {
+      "displayName": "내부선",
+      "icon": "line",
+      "category": "structure",
+      "defaultProperties": {},
+      "defaultStyle": {
+        "color": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    "elevator": {
+      "displayName": "엘리베이터",
+      "icon": "elevator",
+      "category": "facility",
+      "defaultProperties": {},
+      "defaultStyle": {
+        "color": "#EC4899",
+        "size": 36,
+        "icon": "elevator"
+      }
+    },
+    "entrance": {
+      "displayName": "입구/출구",
+      "icon": "door",
+      "category": "navigation",
+      "defaultProperties": {
+        "type": "entrance"
+      },
+      "defaultStyle": {
+        "color": "#14B8A6",
+        "size": 36,
+        "icon": "door"
+      }
+    },
+    "carCharger": {
+      "displayName": "전기차 충전기",
+      "icon": "charging",
+      "category": "facility",
+      "defaultProperties": {
+        "powerOutput": 7,
+        "chargingType": "AC",
+        "connectorType": "Type2"
+      },
+      "defaultStyle": {
+        "color": "#84CC16",
+        "size": 32,
+        "icon": "charging"
+      }
+    },
+    "emergencyBell": {
+      "displayName": "비상벨",
+      "icon": "bell",
+      "category": "security",
+      "defaultProperties": {
+        "linkedCctvId": ""
+      },
+      "defaultStyle": {
+        "color": "#DC2626",
+        "size": 28,
+        "icon": "bell"
+      }
+    },
+    "onePassReader": {
+      "displayName": "원패스 리더기",
+      "icon": "reader",
+      "category": "security",
+      "defaultProperties": {},
+      "defaultStyle": {
+        "color": "#6366F1",
+        "size": 30,
+        "icon": "reader"
+      }
+    },
+    "lights": {
+      "displayName": "조명",
+      "icon": "light",
+      "category": "facility",
+      "defaultProperties": {},
+      "defaultStyle": {
+        "color": "#FBBF24",
+        "size": 24,
+        "icon": "light"
+      }
+    }
+  },
+  "relationTypes": {
+    "linkedTo": {
+      "displayName": "연결됨",
+      "description": "두 객체가 논리적으로 연결되어 있음",
+      "allowedPairs": [
+        ["lightCctv", "parkingLocation"],
+        ["lightCctv", "emergencyBell"],
+        ["emergencyBell", "lightCctv"],
+        ["guideBoard", "parkingLocation"],
+        ["guideBoard", "zone"]
+      ]
+    },
+    "contains": {
+      "displayName": "포함",
+      "description": "한 객체가 다른 객체를 포함함",
+      "allowedPairs": [
+        ["zone", "parkingLocation"],
+        ["zone", "lightCctv"]
+      ]
+    },
+    "adjacent": {
+      "displayName": "인접",
+      "description": "두 CCTV가 서로 인접해 있음",
+      "allowedPairs": [
+        ["lightCctv", "lightCctv"]
+      ]
+    }
+  },
+  "assets": [
+    {
+      "id": "cctv-icon",
+      "name": "CCTV 아이콘",
+      "type": "icon",
+      "url": "/assets/icons/cctv.svg",
+      "category": "security"
+    },
+    {
+      "id": "parking-icon",
+      "name": "주차 아이콘",
+      "type": "icon",
+      "url": "/assets/icons/parking.svg",
+      "category": "parking"
+    },
+    {
+      "id": "elevator-icon",
+      "name": "엘리베이터 아이콘",
+      "type": "icon",
+      "url": "/assets/icons/elevator.svg",
+      "category": "facility"
+    },
+    {
+      "id": "charging-icon",
+      "name": "충전기 아이콘",
+      "type": "icon",
+      "url": "/assets/icons/charging.svg",
+      "category": "facility"
+    },
+    {
+      "id": "bell-icon",
+      "name": "비상벨 아이콘",
+      "type": "icon",
+      "url": "/assets/icons/bell.svg",
+      "category": "security"
+    }
+  ]
+}
