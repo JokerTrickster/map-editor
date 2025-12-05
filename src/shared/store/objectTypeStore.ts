@@ -42,9 +42,11 @@ interface ObjectTypeState {
 
   // Type actions
   addType: (type: Omit<ObjectType, 'id' | 'created' | 'modified'>) => void;
+  addTypes: (types: Omit<ObjectType, 'id' | 'created' | 'modified'>[]) => void;
   updateType: (id: string, updates: Partial<ObjectType>) => void;
   deleteType: (id: string) => void;
   getTypeById: (id: string) => ObjectType | undefined;
+  clearTypes: () => void;
 
   // Mapping actions
   addMapping: (mapping: Omit<Mapping, 'id' | 'created'>) => void;
@@ -128,6 +130,29 @@ export const useObjectTypeStore = create<ObjectTypeState>((set, get) => {
       set({ types: newTypes });
     },
 
+    addTypes: (types) => {
+      const state = get();
+      const now = getCurrentTimestamp();
+
+      const newTypes = types.map((type) => ({
+        id: generateId(),
+        ...type,
+        created: now,
+        modified: now,
+      }));
+
+      const allTypes = [...state.types, ...newTypes];
+      const newState = {
+        types: allTypes,
+        mappings: state.mappings,
+      };
+
+      // Persist to localStorage with current lot ID
+      storage.set(getStorageKey(state.currentLotId), newState);
+
+      set({ types: allTypes });
+    },
+
     updateType: (id, updates) => {
       const state = get();
       const type = state.types.find((t) => t.id === id);
@@ -163,6 +188,19 @@ export const useObjectTypeStore = create<ObjectTypeState>((set, get) => {
       storage.set(getStorageKey(state.currentLotId), newState);
 
       set({ types: newTypes });
+    },
+
+    clearTypes: () => {
+      const state = get();
+      const newState = {
+        types: [],
+        mappings: state.mappings,
+      };
+
+      // Persist to localStorage with current lot ID
+      storage.set(getStorageKey(state.currentLotId), newState);
+
+      set({ types: [] });
     },
 
     deleteType: (id) => {

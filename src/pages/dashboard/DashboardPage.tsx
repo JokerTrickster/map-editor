@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProjectStore, type ParkingLot } from '@/shared/store'
+import { useObjectTypeStore } from '@/shared/store/objectTypeStore'
 import ParkingLotCard from '@/widgets/dashboard/ParkingLotCard'
 import CreateLotModal from '@/widgets/dashboard/CreateLotModal'
 import DeleteConfirmModal from '@/widgets/dashboard/DeleteConfirmModal'
@@ -10,6 +11,7 @@ import styles from './DashboardPage.module.css'
 export default function DashboardPage() {
   const navigate = useNavigate()
   const { lots, createLot, updateLot, deleteLot, setCurrentLot, applyTemplate } = useProjectStore()
+  const { setCurrentLot: setObjectTypeLot, addTypes, clearTypes } = useObjectTypeStore()
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
@@ -94,6 +96,45 @@ export default function DashboardPage() {
 
       // Apply template to project
       applyTemplate(createdProjectId, template)
+
+      // Set current lot in ObjectType store
+      setObjectTypeLot(createdProjectId)
+
+      // Clear existing object types
+      clearTypes()
+
+      // Convert template object types to ObjectType format and add them
+      if (template.objectTypes) {
+        const objectTypesToAdd = Object.entries(template.objectTypes).map(([, typeData]) => {
+          const properties = Object.entries(typeData.defaultProperties || {}).map(([propKey, propValue]) => {
+            let propType: 'string' | 'number' | 'boolean' | 'array'
+            if (Array.isArray(propValue)) {
+              propType = 'array'
+            } else {
+              const valueType = typeof propValue
+              propType = (valueType === 'string' || valueType === 'number' || valueType === 'boolean')
+                ? valueType
+                : 'string'
+            }
+
+            return {
+              key: propKey,
+              type: propType,
+              required: false,
+              defaultValue: propValue,
+            }
+          })
+
+          return {
+            name: typeData.displayName,
+            icon: typeData.icon,
+            color: typeData.defaultStyle?.color || '#000000',
+            properties,
+          }
+        })
+
+        addTypes(objectTypesToAdd)
+      }
 
       // Navigate to editor
       setCurrentLot(createdProjectId)
