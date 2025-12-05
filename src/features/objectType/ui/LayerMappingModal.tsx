@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useObjectTypeStore, ObjectType } from '@/shared/store/objectTypeStore'
 import { useCSVStore } from '@/features/csv/model/csvStore'
 import { useFloorStore } from '@/shared/store/floorStore'
+import { CSVPreviewCanvas } from './components/CSVPreviewCanvas'
 import styles from './LayerMappingModal.module.css'
 
 interface SearchableTypeSelectProps {
@@ -204,20 +205,35 @@ export function LayerMappingModal({ isOpen, onClose, onConfirm }: LayerMappingMo
           <span>매핑된 레이어: {getMappedCount()} / {getTotalLayers()}</span>
         </div>
 
-        <div className={styles.mappingList}>
-          {groupedLayers?.map(layer => (
-            <div key={layer.layer} className={styles.mappingItem}>
-              <div className={styles.layerInfo}>
-                <div className={styles.layerName}>{layer.layer}</div>
-                <div className={styles.layerCount}>{layer.entities.length}개 엔티티</div>
-              </div>
-              <SearchableTypeSelect
-                value={layerMappings[layer.layer] || ''}
-                options={types}
-                onChange={(value) => handleMappingChange(layer.layer, value)}
+        <div className={styles.content}>
+          <div className={styles.previewSection}>
+            <div className={styles.previewHeader}>미리보기</div>
+            {groupedLayers && (
+              <CSVPreviewCanvas
+                groupedLayers={groupedLayers}
+                layerMappings={layerMappings}
+                objectTypes={types}
               />
+            )}
+          </div>
+
+          <div className={styles.mappingSection}>
+            <div className={styles.mappingList}>
+              {groupedLayers?.map(layer => (
+                <div key={layer.layer} className={styles.mappingItem}>
+                  <div className={styles.layerInfo}>
+                    <div className={styles.layerName}>{layer.layer}</div>
+                    <div className={styles.layerCount}>{layer.entities.length}개 엔티티</div>
+                  </div>
+                  <SearchableTypeSelect
+                    value={layerMappings[layer.layer] || ''}
+                    options={types}
+                    onChange={(value) => handleMappingChange(layer.layer, value)}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
 
         <div className={styles.footer}>
