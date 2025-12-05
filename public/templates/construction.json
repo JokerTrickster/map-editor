@@ -209,28 +209,28 @@
       "id": "cone-icon",
       "name": "안전 콘 아이콘",
       "type": "icon",
-      "url": "/assets/icons/cone.svg",
+      "url": "/assets/construction/cone.svg",
       "category": "equipment"
     },
     {
       "id": "warning-icon",
       "name": "경고 아이콘",
       "type": "icon",
-      "url": "/assets/icons/warning.svg",
+      "url": "/assets/construction/warning.svg",
       "category": "safety"
     },
     {
       "id": "crane-icon",
       "name": "크레인 아이콘",
       "type": "icon",
-      "url": "/assets/icons/crane.svg",
+      "url": "/assets/construction/crane.svg",
       "category": "equipment"
     },
     {
       "id": "extinguisher-icon",
       "name": "소화기 아이콘",
       "type": "icon",
-      "url": "/assets/icons/extinguisher.svg",
+      "url": "/assets/construction/extinguisher.svg",
       "category": "safety"
     }
   ],

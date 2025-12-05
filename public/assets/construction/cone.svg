@@ -1,0 +1,12 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cone body -->
+  <path d="M16 4 L8 24 L24 24 Z" fill="#F59E0B" stroke="white" stroke-width="1.5"/>
+
+  <!-- White stripes -->
+  <path d="M14 12 L18 12" stroke="white" stroke-width="2"/>
+  <path d="M12 16 L20 16" stroke="white" stroke-width="2"/>
+  <path d="M10 20 L22 20" stroke="white" stroke-width="2"/>
+
+  <!-- Base -->
+  <rect x="6" y="24" width="20" height="3" rx="1" fill="#1F2937"/>
+</svg>

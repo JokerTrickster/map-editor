@@ -238,35 +238,35 @@
       "id": "cctv-icon",
       "name": "CCTV 아이콘",
       "type": "icon",
-      "url": "/assets/icons/cctv.svg",
+      "url": "/assets/parking/cctv.svg",
       "category": "security"
     },
     {
       "id": "parking-icon",
       "name": "주차 아이콘",
       "type": "icon",
-      "url": "/assets/icons/parking.svg",
+      "url": "/assets/parking/parking.svg",
       "category": "parking"
     },
     {
       "id": "elevator-icon",
       "name": "엘리베이터 아이콘",
       "type": "icon",
-      "url": "/assets/icons/elevator.svg",
+      "url": "/assets/parking/elevator.svg",
       "category": "facility"
     },
     {
       "id": "charging-icon",
       "name": "충전기 아이콘",
       "type": "icon",
-      "url": "/assets/icons/charging.svg",
+      "url": "/assets/parking/charging.svg",
       "category": "facility"
     },
     {
       "id": "bell-icon",
       "name": "비상벨 아이콘",
       "type": "icon",
-      "url": "/assets/icons/bell.svg",
+      "url": "/assets/parking/bell.svg",
       "category": "security"
     }
   ],
