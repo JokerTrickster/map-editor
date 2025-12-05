@@ -89,7 +89,10 @@ export function CSVPreviewCanvas({ groupedLayers, layerMappings, objectTypes, se
     // Render each layer
     groupedLayers.forEach(layer => {
       const isSelected = selectedLayer === layer.layer
-      const color = getLayerColor(layer.layer)
+      const baseColor = getLayerColor(layer.layer)
+
+      // Change color when selected
+      const color = isSelected ? '#FFAA00' : baseColor // Bright orange for selected
 
       layer.entities.forEach(entity => {
         if (entity.points.length === 0) return
@@ -99,7 +102,7 @@ export function CSVPreviewCanvas({ groupedLayers, layerMappings, objectTypes, se
 
         ctx.strokeStyle = color
         ctx.fillStyle = color
-        ctx.lineWidth = isSelected ? 3 : 2
+        ctx.lineWidth = isSelected ? 4 : 2
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
         ctx.globalAlpha = alpha
