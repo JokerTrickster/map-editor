@@ -9,7 +9,7 @@
   "objectTypes": {
     "lightCctv": {
       "displayName": "조명 CCTV",
-      "icon": "cctv-light",
+      "icon": "/assets/parking/cctv.svg",
       "category": "security",
       "usesAsset": true,
       "geometryType": "point",
@@ -28,8 +28,10 @@
     },
     "warningCctv": {
       "displayName": "경고 CCTV",
-      "icon": "cctv-warning",
+      "icon": "/assets/parking/cctv.svg",
       "category": "security",
+      "usesAsset": true,
+      "geometryType": "point",
       "defaultProperties": {
         "ipAddress": ""
       },
@@ -41,8 +43,10 @@
     },
     "guideBoard": {
       "displayName": "안내판",
-      "icon": "sign",
+      "icon": "/assets/parking/sign.svg",
       "category": "navigation",
+      "usesAsset": true,
+      "geometryType": "point",
       "defaultProperties": {
         "ipAddress": "",
         "leftDirectionIds": [],
@@ -56,7 +60,7 @@
     },
     "zone": {
       "displayName": "존",
-      "icon": "zone",
+      "icon": "#8B5CF6",
       "category": "area",
       "usesAsset": false,
       "geometryType": "polygon",
@@ -72,7 +76,7 @@
     },
     "parkingLocation": {
       "displayName": "주차 구역",
-      "icon": "parking",
+      "icon": "#10B981",
       "category": "parking",
       "usesAsset": false,
       "geometryType": "polygon",
@@ -90,8 +94,10 @@
     },
     "arrow": {
       "displayName": "화살표",
-      "icon": "arrow",
+      "icon": "#F59E0B",
       "category": "navigation",
+      "usesAsset": false,
+      "geometryType": "polyline",
       "defaultProperties": {},
       "defaultStyle": {
         "color": "#F59E0B",
@@ -100,8 +106,10 @@
     },
     "column": {
       "displayName": "기둥",
-      "icon": "column",
+      "icon": "#6B7280",
       "category": "structure",
+      "usesAsset": false,
+      "geometryType": "polygon",
       "defaultProperties": {
         "label": ""
       },
@@ -112,8 +120,10 @@
     },
     "outLine": {
       "displayName": "외곽선",
-      "icon": "border",
+      "icon": "#1F2937",
       "category": "structure",
+      "usesAsset": false,
+      "geometryType": "polyline",
       "defaultProperties": {},
       "defaultStyle": {
         "color": "#1F2937",
@@ -122,8 +132,10 @@
     },
     "innerLine": {
       "displayName": "내부선",
-      "icon": "line",
+      "icon": "#4B5563",
       "category": "structure",
+      "usesAsset": false,
+      "geometryType": "polyline",
       "defaultProperties": {},
       "defaultStyle": {
         "color": "#4B5563",
@@ -132,8 +144,10 @@
     },
     "elevator": {
       "displayName": "엘리베이터",
-      "icon": "elevator",
+      "icon": "/assets/parking/elevator.svg",
       "category": "facility",
+      "usesAsset": true,
+      "geometryType": "point",
       "defaultProperties": {},
       "defaultStyle": {
         "color": "#EC4899",
@@ -143,8 +157,10 @@
     },
     "entrance": {
       "displayName": "입구/출구",
-      "icon": "door",
+      "icon": "#14B8A6",
       "category": "navigation",
+      "usesAsset": false,
+      "geometryType": "point",
       "defaultProperties": {
         "type": "entrance"
       },
@@ -156,8 +172,10 @@
     },
     "carCharger": {
       "displayName": "전기차 충전기",
-      "icon": "charging",
+      "icon": "#84CC16",
       "category": "facility",
+      "usesAsset": false,
+      "geometryType": "point",
       "defaultProperties": {
         "powerOutput": 7,
         "chargingType": "AC",
@@ -171,8 +189,10 @@
     },
     "emergencyBell": {
       "displayName": "비상벨",
-      "icon": "bell",
+      "icon": "#DC2626",
       "category": "security",
+      "usesAsset": false,
+      "geometryType": "point",
       "defaultProperties": {
         "linkedCctvId": ""
       },
@@ -184,8 +204,10 @@
     },
     "onePassReader": {
       "displayName": "원패스 리더기",
-      "icon": "reader",
+      "icon": "#6366F1",
       "category": "security",
+      "usesAsset": false,
+      "geometryType": "point",
       "defaultProperties": {},
       "defaultStyle": {
         "color": "#6366F1",
@@ -195,8 +217,10 @@
     },
     "lights": {
       "displayName": "조명",
-      "icon": "light",
+      "icon": "#FBBF24",
       "category": "facility",
+      "usesAsset": false,
+      "geometryType": "point",
       "defaultProperties": {},
       "defaultStyle": {
         "color": "#FBBF24",

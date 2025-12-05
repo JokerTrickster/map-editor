@@ -34,6 +34,10 @@ export function TypeListItem({
   editButtonClassName,
   deleteButtonClassName
 }: TypeListItemProps) {
+  // Check if icon is a URL (starts with / or http) or a color code (starts with #)
+  const isIconUrl = type.icon && (type.icon.startsWith('/') || type.icon.startsWith('http'))
+  const isColorCode = type.icon && type.icon.startsWith('#')
+
   return (
     <div
       className={`${typeItemClassName} ${isSelected ? selectedClassName : ''}`}
@@ -41,7 +45,7 @@ export function TypeListItem({
       title={type.name}
     >
       <div className={typeHeaderClassName}>
-        {type.icon ? (
+        {isIconUrl ? (
           <img
             src={type.icon}
             alt=""
@@ -60,17 +64,17 @@ export function TypeListItem({
               width: '32px',
               height: '32px',
               borderRadius: '4px',
-              background: type.color || 'var(--local-surface-hover)',
+              background: isColorCode ? type.icon : (type.color || 'var(--local-surface-hover)'),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '14px',
               fontWeight: 'bold',
               color: 'white',
-              border: type.color ? '1px solid rgba(255,255,255,0.2)' : 'none'
+              border: (isColorCode || type.color) ? '1px solid rgba(255,255,255,0.2)' : 'none'
             }}
           >
-            {!type.color && type.name.charAt(0).toUpperCase()}
+            {!isColorCode && !type.color && type.name.charAt(0).toUpperCase()}
           </div>
         )}
         <span className={typeNameClassName}>{type.name}</span>
