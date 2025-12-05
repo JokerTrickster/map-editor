@@ -116,6 +116,7 @@ export function LayerMappingModal({ isOpen, onClose, onConfirm }: LayerMappingMo
 
   // Local state: layerName -> typeId
   const [layerMappings, setLayerMappings] = useState<Record<string, string>>({})
+  const [selectedLayer, setSelectedLayer] = useState<string | null>(null)
 
   // Load existing mappings when modal opens
   useEffect(() => {
@@ -213,6 +214,7 @@ export function LayerMappingModal({ isOpen, onClose, onConfirm }: LayerMappingMo
                 groupedLayers={groupedLayers}
                 layerMappings={layerMappings}
                 objectTypes={types}
+                selectedLayer={selectedLayer}
               />
             )}
           </div>
@@ -220,7 +222,11 @@ export function LayerMappingModal({ isOpen, onClose, onConfirm }: LayerMappingMo
           <div className={styles.mappingSection}>
             <div className={styles.mappingList}>
               {groupedLayers?.map(layer => (
-                <div key={layer.layer} className={styles.mappingItem}>
+                <div
+                  key={layer.layer}
+                  className={`${styles.mappingItem} ${selectedLayer === layer.layer ? styles.selectedMappingItem : ''}`}
+                  onClick={() => setSelectedLayer(layer.layer === selectedLayer ? null : layer.layer)}
+                >
                   <div className={styles.layerInfo}>
                     <div className={styles.layerName}>{layer.layer}</div>
                     <div className={styles.layerCount}>{layer.entities.length}개 엔티티</div>

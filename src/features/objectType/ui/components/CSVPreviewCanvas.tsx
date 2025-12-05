@@ -11,6 +11,7 @@ interface CSVPreviewCanvasProps {
   groupedLayers: GroupedLayer[]
   layerMappings: Record<string, string>
   objectTypes: ObjectType[]
+  selectedLayer: string | null
 }
 
 interface Point {
@@ -18,7 +19,7 @@ interface Point {
   y: number
 }
 
-export function CSVPreviewCanvas({ groupedLayers, layerMappings, objectTypes }: CSVPreviewCanvasProps) {
+export function CSVPreviewCanvas({ groupedLayers, layerMappings, objectTypes, selectedLayer }: CSVPreviewCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -87,16 +88,21 @@ export function CSVPreviewCanvas({ groupedLayers, layerMappings, objectTypes }: 
 
     // Render each layer
     groupedLayers.forEach(layer => {
+      const isSelected = selectedLayer === layer.layer
       const color = getLayerColor(layer.layer)
 
       layer.entities.forEach(entity => {
         if (entity.points.length === 0) return
 
+        // Dim unselected layers when a layer is selected
+        const alpha = selectedLayer && !isSelected ? 0.2 : 1
+
         ctx.strokeStyle = color
         ctx.fillStyle = color
-        ctx.lineWidth = 2
+        ctx.lineWidth = isSelected ? 3 : 2
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
+        ctx.globalAlpha = alpha
 
         const transformedPoints = entity.points.map(transform)
 
@@ -119,9 +125,10 @@ export function CSVPreviewCanvas({ groupedLayers, layerMappings, objectTypes }: 
         if (isClosed) {
           ctx.closePath()
           // Fill with semi-transparent color
-          ctx.globalAlpha = 0.2
+          const fillAlpha = isSelected ? 0.3 : 0.2
+          ctx.globalAlpha = alpha * fillAlpha
           ctx.fill()
-          ctx.globalAlpha = 1
+          ctx.globalAlpha = alpha
         }
 
         ctx.stroke()
@@ -131,57 +138,16 @@ export function CSVPreviewCanvas({ groupedLayers, layerMappings, objectTypes }: 
           // Single point - draw circle
           const p = transformedPoints[0]
           ctx.beginPath()
-          ctx.arc(p.x, p.y, 4, 0, Math.PI * 2)
+          ctx.arc(p.x, p.y, isSelected ? 5 : 4, 0, Math.PI * 2)
           ctx.fill()
         }
       })
     })
 
-    // Draw legend
-    const legendX = 10
-    let legendY = 10
-    const legendLineHeight = 20
+    // Reset alpha
+    ctx.globalAlpha = 1
 
-    ctx.font = '12px sans-serif'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'middle'
-
-    // Count mapped vs unmapped
-    const mappedCount = Object.values(layerMappings).filter(id => id).length
-    const totalCount = groupedLayers.length
-
-    // Draw background for legend
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-    ctx.fillRect(legendX - 5, legendY - 5, 150, legendLineHeight * (groupedLayers.length + 1) + 10)
-
-    // Draw legend title
-    ctx.fillStyle = '#FFFFFF'
-    ctx.fillText(`Layers (${mappedCount}/${totalCount} mapped)`, legendX, legendY + legendLineHeight / 2)
-    legendY += legendLineHeight
-
-    // Draw each layer in legend
-    groupedLayers.slice(0, 10).forEach(layer => { // Show max 10 layers
-      const color = getLayerColor(layer.layer)
-      const typeId = layerMappings[layer.layer]
-      const typeName = typeId ? objectTypes.find(t => t.id === typeId)?.name : 'Unmapped'
-
-      // Draw color box
-      ctx.fillStyle = color
-      ctx.fillRect(legendX, legendY, 12, 12)
-
-      // Draw layer name
-      ctx.fillStyle = '#FFFFFF'
-      ctx.fillText(`${layer.layer}: ${typeName}`, legendX + 18, legendY + 6)
-
-      legendY += legendLineHeight
-    })
-
-    if (groupedLayers.length > 10) {
-      ctx.fillStyle = '#AAAAAA'
-      ctx.fillText(`... and ${groupedLayers.length - 10} more`, legendX, legendY + 6)
-    }
-
-  }, [groupedLayers, layerMappings, objectTypes])
+  }, [groupedLayers, layerMappings, objectTypes, selectedLayer])
 
   return (
     <canvas
