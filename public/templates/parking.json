@@ -11,6 +11,8 @@
       "displayName": "조명 CCTV",
       "icon": "cctv-light",
       "category": "security",
+      "usesAsset": true,
+      "geometryType": "point",
       "defaultProperties": {
         "ipAddress": "",
         "linkedParkingLocationIds": [],
@@ -56,6 +58,8 @@
       "displayName": "존",
       "icon": "zone",
       "category": "area",
+      "usesAsset": false,
+      "geometryType": "polygon",
       "defaultProperties": {
         "includedParkingLocationIds": []
       },
@@ -70,6 +74,8 @@
       "displayName": "주차 구역",
       "icon": "parking",
       "category": "parking",
+      "usesAsset": false,
+      "geometryType": "polygon",
       "defaultProperties": {
         "type": "regular",
         "angle": 0,
@@ -262,6 +268,104 @@
       "type": "icon",
       "url": "/assets/icons/bell.svg",
       "category": "security"
+    }
+  ],
+  "initialObjects": [
+    {
+      "id": "zone-a",
+      "type": "zone",
+      "name": "A구역",
+      "geometry": {
+        "type": "polygon",
+        "coordinates": [[100, 100], [400, 100], [400, 300], [100, 300], [100, 100]]
+      },
+      "style": {
+        "color": "#8B5CF6",
+        "fillOpacity": 0.2,
+        "strokeWidth": 2,
+        "strokeColor": "#8B5CF6"
+      },
+      "properties": {
+        "includedParkingLocationIds": []
+      }
+    },
+    {
+      "id": "parking-a1",
+      "type": "parkingLocation",
+      "name": "A-1",
+      "geometry": {
+        "type": "polygon",
+        "coordinates": [[120, 120], [200, 120], [200, 170], [120, 170], [120, 120]]
+      },
+      "style": {
+        "color": "#10B981",
+        "fillOpacity": 0.3,
+        "strokeWidth": 2,
+        "strokeColor": "#059669"
+      },
+      "properties": {
+        "type": "regular",
+        "angle": 0,
+        "number": "A-1"
+      }
+    },
+    {
+      "id": "parking-a2",
+      "type": "parkingLocation",
+      "name": "A-2",
+      "geometry": {
+        "type": "polygon",
+        "coordinates": [[220, 120], [300, 120], [300, 170], [220, 170], [220, 120]]
+      },
+      "style": {
+        "color": "#10B981",
+        "fillOpacity": 0.3,
+        "strokeWidth": 2,
+        "strokeColor": "#059669"
+      },
+      "properties": {
+        "type": "regular",
+        "angle": 0,
+        "number": "A-2"
+      }
+    },
+    {
+      "id": "cctv-1",
+      "type": "lightCctv",
+      "name": "CCTV-1",
+      "geometry": {
+        "type": "point",
+        "coordinates": [250, 80]
+      },
+      "style": {
+        "color": "#3B82F6",
+        "size": 32,
+        "icon": "cctv"
+      },
+      "properties": {
+        "ipAddress": "192.168.1.101",
+        "linkedParkingLocationIds": [],
+        "linkedEmergencyBellIds": [],
+        "rightCctvIds": [],
+        "leftCctvIds": []
+      }
+    },
+    {
+      "id": "entrance-main",
+      "type": "entrance",
+      "name": "메인 입구",
+      "geometry": {
+        "type": "point",
+        "coordinates": [250, 350]
+      },
+      "style": {
+        "color": "#14B8A6",
+        "size": 36,
+        "icon": "door"
+      },
+      "properties": {
+        "type": "entrance"
+      }
     }
   ]
 }

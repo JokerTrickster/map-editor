@@ -233,5 +233,100 @@
       "url": "/assets/icons/extinguisher.svg",
       "category": "safety"
     }
+  ],
+  "initialObjects": [
+    {
+      "id": "hazard-zone-1",
+      "type": "hazardZone",
+      "name": "위험구역-1",
+      "geometry": {
+        "type": "polygon",
+        "coordinates": [[100, 100], [300, 100], [300, 250], [100, 250], [100, 100]]
+      },
+      "style": {
+        "color": "#EF4444",
+        "fillOpacity": 0.3,
+        "strokeWidth": 3,
+        "strokeColor": "#DC2626"
+      },
+      "properties": {
+        "hazardLevel": "high",
+        "hazardType": "falling",
+        "description": "낙하물 위험구역"
+      }
+    },
+    {
+      "id": "safety-zone-1",
+      "type": "safetyZone",
+      "name": "안전구역-1",
+      "geometry": {
+        "type": "polygon",
+        "coordinates": [[350, 100], [550, 100], [550, 250], [350, 250], [350, 100]]
+      },
+      "style": {
+        "color": "#10B981",
+        "fillOpacity": 0.2,
+        "strokeWidth": 2,
+        "strokeColor": "#059669"
+      },
+      "properties": {
+        "capacity": 20,
+        "emergencyExit": true
+      }
+    },
+    {
+      "id": "cctv-safety-1",
+      "type": "safetyCctv",
+      "name": "안전CCTV-1",
+      "geometry": {
+        "type": "point",
+        "coordinates": [200, 70]
+      },
+      "style": {
+        "color": "#3B82F6",
+        "size": 32,
+        "icon": "cctv"
+      },
+      "properties": {
+        "ipAddress": "192.168.1.201",
+        "monitoringArea": "위험구역-1",
+        "recordingEnabled": true
+      }
+    },
+    {
+      "id": "cone-1",
+      "type": "safetyCone",
+      "name": "안전콘-1",
+      "geometry": {
+        "type": "point",
+        "coordinates": [80, 120]
+      },
+      "style": {
+        "color": "#F59E0B",
+        "size": 24,
+        "icon": "cone"
+      },
+      "properties": {
+        "height": 70
+      }
+    },
+    {
+      "id": "entrance-site",
+      "type": "constructionEntrance",
+      "name": "현장 출입구",
+      "geometry": {
+        "type": "point",
+        "coordinates": [300, 300]
+      },
+      "style": {
+        "color": "#14B8A6",
+        "size": 36,
+        "icon": "gate"
+      },
+      "properties": {
+        "accessControl": true,
+        "workerOnly": true
+      }
+    }
   ]
 }

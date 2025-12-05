@@ -18,6 +18,7 @@ export interface ParkingLot {
   availableObjectTypes?: Template['objectTypes'];
   relationTypes?: Template['relationTypes'];
   assets?: Template['assets'];
+  initialObjects?: Template['initialObjects'];
 }
 
 interface ProjectState {
@@ -175,6 +176,7 @@ export const useProjectStore = create<ProjectState>((set, get) => {
         availableObjectTypes: template.objectTypes,
         relationTypes: template.relationTypes,
         assets: template.assets,
+        initialObjects: template.initialObjects,
         modified: getCurrentTimestamp(),
       };
 

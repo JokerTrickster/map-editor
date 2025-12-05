@@ -8,6 +8,8 @@ export const TemplateObjectTypeSchema = z.object({
   displayName: z.string(),
   icon: z.string(),
   category: z.string().optional(),
+  usesAsset: z.boolean().optional(), // true if this object type uses asset references, false if rendered directly
+  geometryType: z.enum(['point', 'polyline', 'polygon']).optional(), // expected geometry type
   defaultProperties: z.record(z.unknown()),
   defaultStyle: z
     .object({
