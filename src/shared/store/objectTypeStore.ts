@@ -19,6 +19,7 @@ export interface ObjectType {
   name: string;
   icon?: string;
   color?: string;
+  priority?: number; // Z-index priority (higher = rendered on top)
   properties: Property[];
   created: string;
   modified: string;

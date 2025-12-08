@@ -20,6 +20,9 @@ export function AssetUploader({
   onRemove,
   fileInputRef
 }: AssetUploaderProps) {
+  // Check if previewUrl is an actual image URL or a color code
+  const isActualImage = previewUrl && !previewUrl.startsWith('#')
+
   return (
     <div
       onClick={() => fileInputRef.current?.click()}
@@ -40,7 +43,7 @@ export function AssetUploader({
         accept="image/*"
         style={{ display: 'none' }}
       />
-      {previewUrl ? (
+      {isActualImage ? (
         <div style={{
           position: 'relative',
           display: 'flex',

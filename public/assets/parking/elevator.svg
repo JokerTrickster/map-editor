@@ -1,15 +1,5 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Elevator box -->
-  <rect x="6" y="4" width="20" height="24" rx="2" fill="#EC4899" stroke="white" stroke-width="1.5"/>
-
-  <!-- Door -->
-  <line x1="16" y1="8" x2="16" y2="24" stroke="white" stroke-width="1.5"/>
-  <rect x="8" y="8" width="7" height="16" fill="none" stroke="white" stroke-width="1"/>
-  <rect x="17" y="8" width="7" height="16" fill="none" stroke="white" stroke-width="1"/>
-
-  <!-- Up arrow -->
-  <path d="M12 12 L12 18 M10 14 L12 12 L14 14" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Down arrow -->
-  <path d="M20 18 L20 12 M18 16 L20 18 L22 16" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="15" cy="15" r="14.5" fill="white" stroke="#D5D5D5"/>
+<path d="M15 6V24M24 6.6V23.4C24 23.5591 23.9368 23.7117 23.8243 23.8243C23.7117 23.9368 23.5591 24 23.4 24H6.6C6.44087 24 6.28826 23.9368 6.17574 23.8243C6.06321 23.7117 6 23.5591 6 23.4V6.6C6 6.44087 6.06321 6.28826 6.17574 6.17574C6.28826 6.06321 6.44087 6 6.6 6H23.4C23.5591 6 23.7117 6.06321 23.8243 6.17574C23.9368 6.28826 24 6.44087 24 6.6Z" stroke="#202123" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9 15L10.5 13L12 15M18 15L19.5 17L21 15" stroke="#202123" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

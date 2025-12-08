@@ -10,6 +10,26 @@ import { useFloorStore } from '@/shared/store/floorStore'
 import { CSVPreviewCanvas } from './components/CSVPreviewCanvas'
 import styles from './LayerMappingModal.module.css'
 
+/**
+ * Auto-mapping configuration
+ * Maps layer name keywords to object type names
+ * If layer name CONTAINS the keyword (case-insensitive), it will be auto-mapped
+ */
+const AUTO_LAYER_KEYWORD_MAPPINGS: Record<string, string> = {
+  // Keyword (case-insensitive) -> Object type display name
+  'arrow': '화살표',
+  'outline': '외곽선',
+  'innerline': '내부선',
+  'entrance': '입구/출구',
+  'elevator': '엘리베이터',
+  'lightingline': '조명',
+  'occupancylight': '만공차등',
+  'cctv': '조명 CCTV',
+  'pillar': '기둥',
+  'parking': '주차 구역',
+  'emergencybell': '비상벨',
+}
+
 interface SearchableTypeSelectProps {
   value: string
   options: ObjectType[]
@@ -146,7 +166,28 @@ export function LayerMappingModal({ isOpen, onClose, onConfirm }: LayerMappingMo
       const mappingsMap: Record<string, string> = {}
 
       groupedLayers.forEach(layer => {
-        // Find mapping for this layer (check first entity handle)
+        // Check if this layer should be auto-mapped (keyword matching)
+        const layerLower = layer.layer.toLowerCase()
+        let autoTypeDisplayName: string | undefined
+
+        // Find matching keyword in layer name
+        for (const [keyword, typeName] of Object.entries(AUTO_LAYER_KEYWORD_MAPPINGS)) {
+          if (layerLower.includes(keyword.toLowerCase())) {
+            autoTypeDisplayName = typeName
+            break
+          }
+        }
+
+        if (autoTypeDisplayName) {
+          // Find the object type by display name
+          const autoType = types.find(t => t.name === autoTypeDisplayName)
+          if (autoType) {
+            mappingsMap[layer.layer] = autoType.id
+            return
+          }
+        }
+
+        // Otherwise, check for existing mapping
         const firstEntityHandle = layer.entities[0]?.entityHandle
         if (firstEntityHandle) {
           const mapping = existingMappings.find(m => m.entityHandle === firstEntityHandle)
@@ -158,7 +199,7 @@ export function LayerMappingModal({ isOpen, onClose, onConfirm }: LayerMappingMo
 
       setLayerMappings(mappingsMap)
     }
-  }, [isOpen, currentFloor, groupedLayers, getMappingsByFloorId])
+  }, [isOpen, currentFloor, groupedLayers, getMappingsByFloorId, types])
 
   const handleMappingChange = (layerName: string, typeId: string) => {
     setLayerMappings(prev => ({

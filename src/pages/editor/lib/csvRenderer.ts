@@ -129,25 +129,49 @@ function createElementFromEntity(
   const width = maxX - minX || 1
   const height = maxY - minY || 1
 
-  // Use mapped type color/icon if available
-  const fillColor = mappedType?.color || getLayerFillColor(layer)
-  const strokeColor = mappedType?.color || getLayerStrokeColor(layer)
+  // Determine colors based on mapped type
+  let fillColor: string
+  let strokeColor: string
+
+  if (mappedType) {
+    // If icon is a color code (starts with #), use it as fill color
+    if (mappedType.icon && mappedType.icon.startsWith('#')) {
+      fillColor = mappedType.icon
+      strokeColor = mappedType.icon
+    } else if (mappedType.color) {
+      fillColor = mappedType.color
+      strokeColor = mappedType.color
+    } else {
+      fillColor = getLayerFillColor(layer)
+      strokeColor = getLayerStrokeColor(layer)
+    }
+  } else {
+    fillColor = getLayerFillColor(layer)
+    strokeColor = getLayerStrokeColor(layer)
+  }
+
   const labelText = mappedType?.name || ''
 
-  // If type has icon, create Image element instead
-  if (mappedType?.icon) {
+  // Check if icon is an actual asset file (from /assets/parking/)
+  // Only use Image element for actual SVG/image files, not color codes
+  const isActualAsset = mappedType?.icon &&
+    (mappedType.icon.startsWith('/assets/parking/') ||
+     mappedType.icon.startsWith('http'))
+
+  // If type has an actual asset icon, create Image element
+  if (isActualAsset) {
+    const iconSize = 32 // Fixed icon size for assets
+    const zIndex = mappedType?.priority ?? 5 // Default priority 5
+
     const image = new shapes.standard.Image({
       id: `${layer}_${entityHandle}`,
-      position: { x: minX, y: minY },
-      size: { width, height },
+      position: { x: minX + (width - iconSize) / 2, y: minY + (height - iconSize) / 2 }, // Center icon
+      size: { width: iconSize, height: iconSize },
+      z: zIndex,
       attrs: {
-        image: { xlinkHref: mappedType.icon },
+        image: { xlinkHref: mappedType!.icon },
         label: {
-          text: labelText,
-          fill: '#ffffff',
-          fontSize: 12,
-          refY: '100%',
-          refY2: 5
+          text: '', // No label
         }
       },
       data: {
@@ -179,10 +203,13 @@ function createElementFromEntity(
     .join(' ')
 
   // Create path element
+  const zIndex = mappedType?.priority ?? 5 // Default priority 5
+
   const element = new shapes.standard.Path({
     id: `${layer}_${entityHandle}`,
     position: { x: minX, y: minY },
     size: { width, height },
+    z: zIndex,
     attrs: {
       body: {
         d: pathData,
@@ -192,9 +219,7 @@ function createElementFromEntity(
         opacity: 0.8,
       },
       label: {
-        text: labelText,
-        fill: '#ffffff',
-        fontSize: 12,
+        text: '', // No label
       },
     },
     data: {

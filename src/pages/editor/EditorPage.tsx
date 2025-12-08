@@ -92,6 +92,47 @@ export default function EditorPage() {
     }
   }
 
+  // Handle object type selection - select all objects of this type on the map
+  const handleTypeSelect = (type: ObjectType | null) => {
+    setSelectedObjectType(type)
+
+    if (!graph || !paper || !type) {
+      // Clear selection if no type selected
+      setSelectedElementId(null)
+      return
+    }
+
+    // Find all elements with this object type
+    const cells = graph.getCells()
+    const matchingElements: dia.Element[] = []
+
+    cells.forEach(cell => {
+      if (!cell.isElement()) return
+      const element = cell as dia.Element
+
+      const elementTypeId = element.prop('objectTypeId')
+      if (elementTypeId === type.id) {
+        matchingElements.push(element)
+      }
+    })
+
+    // Highlight all matching elements
+    if (matchingElements.length > 0) {
+      console.log(`✅ Selected ${matchingElements.length} objects of type "${type.name}"`)
+
+      // Use paper to highlight elements
+      matchingElements.forEach(element => {
+        const view = paper.findViewByModel(element)
+        if (view) {
+          view.highlight()
+        }
+      })
+
+      // Set the first one as selected element
+      setSelectedElementId(matchingElements[0].id.toString())
+    }
+  }
+
   // Debug: log when showMappingModal changes
   useEffect(() => {
     console.log('🔔 showMappingModal changed:', showMappingModal)
@@ -388,7 +429,7 @@ export default function EditorPage() {
         >
           <ObjectTypeSidebar
             selectedTypeId={selectedObjectType?.id}
-            onSelectType={setSelectedObjectType}
+            onSelectType={handleTypeSelect}
           />
         </ResizablePanel>
 

@@ -34,5 +34,6 @@
         "linkedCctvId": ""
     },
     "onePassReader": {},
-    "lights": {}
+    "lights": {},
+    "occupancyLight": {}
 }

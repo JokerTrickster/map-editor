@@ -98,15 +98,15 @@ function updateElementsForType(
         }
       }
 
-      // Update icon for image elements
+      // Update icon for image elements (only if icon is a URL)
       if (type.icon && element.attr('image')) {
-        element.attr('image/xlinkHref', type.icon)
+        const isActualAsset = type.icon.startsWith('/assets/parking/') || type.icon.startsWith('http')
+        if (isActualAsset) {
+          element.attr('image/xlinkHref', type.icon)
+        }
       }
 
-      // Update label
-      if (element.attr('label')) {
-        element.attr('label/text', type.name)
-      }
+      // Do NOT update label - keep labels empty
 
       updatedCount++
     }

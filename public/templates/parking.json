@@ -11,6 +11,7 @@
       "displayName": "조명 CCTV",
       "icon": "/assets/parking/cctv.svg",
       "category": "security",
+      "priority": 9,
       "usesAsset": true,
       "geometryType": "point",
       "defaultProperties": {
@@ -30,6 +31,7 @@
       "displayName": "경고 CCTV",
       "icon": "/assets/parking/cctv.svg",
       "category": "security",
+      "priority": 9,
       "usesAsset": true,
       "geometryType": "point",
       "defaultProperties": {
@@ -45,6 +47,7 @@
       "displayName": "안내판",
       "icon": "/assets/parking/sign.svg",
       "category": "navigation",
+      "priority": 7,
       "usesAsset": true,
       "geometryType": "point",
       "defaultProperties": {
@@ -62,6 +65,7 @@
       "displayName": "존",
       "icon": "#8B5CF6",
       "category": "area",
+      "priority": 2,
       "usesAsset": false,
       "geometryType": "polygon",
       "defaultProperties": {
@@ -78,6 +82,7 @@
       "displayName": "주차 구역",
       "icon": "#10B981",
       "category": "parking",
+      "priority": 3,
       "usesAsset": false,
       "geometryType": "polygon",
       "defaultProperties": {
@@ -96,6 +101,7 @@
       "displayName": "화살표",
       "icon": "#F59E0B",
       "category": "navigation",
+      "priority": 4,
       "usesAsset": false,
       "geometryType": "polyline",
       "defaultProperties": {},
@@ -108,6 +114,7 @@
       "displayName": "기둥",
       "icon": "#6B7280",
       "category": "structure",
+      "priority": 5,
       "usesAsset": false,
       "geometryType": "polygon",
       "defaultProperties": {
@@ -122,6 +129,7 @@
       "displayName": "외곽선",
       "icon": "#1F2937",
       "category": "structure",
+      "priority": 1,
       "usesAsset": false,
       "geometryType": "polyline",
       "defaultProperties": {},
@@ -134,6 +142,7 @@
       "displayName": "내부선",
       "icon": "#4B5563",
       "category": "structure",
+      "priority": 2,
       "usesAsset": false,
       "geometryType": "polyline",
       "defaultProperties": {},
@@ -146,6 +155,7 @@
       "displayName": "엘리베이터",
       "icon": "/assets/parking/elevator.svg",
       "category": "facility",
+      "priority": 8,
       "usesAsset": true,
       "geometryType": "point",
       "defaultProperties": {},
@@ -159,6 +169,7 @@
       "displayName": "입구/출구",
       "icon": "#14B8A6",
       "category": "navigation",
+      "priority": 6,
       "usesAsset": false,
       "geometryType": "point",
       "defaultProperties": {
@@ -174,6 +185,7 @@
       "displayName": "전기차 충전기",
       "icon": "#84CC16",
       "category": "facility",
+      "priority": 7,
       "usesAsset": false,
       "geometryType": "point",
       "defaultProperties": {
@@ -191,6 +203,7 @@
       "displayName": "비상벨",
       "icon": "#DC2626",
       "category": "security",
+      "priority": 8,
       "usesAsset": false,
       "geometryType": "point",
       "defaultProperties": {
@@ -206,6 +219,7 @@
       "displayName": "원패스 리더기",
       "icon": "#6366F1",
       "category": "security",
+      "priority": 7,
       "usesAsset": false,
       "geometryType": "point",
       "defaultProperties": {},
@@ -219,11 +233,26 @@
       "displayName": "조명",
       "icon": "#FBBF24",
       "category": "facility",
+      "priority": 6,
       "usesAsset": false,
       "geometryType": "point",
       "defaultProperties": {},
       "defaultStyle": {
         "color": "#FBBF24",
+        "size": 24,
+        "icon": "light"
+      }
+    },
+    "occupancyLight": {
+      "displayName": "만공차등",
+      "icon": "#FCD34D",
+      "category": "facility",
+      "priority": 6,
+      "usesAsset": false,
+      "geometryType": "point",
+      "defaultProperties": {},
+      "defaultStyle": {
+        "color": "#FCD34D",
         "size": 24,
         "icon": "light"
       }
