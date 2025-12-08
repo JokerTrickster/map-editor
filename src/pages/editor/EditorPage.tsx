@@ -455,10 +455,10 @@ export default function EditorPage() {
             const bbox = paper.getContentBBox()
 
             if (bbox && bbox.width > 0 && bbox.height > 0) {
-              // Create a temporary canvas
+              // Create a temporary canvas with same aspect ratio as card (4:3)
               const canvas = document.createElement('canvas')
-              const targetWidth = 400
-              const targetHeight = 300
+              const targetWidth = 800  // Higher resolution for better quality
+              const targetHeight = 600
               canvas.width = targetWidth
               canvas.height = targetHeight
               const ctx = canvas.getContext('2d')
@@ -468,14 +468,15 @@ export default function EditorPage() {
                 ctx.fillStyle = '#0f172a'
                 ctx.fillRect(0, 0, targetWidth, targetHeight)
 
-                // Calculate scale to fit content
-                const scale = Math.min(
-                  targetWidth / bbox.width,
-                  targetHeight / bbox.height
-                ) * 0.9 // 90% to leave some padding
+                // Calculate scale to fit content with minimal padding
+                const scaleX = targetWidth / bbox.width
+                const scaleY = targetHeight / bbox.height
+                const scale = Math.min(scaleX, scaleY) * 0.95 // 95% to leave minimal padding
 
-                const offsetX = (targetWidth - bbox.width * scale) / 2
-                const offsetY = (targetHeight - bbox.height * scale) / 2
+                const scaledWidth = bbox.width * scale
+                const scaledHeight = bbox.height * scale
+                const offsetX = (targetWidth - scaledWidth) / 2
+                const offsetY = (targetHeight - scaledHeight) / 2
 
                 // Create SVG image
                 const svgData = new XMLSerializer().serializeToString(svg)
@@ -485,14 +486,13 @@ export default function EditorPage() {
 
                 img.onload = () => {
                   ctx.save()
-                  ctx.translate(offsetX, offsetY)
+                  ctx.translate(offsetX - bbox.x * scale, offsetY - bbox.y * scale)
                   ctx.scale(scale, scale)
-                  ctx.translate(-bbox.x, -bbox.y)
-                  ctx.drawImage(img, bbox.x, bbox.y, bbox.width, bbox.height)
+                  ctx.drawImage(img, 0, 0)
                   ctx.restore()
 
-                  // Convert to base64
-                  const thumbnail = canvas.toDataURL('image/png', 0.8)
+                  // Convert to base64 with higher quality
+                  const thumbnail = canvas.toDataURL('image/png', 0.9)
 
                   // Update project thumbnail
                   const updateLot = useProjectStore.getState().updateLot
