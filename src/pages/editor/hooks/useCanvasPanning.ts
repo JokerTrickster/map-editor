@@ -14,16 +14,14 @@ export function useCanvasPanning(
 ) {
   const isPanning = useRef(false)
   const lastMousePosition = useRef({ x: 0, y: 0 })
+  const hasMoved = useRef(false)
 
   useEffect(() => {
     if (!paper || !graph) return
 
     const handleBlankPointerDown = (evt: dia.Event) => {
-      if (onBlankClick) {
-        onBlankClick()
-      }
-
       isPanning.current = true
+      hasMoved.current = false
       lastMousePosition.current = { x: evt.clientX || 0, y: evt.clientY || 0 }
       if (canvasRef.current) {
         canvasRef.current.style.cursor = 'grabbing'
@@ -35,6 +33,11 @@ export function useCanvasPanning(
 
       const dx = e.clientX - lastMousePosition.current.x
       const dy = e.clientY - lastMousePosition.current.y
+
+      // Track if user has moved (not just clicked)
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+        hasMoved.current = true
+      }
 
       const currentTranslate = paper.translate()
       const currentScale = paper.scale()
@@ -85,7 +88,13 @@ export function useCanvasPanning(
     }
 
     const handleMouseUp = () => {
+      // Only trigger blank click if user clicked without moving (not panning)
+      if (isPanning.current && !hasMoved.current && onBlankClick) {
+        onBlankClick()
+      }
+
       isPanning.current = false
+      hasMoved.current = false
       if (canvasRef.current) {
         canvasRef.current.style.cursor = 'default'
       }

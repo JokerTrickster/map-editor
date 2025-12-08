@@ -48,12 +48,23 @@ export function useElementSelection(
       if (cell.isElement()) {
         const view = paper.findViewByModel(cell)
         if (view && view.el) {
-          // Remove single-select highlight class
+          // Remove single-select highlight class and restore original z-index
           view.el.classList.remove('single-select-highlight')
+          const originalZ = cell.get('singleSelectOriginalZ')
+          if (originalZ !== undefined) {
+            cell.set('z', originalZ)
+            cell.unset('singleSelectOriginalZ')
+          }
 
-          // Add highlight class to selected element
+          // Add highlight class to selected element and bring to front
           if (cell.id === selectedElementId) {
             view.el.classList.add('single-select-highlight')
+            // Store original z-index and bring to front
+            const currentZ = cell.get('z')
+            if (cell.get('singleSelectOriginalZ') === undefined) {
+              cell.set('singleSelectOriginalZ', currentZ)
+            }
+            cell.toFront()
           }
         }
       }
