@@ -471,7 +471,7 @@ export default function EditorPage() {
                 // Calculate scale to fit content with padding
                 const scaleX = targetWidth / bbox.width
                 const scaleY = targetHeight / bbox.height
-                const scale = Math.min(scaleX, scaleY) * 0.75 // 75% to show full map with padding
+                const scale = Math.min(scaleX, scaleY) * 0.65 // 65% to show full map with more padding
 
                 const scaledWidth = bbox.width * scale
                 const scaledHeight = bbox.height * scale
