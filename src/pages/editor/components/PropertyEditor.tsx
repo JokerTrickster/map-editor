@@ -118,14 +118,27 @@ export function PropertyEditor({ element, onUpdate }: PropertyEditorProps) {
 
     const selectedType = types.find(t => t.id === selectedTypeId)
 
+    // Get name from properties
+    const elementName = customProperties.name || ''
+
+    const handleNameChange = (value: string) => {
+        handlePropertyChange('name', value)
+    }
+
     return (
         <div className={styles.container}>
             <div className={styles.section}>
                 <h3 className={styles.title}>Properties</h3>
 
-                <div className={styles.row}>
-                    <label>ID</label>
-                    <input type="text" value={element.id as string} disabled className={styles.input} />
+                <div className={styles.group}>
+                    <label className={styles.groupLabel}>Name</label>
+                    <input
+                        type="text"
+                        value={elementName}
+                        onChange={(e) => handleNameChange(e.target.value)}
+                        className={styles.input}
+                        placeholder="Enter name"
+                    />
                 </div>
 
                 <div className={styles.group}>
@@ -181,7 +194,9 @@ export function PropertyEditor({ element, onUpdate }: PropertyEditorProps) {
                             {isCsvEntity ? 'Object Properties' : 'Custom Properties'}
                             {isCsvEntity && <span className={styles.csvNote}> (from mapped type)</span>}
                         </label>
-                        {selectedType.properties.map(prop => {
+                        {selectedType.properties
+                            .filter(prop => prop.key !== 'name') // Name is shown at top
+                            .map(prop => {
                             const value = customProperties[prop.key]
 
                             return (

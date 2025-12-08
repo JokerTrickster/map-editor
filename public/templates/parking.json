@@ -86,9 +86,9 @@
       "usesAsset": false,
       "geometryType": "polygon",
       "defaultProperties": {
+        "name": "",
         "type": "regular",
-        "angle": 0,
-        "number": ""
+        "angle": 0
       },
       "defaultStyle": {
         "color": "#10B981",
