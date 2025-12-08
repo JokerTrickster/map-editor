@@ -160,7 +160,12 @@ export default function DashboardPage() {
 
   const handleSelectLot = (lotId: string) => {
     try {
+      // Set current lot in project store
       setCurrentLot(lotId)
+
+      // Set current lot in ObjectType store to load project-specific types and mappings
+      setObjectTypeLot(lotId)
+
       navigate('/editor')
     } catch (err) {
       console.error('Failed to select parking lot:', err)
