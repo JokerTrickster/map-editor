@@ -210,6 +210,8 @@ function createElementFromEntity(
         layer,
         entityHandle,
         type: 'csv-entity',
+        typeId: mappedType?.id, // Store typeId in data for PropertyEditor
+        properties: {}, // Initialize empty properties object
       }
     })
 
@@ -258,6 +260,8 @@ function createElementFromEntity(
       layer,
       entityHandle,
       type: 'csv-entity',
+      typeId: mappedType?.id, // Store typeId in data for PropertyEditor
+      properties: {}, // Initialize empty properties object
     },
   })
 

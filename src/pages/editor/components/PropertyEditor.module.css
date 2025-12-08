@@ -136,3 +136,51 @@
     font-size: 12px;
     margin-top: 4px;
 }
+
+.typeDisplay {
+    margin-bottom: 8px;
+}
+
+.typeInfo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #f1f5f9;
+}
+
+.mappedBadge {
+    margin-left: auto;
+    padding: 2px 8px;
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.noType {
+    padding: 8px 12px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #64748b;
+    font-style: italic;
+}
+
+.csvNote {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 400;
+}
+
+.propertyType {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 400;
+}

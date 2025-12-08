@@ -17,6 +17,7 @@ export function PropertyEditor({ element, onUpdate }: PropertyEditorProps) {
     const [customProperties, setCustomProperties] = useState<Record<string, any>>({})
     const [jsonData, setJsonData] = useState('')
     const [jsonError, setJsonError] = useState<string | null>(null)
+    const [isCsvEntity, setIsCsvEntity] = useState(false)
 
     useEffect(() => {
         setPosition(element.position())
@@ -25,12 +26,30 @@ export function PropertyEditor({ element, onUpdate }: PropertyEditorProps) {
         const data = element.get('data') || {}
         setJsonData(JSON.stringify(data, null, 2))
 
+        // Check if this is a CSV entity
+        const isCSV = data.type === 'csv-entity'
+        setIsCsvEntity(isCSV)
+
         // Initialize selected type and custom properties from data
         if (data.typeId) {
             setSelectedTypeId(data.typeId)
         }
-        setCustomProperties(data.properties || {})
-    }, [element])
+
+        // Initialize properties with default values from object type
+        if (data.typeId && isCSV) {
+            const type = types.find(t => t.id === data.typeId)
+            if (type) {
+                const initialProps: Record<string, any> = {}
+                type.properties.forEach(prop => {
+                    // Use existing value or default value
+                    initialProps[prop.key] = data.properties?.[prop.key] ?? prop.defaultValue ?? ''
+                })
+                setCustomProperties(initialProps)
+            }
+        } else {
+            setCustomProperties(data.properties || {})
+        }
+    }, [element, types])
 
     const handlePositionChange = (axis: 'x' | 'y', value: string) => {
         const numValue = parseFloat(value)
@@ -74,6 +93,9 @@ export function PropertyEditor({ element, onUpdate }: PropertyEditorProps) {
             properties: newProperties
         }
 
+        // Update JSON display
+        setJsonData(JSON.stringify(newData, null, 2))
+
         onUpdate(element.id as string, { data: newData })
     }
 
@@ -108,46 +130,107 @@ export function PropertyEditor({ element, onUpdate }: PropertyEditorProps) {
 
                 <div className={styles.group}>
                     <label className={styles.groupLabel}>Object Type</label>
-                    <select
-                        value={selectedTypeId}
-                        onChange={handleTypeChange}
-                        className={styles.select}
-                    >
-                        <option value="">Select Type...</option>
-                        {types.map(type => (
-                            <option key={type.id} value={type.id}>
-                                {type.name}
-                            </option>
-                        ))}
-                    </select>
+                    {isCsvEntity ? (
+                        <div className={styles.typeDisplay}>
+                            {selectedType ? (
+                                <div className={styles.typeInfo}>
+                                    {selectedType.icon && selectedType.icon.startsWith('#') && (
+                                        <div
+                                            style={{
+                                                width: 16,
+                                                height: 16,
+                                                borderRadius: 4,
+                                                background: selectedType.icon,
+                                                border: '1px solid rgba(255,255,255,0.2)'
+                                            }}
+                                        />
+                                    )}
+                                    {selectedType.icon && (selectedType.icon.startsWith('/') || selectedType.icon.startsWith('http')) && (
+                                        <img
+                                            src={selectedType.icon}
+                                            alt=""
+                                            style={{ width: 16, height: 16, borderRadius: 4, objectFit: 'cover' }}
+                                        />
+                                    )}
+                                    <span>{selectedType.name}</span>
+                                    <span className={styles.mappedBadge}>Mapped from CSV</span>
+                                </div>
+                            ) : (
+                                <div className={styles.noType}>No type assigned</div>
+                            )}
+                        </div>
+                    ) : (
+                        <select
+                            value={selectedTypeId}
+                            onChange={handleTypeChange}
+                            className={styles.select}
+                        >
+                            <option value="">Select Type...</option>
+                            {types.map(type => (
+                                <option key={type.id} value={type.id}>
+                                    {type.name}
+                                </option>
+                            ))}
+                        </select>
+                    )}
                 </div>
 
                 {selectedType && (
                     <div className={styles.group}>
-                        <label className={styles.groupLabel}>Custom Properties</label>
-                        {selectedType.properties.map(prop => (
-                            <div key={prop.key} className={styles.propertyRow}>
-                                <label className={styles.propertyLabel}>
-                                    {prop.key}
-                                    {prop.required && <span className={styles.required}>*</span>}
-                                </label>
-                                {prop.type === 'boolean' ? (
-                                    <input
-                                        type="checkbox"
-                                        checked={!!customProperties[prop.key]}
-                                        onChange={(e) => handlePropertyChange(prop.key, e.target.checked)}
-                                    />
-                                ) : (
-                                    <input
-                                        type={prop.type === 'number' ? 'number' : 'text'}
-                                        value={customProperties[prop.key] || ''}
-                                        onChange={(e) => handlePropertyChange(prop.key, e.target.value)}
-                                        className={styles.input}
-                                        placeholder={prop.type}
-                                    />
-                                )}
-                            </div>
-                        ))}
+                        <label className={styles.groupLabel}>
+                            {isCsvEntity ? 'Object Properties' : 'Custom Properties'}
+                            {isCsvEntity && <span className={styles.csvNote}> (from mapped type)</span>}
+                        </label>
+                        {selectedType.properties.map(prop => {
+                            const value = customProperties[prop.key]
+
+                            return (
+                                <div key={prop.key} className={styles.propertyRow}>
+                                    <label className={styles.propertyLabel}>
+                                        {prop.key}
+                                        {prop.required && <span className={styles.required}>*</span>}
+                                        <span className={styles.propertyType}> ({prop.type})</span>
+                                    </label>
+                                    {prop.type === 'boolean' ? (
+                                        <input
+                                            type="checkbox"
+                                            checked={!!value}
+                                            onChange={(e) => handlePropertyChange(prop.key, e.target.checked)}
+                                        />
+                                    ) : prop.type === 'number' ? (
+                                        <input
+                                            type="number"
+                                            value={value ?? ''}
+                                            onChange={(e) => {
+                                                const numValue = e.target.value === '' ? '' : parseFloat(e.target.value)
+                                                handlePropertyChange(prop.key, numValue)
+                                            }}
+                                            className={styles.input}
+                                            placeholder={`Enter ${prop.key}`}
+                                        />
+                                    ) : prop.type === 'array' ? (
+                                        <input
+                                            type="text"
+                                            value={Array.isArray(value) ? value.join(', ') : value || ''}
+                                            onChange={(e) => {
+                                                const arrValue = e.target.value.split(',').map(v => v.trim()).filter(v => v)
+                                                handlePropertyChange(prop.key, arrValue)
+                                            }}
+                                            className={styles.input}
+                                            placeholder="Comma-separated values"
+                                        />
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={value ?? ''}
+                                            onChange={(e) => handlePropertyChange(prop.key, e.target.value)}
+                                            className={styles.input}
+                                            placeholder={`Enter ${prop.key}`}
+                                        />
+                                    )}
+                                </div>
+                            )
+                        })}
                         {selectedType.properties.length === 0 && (
                             <div className={styles.emptyProperties}>No properties defined for this type</div>
                         )}
