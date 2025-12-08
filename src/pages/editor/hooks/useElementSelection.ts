@@ -15,7 +15,9 @@ export function useElementSelection(
   graph: dia.Graph | null,
   paper: dia.Paper | null,
   selectedElementId: string | null,
-  onSelectionChange: (elementId: string | null) => void
+  onSelectionChange: (elementId: string | null) => void,
+  onClearMultiSelection?: () => void,
+  hasMultiSelection?: boolean
 ): UseElementSelectionReturn {
   // Handle element click from canvas
   useEffect(() => {
@@ -24,6 +26,10 @@ export function useElementSelection(
     const handlePointerClick = (elementView: dia.ElementView) => {
       const elementId = elementView.model.id as string
       onSelectionChange(elementId)
+      // Clear multi-selection when clicking individual element
+      if (onClearMultiSelection) {
+        onClearMultiSelection()
+      }
     }
 
     paper.on('element:pointerclick', handlePointerClick)
@@ -31,23 +37,28 @@ export function useElementSelection(
     return () => {
       paper.off('element:pointerclick', handlePointerClick)
     }
-  }, [paper, graph, onSelectionChange])
+  }, [paper, graph, onSelectionChange, onClearMultiSelection])
 
-  // Update highlighting when selection changes
+  // Update highlighting when selection changes (skip if multi-selection is active)
   useEffect(() => {
     if (!graph || !paper) return
+    if (hasMultiSelection) return // Don't interfere with multi-selection highlights
 
     graph.getCells().forEach((cell) => {
       if (cell.isElement()) {
         const view = paper.findViewByModel(cell)
-        if (cell.id === selectedElementId) {
-          view?.highlight()
-        } else {
-          view?.unhighlight()
+        if (view && view.el) {
+          // Remove single-select highlight class
+          view.el.classList.remove('single-select-highlight')
+
+          // Add highlight class to selected element
+          if (cell.id === selectedElementId) {
+            view.el.classList.add('single-select-highlight')
+          }
         }
       }
     })
-  }, [graph, paper, selectedElementId])
+  }, [graph, paper, selectedElementId, hasMultiSelection])
 
   // Update interactivity based on selection
   useEffect(() => {
@@ -93,6 +104,11 @@ export function useElementSelection(
   const handleBlankClick = useCallback(() => {
     onSelectionChange(null)
 
+    // Clear multi-selection
+    if (onClearMultiSelection) {
+      onClearMultiSelection()
+    }
+
     if (!graph || !paper) return
 
     // Unhighlight all elements
@@ -102,7 +118,7 @@ export function useElementSelection(
         view?.unhighlight()
       }
     })
-  }, [graph, paper, onSelectionChange])
+  }, [graph, paper, onSelectionChange, onClearMultiSelection])
 
   return { handleElementClick, handleBlankClick }
 }

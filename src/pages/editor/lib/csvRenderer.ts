@@ -69,6 +69,14 @@ export function createElementsFromCSV(
     typeMappings.forEach(mapping => {
       mappingMap.set(mapping.entityHandle, mapping.type)
     })
+    console.log(`📌 Type mappings created: ${mappingMap.size} entities mapped`)
+    // Log first few mappings
+    const firstMappings = Array.from(mappingMap.entries()).slice(0, 3)
+    firstMappings.forEach(([handle, type]) => {
+      console.log(`  ${handle} → ${type.name} (priority: ${type.priority})`)
+    })
+  } else {
+    console.log('⚠️ No type mappings provided!')
   }
 
   // Calculate scale factor to fit in canvas (1000px target width)
@@ -76,15 +84,24 @@ export function createElementsFromCSV(
   const TARGET_WIDTH = 1000
   const scale = dataWidth > 0 ? TARGET_WIDTH / dataWidth : 1
 
+  // Collect all elements with their priorities first
+  const elementsWithPriority: Array<{ element: dia.Element; priority: number; layer: string }> = []
+
   groupedLayers.forEach(layer => {
     const layerElements: dia.Element[] = []
 
     layer.entities.forEach(entity => {
       const mappedType = mappingMap.get(entity.entityHandle)
+
+      if (!mappedType) {
+        console.warn(`⚠️ No type mapping for entity ${entity.entityHandle} in layer ${layer.layer}`)
+      }
+
       const element = createElementFromEntity(entity, bounds, scale, layer.layer, mappedType)
 
       if (element) {
-        elements.push(element)
+        const priority = mappedType?.priority ?? 5
+        elementsWithPriority.push({ element, priority, layer: layer.layer })
         layerElements.push(element)
       }
     })
@@ -94,7 +111,20 @@ export function createElementsFromCSV(
     }
   })
 
-  return { elements, objectsByLayer }
+  // Sort by priority (higher priority first, so they get higher z-index)
+  // Elements added later get higher z-index in JointJS
+  elementsWithPriority.sort((a, b) => b.priority - a.priority)
+
+  // Extract sorted elements
+  const sortedElements = elementsWithPriority.map(item => item.element)
+
+  console.log('🎨 Element rendering order (by priority):')
+  elementsWithPriority.slice(0, 5).forEach(item => {
+    const type = item.element.prop('objectTypeId')
+    console.log(`  Priority ${item.priority}: ${item.layer} (type: ${type})`)
+  })
+
+  return { elements: sortedElements, objectsByLayer }
 }
 
 /**
@@ -160,7 +190,9 @@ function createElementFromEntity(
 
   // If type has an actual asset icon, create Image element
   if (isActualAsset) {
-    const iconSize = 32 // Fixed icon size for assets
+    // Determine icon size based on object type (CCTV is smaller)
+    const isCCTV = mappedType?.name?.includes('CCTV')
+    const iconSize = isCCTV ? 20 : 32
     const zIndex = mappedType?.priority ?? 5 // Default priority 5
 
     const image = new shapes.standard.Image({

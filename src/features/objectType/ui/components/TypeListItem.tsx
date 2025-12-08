@@ -11,6 +11,7 @@ interface TypeListItemProps {
   onSelect: () => void
   onEdit: () => void
   onDelete: () => void
+  onPriorityChange?: (typeId: string, priority: number) => void
   typeItemClassName: string
   selectedClassName: string
   typeHeaderClassName: string
@@ -26,6 +27,7 @@ export function TypeListItem({
   onSelect,
   onEdit,
   onDelete,
+  onPriorityChange,
   typeItemClassName,
   selectedClassName,
   typeHeaderClassName,
@@ -78,9 +80,42 @@ export function TypeListItem({
           </div>
         )}
         <span className={typeNameClassName}>{type.name}</span>
+        {type.priority !== undefined && (
+          <span style={{
+            marginLeft: '8px',
+            fontSize: '11px',
+            color: 'var(--local-text-secondary)',
+            background: 'var(--local-surface-hover)',
+            padding: '2px 6px',
+            borderRadius: '4px'
+          }}>
+            Z:{type.priority}
+          </span>
+        )}
       </div>
 
       <div className={typeActionsClassName} onClick={(e) => e.stopPropagation()}>
+        {onPriorityChange && (
+          <input
+            type="number"
+            min="1"
+            max="9"
+            value={type.priority ?? 5}
+            onChange={(e) => onPriorityChange(type.id, parseInt(e.target.value))}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '40px',
+              padding: '4px',
+              fontSize: '12px',
+              textAlign: 'center',
+              background: 'var(--local-surface)',
+              border: '1px solid var(--local-border)',
+              borderRadius: '4px',
+              color: 'var(--local-text)'
+            }}
+            title="우선순위 (1=아래, 9=위)"
+          />
+        )}
         <button onClick={onEdit} className={editButtonClassName} title="수정">
           <svg
             width="16"

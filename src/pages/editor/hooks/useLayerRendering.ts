@@ -97,6 +97,22 @@ export function useLayerRendering(
 
     console.log(`📋 Mappings: ${floorMappings.length} entities mapped to object types`)
 
+    // Show which layers are mapped
+    const mappedLayers = new Set(
+      groupedLayers
+        .filter(layer => layer.entities.some(e => mappedEntityHandles.has(e.entityHandle)))
+        .map(layer => layer.layer)
+    )
+    console.log(`✅ Mapped layers (${mappedLayers.size}):`, Array.from(mappedLayers).join(', '))
+
+    // Show unmapped layers
+    const unmappedLayers = groupedLayers
+      .filter(layer => !layer.entities.some(e => mappedEntityHandles.has(e.entityHandle)))
+      .map(layer => layer.layer)
+    if (unmappedLayers.length > 0) {
+      console.warn(`⚠️ Unmapped layers (${unmappedLayers.length}):`, unmappedLayers.join(', '))
+    }
+
     // Clear current elements
     graph.clear()
 
@@ -156,6 +172,30 @@ export function useLayerRendering(
 
     // Add elements to graph
     graph.resetCells(elements)
+
+    // Force z-index sorting after adding all elements
+    // This ensures elements are properly layered according to their z property
+    const cells = graph.getCells()
+    cells.forEach(cell => {
+      if (cell.isElement()) {
+        const currentZ = cell.get('z')
+        if (currentZ !== undefined) {
+          cell.set('z', currentZ)
+        }
+      }
+    })
+
+    console.log('📊 Final z-index distribution:')
+    const zIndexCounts = new Map<number, number>()
+    cells.forEach(cell => {
+      if (cell.isElement()) {
+        const z = cell.get('z') || 0
+        zIndexCounts.set(z, (zIndexCounts.get(z) || 0) + 1)
+      }
+    })
+    Array.from(zIndexCounts.entries())
+      .sort((a, b) => a[0] - b[0])
+      .forEach(([z, count]) => console.log(`  z=${z}: ${count} elements`))
 
     // Update state
     setElementCount(elements.length)

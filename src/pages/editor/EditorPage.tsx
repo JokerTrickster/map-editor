@@ -60,6 +60,8 @@ export default function EditorPage() {
   const [objectsByLayer, setObjectsByLayer] = useState<Map<string, dia.Element[]>>(new Map())
   const [loadedFileName, setLoadedFileName] = useState<string | null>(null)
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
+  const [selectedElementIds, setSelectedElementIds] = useState<Set<string>>(new Set())
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
   const [pendingGraphJson, setPendingGraphJson] = useState<any | null>(null)
   const [isRestoring] = useState(false)
   const [showSaveModal, setShowSaveModal] = useState(false)
@@ -94,17 +96,37 @@ export default function EditorPage() {
 
   // Handle object type selection - select all objects of this type on the map
   const handleTypeSelect = (type: ObjectType | null) => {
+    console.log('🎯 handleTypeSelect called:', { type: type?.name, typeId: type?.id })
     setSelectedObjectType(type)
 
     if (!graph || !paper || !type) {
       // Clear selection if no type selected
+      console.log('🧹 Clearing selection (no type)')
+      setSelectedTypeId(null)
+      setSelectedElementId(null)
+      setSelectedElementIds(new Set())
+      // Clear all highlights
+      graph?.getCells().forEach(cell => {
+        if (cell.isElement()) {
+          const view = paper?.findViewByModel(cell)
+          view?.unhighlight()
+        }
+      })
+      return
+    }
+
+    // Toggle: If same type clicked again, deselect
+    if (selectedTypeId === type.id) {
+      console.log(`🔄 Deselecting type "${type.name}"`)
+      setSelectedTypeId(null)
+      setSelectedElementIds(new Set())
       setSelectedElementId(null)
       return
     }
 
     // Find all elements with this object type
     const cells = graph.getCells()
-    const matchingElements: dia.Element[] = []
+    const matchingElementIds = new Set<string>()
 
     cells.forEach(cell => {
       if (!cell.isElement()) return
@@ -112,24 +134,16 @@ export default function EditorPage() {
 
       const elementTypeId = element.prop('objectTypeId')
       if (elementTypeId === type.id) {
-        matchingElements.push(element)
+        matchingElementIds.add(element.id.toString())
       }
     })
 
-    // Highlight all matching elements
-    if (matchingElements.length > 0) {
-      console.log(`✅ Selected ${matchingElements.length} objects of type "${type.name}"`)
-
-      // Use paper to highlight elements
-      matchingElements.forEach(element => {
-        const view = paper.findViewByModel(element)
-        if (view) {
-          view.highlight()
-        }
-      })
-
-      // Set the first one as selected element
-      setSelectedElementId(matchingElements[0].id.toString())
+    // Update selection state
+    if (matchingElementIds.size > 0) {
+      console.log(`✅ Selected ${matchingElementIds.size} objects of type "${type.name}"`)
+      setSelectedTypeId(type.id)
+      setSelectedElementIds(matchingElementIds)
+      setSelectedElementId(Array.from(matchingElementIds)[0])
     }
   }
 
@@ -150,7 +164,12 @@ export default function EditorPage() {
     graph,
     paper,
     selectedElementId,
-    setSelectedElementId
+    setSelectedElementId,
+    () => {
+      setSelectedTypeId(null)
+      setSelectedElementIds(new Set())
+    },
+    selectedElementIds.size > 0
   )
 
   useCanvasPanning(paper, graph, canvasRef, handleBlankClick)
@@ -200,6 +219,66 @@ export default function EditorPage() {
   )
 
   useObjectTypeSync(graph)
+
+  // Highlight multiple selected elements with custom styling
+  useEffect(() => {
+    if (!graph || !paper) return
+
+    const elementIdArray = Array.from(selectedElementIds)
+    console.log('🎨 Multi-selection highlight effect triggered:', {
+      selectedCount: selectedElementIds.size,
+      selectedTypeId,
+      elementIds: elementIdArray
+    })
+
+    // Clear all existing highlights first
+    console.log('🧹 Clearing all highlights...')
+
+    // Remove custom highlight class and restore original z-index from all cells
+    graph.getCells().forEach(cell => {
+      if (cell.isElement()) {
+        const view = paper.findViewByModel(cell)
+        if (view && view.el) {
+          // Remove custom highlight class
+          view.el.classList.remove('multi-select-highlight')
+
+          // Restore original z-index if it was stored
+          const originalZ = cell.get('originalZ')
+          if (originalZ !== undefined) {
+            cell.set('z', originalZ)
+            cell.unset('originalZ')
+          }
+
+          // Also call unhighlight to remove JointJS highlights
+          view.unhighlight()
+        }
+      }
+    })
+
+    // Apply custom highlight to selected elements
+    if (elementIdArray.length > 0) {
+      console.log('✨ Applying highlights to', elementIdArray.length, 'elements')
+      elementIdArray.forEach(elementId => {
+        const cell = graph.getCell(elementId)
+        if (cell && cell.isElement()) {
+          const view = paper.findViewByModel(cell)
+          if (view && view.el) {
+            // Add custom CSS class for highlighting
+            view.el.classList.add('multi-select-highlight')
+
+            // Store original z-index and temporarily bring to front
+            const currentZ = cell.get('z')
+            if (cell.get('originalZ') === undefined) {
+              cell.set('originalZ', currentZ)
+            }
+            cell.toFront()
+          }
+        }
+      })
+    } else {
+      console.log('🧹 Cleared all highlights (no selection)')
+    }
+  }, [graph, paper, selectedTypeId, selectedElementIds])
 
   // Set current lot in objectTypeStore when project loads
   useEffect(() => {
@@ -428,7 +507,7 @@ export default function EditorPage() {
           defaultCollapsed={!currentLotData?.templateId}
         >
           <ObjectTypeSidebar
-            selectedTypeId={selectedObjectType?.id}
+            selectedTypeId={selectedTypeId}
             onSelectType={handleTypeSelect}
           />
         </ResizablePanel>

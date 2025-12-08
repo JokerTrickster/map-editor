@@ -18,7 +18,7 @@ import styles from './LayerMappingModal.module.css'
 const AUTO_LAYER_KEYWORD_MAPPINGS: Record<string, string> = {
   // Keyword (case-insensitive) -> Object type display name
   'arrow': '화살표',
-  'outline': '외곽선',
+  // 'outline': '외곽선', // 외곽선은 매핑하지 않음 (다른 객체들을 가림)
   'innerline': '내부선',
   'entrance': '입구/출구',
   'elevator': '엘리베이터',

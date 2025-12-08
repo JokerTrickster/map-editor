@@ -220,3 +220,17 @@
     transition: all 0.1s ease;
     z-index: 10;
 }
+
+/* Multi-select highlight (red) */
+:global(.multi-select-highlight) {
+    outline: 3px solid #FF0000 !important;
+    outline-offset: 8px;
+    z-index: 9999 !important;
+}
+
+/* Single-select highlight (blue) */
+:global(.single-select-highlight) {
+    outline: 2px solid #3B82F6 !important;
+    outline-offset: 4px;
+    z-index: 9998 !important;
+}
