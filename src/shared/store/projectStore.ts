@@ -11,6 +11,7 @@ export interface ParkingLot {
   id: string;
   name: string;
   description?: string;
+  thumbnail?: string; // Base64 encoded screenshot of the canvas
   created: string;
   modified: string;
   templateId?: string;

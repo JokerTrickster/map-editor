@@ -51,11 +51,15 @@ export default function ParkingLotCard({
   return (
     <div className={styles.card} onClick={() => onSelect(lot.id)}>
       <div className={styles.cardImage}>
-        <div className={styles.placeholder}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z" />
-          </svg>
-        </div>
+        {lot.thumbnail ? (
+          <img src={lot.thumbnail} alt={lot.name} className={styles.thumbnail} />
+        ) : (
+          <div className={styles.placeholder}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z" />
+            </svg>
+          </div>
+        )}
       </div>
 
       <div className={styles.cardContent}>

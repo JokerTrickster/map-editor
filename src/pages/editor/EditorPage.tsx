@@ -434,7 +434,7 @@ export default function EditorPage() {
   }
 
   const handleSave = () => {
-    if (graph && currentFloor) {
+    if (graph && currentFloor && currentLot) {
       const json = graph.toJSON()
       const currentFloorData = floors.find(f => f.id === currentFloor)
       if (currentFloorData) {
@@ -447,6 +447,68 @@ export default function EditorPage() {
             objects: currentFloorData.mapData?.objects || []
           }
         })
+
+        // Generate and save canvas thumbnail
+        if (paper) {
+          try {
+            const svg = paper.svg
+            const bbox = paper.getContentBBox()
+
+            if (bbox && bbox.width > 0 && bbox.height > 0) {
+              // Create a temporary canvas
+              const canvas = document.createElement('canvas')
+              const targetWidth = 400
+              const targetHeight = 300
+              canvas.width = targetWidth
+              canvas.height = targetHeight
+              const ctx = canvas.getContext('2d')
+
+              if (ctx) {
+                // Fill with background color
+                ctx.fillStyle = '#0f172a'
+                ctx.fillRect(0, 0, targetWidth, targetHeight)
+
+                // Calculate scale to fit content
+                const scale = Math.min(
+                  targetWidth / bbox.width,
+                  targetHeight / bbox.height
+                ) * 0.9 // 90% to leave some padding
+
+                const offsetX = (targetWidth - bbox.width * scale) / 2
+                const offsetY = (targetHeight - bbox.height * scale) / 2
+
+                // Create SVG image
+                const svgData = new XMLSerializer().serializeToString(svg)
+                const img = new Image()
+                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+                const url = URL.createObjectURL(svgBlob)
+
+                img.onload = () => {
+                  ctx.save()
+                  ctx.translate(offsetX, offsetY)
+                  ctx.scale(scale, scale)
+                  ctx.translate(-bbox.x, -bbox.y)
+                  ctx.drawImage(img, bbox.x, bbox.y, bbox.width, bbox.height)
+                  ctx.restore()
+
+                  // Convert to base64
+                  const thumbnail = canvas.toDataURL('image/png', 0.8)
+
+                  // Update project thumbnail
+                  const updateLot = useProjectStore.getState().updateLot
+                  updateLot(currentLot, { thumbnail })
+
+                  URL.revokeObjectURL(url)
+                }
+
+                img.src = url
+              }
+            }
+          } catch (err) {
+            console.error('Failed to generate thumbnail:', err)
+          }
+        }
+
         setShowSaveModal(true)
       }
     }
@@ -468,7 +530,25 @@ export default function EditorPage() {
   }
 
   const handleBackToProjects = () => {
-    navigate('/dashboard')
+    // Check if there are unsaved changes
+    if (graph && graph.getCells().length > 0) {
+      const confirmed = window.confirm(
+        '프로젝트를 나가기 전에 저장하시겠습니까?\n\n저장하지 않은 변경사항은 손실될 수 있습니다.'
+      )
+
+      if (confirmed) {
+        // Save before leaving
+        handleSave()
+        // Navigate after a short delay to allow save to complete
+        setTimeout(() => {
+          navigate('/dashboard')
+        }, 500)
+      } else {
+        navigate('/dashboard')
+      }
+    } else {
+      navigate('/dashboard')
+    }
   }
 
   return (
