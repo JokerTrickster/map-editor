@@ -468,10 +468,10 @@ export default function EditorPage() {
                 ctx.fillStyle = '#0f172a'
                 ctx.fillRect(0, 0, targetWidth, targetHeight)
 
-                // Calculate scale to fit content with minimal padding
+                // Calculate scale to fit content with padding
                 const scaleX = targetWidth / bbox.width
                 const scaleY = targetHeight / bbox.height
-                const scale = Math.min(scaleX, scaleY) * 0.95 // 95% to leave minimal padding
+                const scale = Math.min(scaleX, scaleY) * 0.75 // 75% to show full map with padding
 
                 const scaledWidth = bbox.width * scale
                 const scaledHeight = bbox.height * scale
