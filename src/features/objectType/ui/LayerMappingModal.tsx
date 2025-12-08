@@ -30,6 +30,16 @@ const AUTO_LAYER_KEYWORD_MAPPINGS: Record<string, string> = {
   'emergencybell': '비상벨',
 }
 
+/**
+ * Layers to exclude from auto-mapping
+ * These layers should default to "매핑 안함"
+ */
+const EXCLUDED_LAYERS = [
+  'c-cctv-id',
+  'c-cctv-ip',
+  'p-parking-cctvid',
+]
+
 interface SearchableTypeSelectProps {
   value: string
   options: ObjectType[]
@@ -166,8 +176,19 @@ export function LayerMappingModal({ isOpen, onClose, onConfirm }: LayerMappingMo
       const mappingsMap: Record<string, string> = {}
 
       groupedLayers.forEach(layer => {
-        // Check if this layer should be auto-mapped (keyword matching)
         const layerLower = layer.layer.toLowerCase()
+
+        // Check if this layer is excluded from auto-mapping
+        const isExcluded = EXCLUDED_LAYERS.some(excluded =>
+          layerLower === excluded.toLowerCase()
+        )
+
+        if (isExcluded) {
+          // Skip auto-mapping for excluded layers (매핑 안함)
+          return
+        }
+
+        // Check if this layer should be auto-mapped (keyword matching)
         let autoTypeDisplayName: string | undefined
 
         // Find matching keyword in layer name
