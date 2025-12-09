@@ -7,14 +7,19 @@ interface ModalProps {
     title: string
     children: ReactNode
     footer?: ReactNode
+    maxWidth?: string | number
 }
 
-export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, footer, maxWidth }: ModalProps) {
     if (!isOpen) return null
 
     return (
         <div className={styles.overlay} onClick={onClose}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div
+                className={styles.modal}
+                onClick={(e) => e.stopPropagation()}
+                style={maxWidth ? { maxWidth } : undefined}
+            >
                 <div className={styles.header}>
                     <h3 className={styles.title}>{title}</h3>
                     <button className={styles.closeButton} onClick={onClose}>

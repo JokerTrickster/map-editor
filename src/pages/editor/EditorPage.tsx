@@ -20,6 +20,7 @@ import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
 import { EditorHeader } from './components/EditorHeader'
 import { EditorSidebar } from './components/EditorSidebar'
 import { AutoLinkModal } from './components/AutoLinkModal'
+import { ExportModal } from './components/ExportModal'
 import { useJointJSCanvas } from './hooks/useJointJSCanvas'
 import { useCanvasPanning } from './hooks/useCanvasPanning'
 import { useCanvasZoom } from './hooks/useCanvasZoom'
@@ -77,6 +78,9 @@ export default function EditorPage() {
 
   // Relationship State
   const [showAutoLinkModal, setShowAutoLinkModal] = useState(false)
+
+  // Export State
+  const [showExportModal, setShowExportModal] = useState(false)
 
   // Load Template for Relation Types
   const { template } = useTemplate(currentLotData?.templateId as TemplateId)
@@ -169,6 +173,10 @@ export default function EditorPage() {
 
   const handleOpenAutoLinkModal = () => {
     setShowAutoLinkModal(true)
+  }
+
+  const handleExport = () => {
+    setShowExportModal(true)
   }
 
   const handleAutoLinkConfirm = async (adjustedDistances: Record<string, number>) => {
@@ -717,6 +725,7 @@ export default function EditorPage() {
         onUploadClick={handleUploadClick}
         onSave={() => handleSave(false)}
         onClearCanvas={handleClearCanvas}
+        onExport={handleExport}
         onThemeToggle={toggleTheme}
         onLogout={handleLogout}
         onBackToProjects={handleBackToProjects}
@@ -968,6 +977,16 @@ export default function EditorPage() {
           paper={paper}
         />
       )}
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        graph={graph}
+        lotName={currentLotData?.name}
+        floorName={currentFloor || undefined}
+        floorOrder={1}
+      />
     </div>
   )
 }
