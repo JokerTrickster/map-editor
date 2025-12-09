@@ -67,9 +67,8 @@ function EntityPreview({ entity, mappedType }: EntityPreviewProps) {
     canvas.width = size
     canvas.height = size
 
-    // Fill background
-    ctx.fillStyle = '#0b0f19'
-    ctx.fillRect(0, 0, size, size)
+    // Clear background
+    ctx.clearRect(0, 0, size, size)
 
     if (!entity.points || entity.points.length === 0) return
 
@@ -148,7 +147,7 @@ function SearchableTypeSelect({ value, options, onChange, placeholder = "매핑 
     if (isUrl) {
       return <img src={option.icon} alt="" style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover' }} />
     } else if (isColor) {
-      return <div style={{ width: 20, height: 20, borderRadius: 4, background: option.icon, border: '1px solid rgba(255,255,255,0.2)' }} />
+      return <div style={{ width: 20, height: 20, borderRadius: 4, background: option.icon, border: '1px solid var(--color-border)' }} />
     }
     return null
   }
@@ -408,9 +407,9 @@ export function LayerMappingModal({ isOpen, onClose, onConfirm }: LayerMappingMo
                         ) : (
                           <div className={styles.previewPlaceholder}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                              <path d="M2 17l10 5 10-5"/>
-                              <path d="M2 12l10 5 10-5"/>
+                              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                              <path d="M2 17l10 5 10-5" />
+                              <path d="M2 12l10 5 10-5" />
                             </svg>
                           </div>
                         )}
