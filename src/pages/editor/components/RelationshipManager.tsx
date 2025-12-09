@@ -8,11 +8,8 @@ interface RelationshipManagerProps {
     template?: any
     selectedType?: ObjectType
     relationTypes: Record<string, TemplateRelationType>
-    onStartLinking: (key: string) => void
     onUnlink: (key: string, targetId: string) => void
     onAutoLink: (key: string) => void
-    isLinking: boolean
-    activeRelationKey: string | null
     graph: dia.Graph | null
 }
 
@@ -21,11 +18,8 @@ export function RelationshipManager({
     template,
     selectedType,
     relationTypes,
-    onStartLinking,
     onUnlink,
     onAutoLink,
-    isLinking,
-    activeRelationKey,
     graph
 }: RelationshipManagerProps) {
     const elementData = element.get('data') || {}
@@ -55,6 +49,73 @@ export function RelationshipManager({
 
     console.log('Relevant Relations:', relevantRelations)
 
+    // Get available targets for each relation type
+    const getAvailableTargets = (config: TemplateRelationType) => {
+        if (!graph) return []
+
+        const linkedIds = elementData.properties?.[config.propertyKey]
+        const linkedList = Array.isArray(linkedIds) ? linkedIds : linkedIds ? [linkedIds] : []
+
+        return graph.getElements()
+            .filter(el => el.id !== element.id) // Not self
+            .filter(el => {
+                const elData = el.get('data') || {}
+                const elTypeId = elData.typeId || elData.type
+
+                // Check if element type matches target type
+                if (elTypeId === config.targetType) return true
+
+                // Also check by name
+                if (template?.objectTypes) {
+                    const templateType = template.objectTypes[config.targetType]
+                    if (templateType && elData.properties?.name) {
+                        // This is a simple check, might need more robust matching
+                        return true
+                    }
+                }
+
+                return false
+            })
+            .filter(el => !linkedList.includes(el.id as string)) // Not already linked
+            .map(el => {
+                const elData = el.get('data') || {}
+                return {
+                    id: el.id as string,
+                    name: elData.properties?.name || elData.text || (el.id as string).slice(0, 8),
+                    type: elData.typeId || elData.type
+                }
+            })
+    }
+
+    const handleAddLink = (config: TemplateRelationType, targetId: string) => {
+        // Use the existing linking mechanism through updating element data
+        const currentData = element.get('data') || {}
+        const currentProps = currentData.properties || {}
+        const value = currentProps[config.propertyKey]
+
+        let newValue: string | string[]
+        if (config.cardinality === '1:1') {
+            newValue = targetId
+        } else {
+            // 1:N
+            const list = Array.isArray(value) ? [...value] : (value ? [value] : [])
+            if (!list.includes(targetId)) {
+                list.push(targetId)
+            }
+            newValue = list
+        }
+
+        const newData = {
+            ...currentData,
+            properties: {
+                ...currentProps,
+                [config.propertyKey]: newValue
+            }
+        }
+
+        element.set('data', newData)
+    }
+
     if (relevantRelations.length === 0) return null
 
     return (
@@ -66,11 +127,15 @@ export function RelationshipManager({
                 const linkedList = Array.isArray(linkedIds)
                     ? linkedIds
                     : linkedIds ? [linkedIds] : []
+                const availableTargets = getAvailableTargets(config)
 
                 return (
                     <div key={key} className={styles.relationGroup}>
                         <div className={styles.header}>
-                            <span className={styles.relationName}>{config.name}</span>
+                            <div className={styles.headerLeft}>
+                                <span className={styles.relationName}>{config.name}</span>
+                                <span className={styles.cardinalityBadge}>{config.cardinality}</span>
+                            </div>
                             <div className={styles.actions}>
                                 {config.autoLink && (
                                     <button
@@ -78,34 +143,78 @@ export function RelationshipManager({
                                         onClick={() => onAutoLink(key)}
                                         title="Auto Link"
                                     >
-                                        Auto
+                                        🔗 Auto
                                     </button>
                                 )}
-                                <button
-                                    className={`${styles.linkBtn} ${isLinking && activeRelationKey === key ? styles.active : ''} `}
-                                    onClick={() => onStartLinking(key)}
-                                    disabled={isLinking && activeRelationKey !== key}
-                                >
-                                    {isLinking && activeRelationKey === key ? 'Cancel' : '+ Link'}
-                                </button>
                             </div>
                         </div>
 
+                        {/* Dropdown for adding connections */}
+                        {availableTargets.length > 0 && config.cardinality === '1:N' ? (
+                            <div className={styles.addSection}>
+                                <select
+                                    className={styles.targetSelect}
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            handleAddLink(config, e.target.value)
+                                            e.target.value = '' // Reset
+                                        }
+                                    }}
+                                    defaultValue=""
+                                >
+                                    <option value="" disabled>+ Add connection...</option>
+                                    {availableTargets.map(target => (
+                                        <option key={target.id} value={target.id}>
+                                            {target.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : config.cardinality === '1:1' && linkedList.length === 0 && availableTargets.length > 0 ? (
+                            <div className={styles.addSection}>
+                                <select
+                                    className={styles.targetSelect}
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            handleAddLink(config, e.target.value)
+                                            e.target.value = ''
+                                        }
+                                    }}
+                                    defaultValue=""
+                                >
+                                    <option value="" disabled>Select connection...</option>
+                                    {availableTargets.map(target => (
+                                        <option key={target.id} value={target.id}>
+                                            {target.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : null}
+
+                        {/* Linked objects list */}
                         <div className={styles.linkedList}>
                             {linkedList.length > 0 ? (
                                 linkedList.map((id: string) => {
                                     const targetCell = graph?.getCell(id)
-                                    const targetName = targetCell?.get('data')?.properties?.name ||
-                                        targetCell?.get('data')?.text ||
+                                    const targetData = targetCell?.get('data') || {}
+                                    const targetName = targetData.properties?.name ||
+                                        targetData.text ||
                                         id.slice(0, 8)
+                                    const targetType = targetData.typeId || targetData.type
 
                                     return (
                                         <div key={id} className={styles.linkedItem}>
-                                            <span className={styles.targetName}>{targetName}</span>
+                                            <div className={styles.linkedInfo}>
+                                                <span className={styles.targetName}>{targetName}</span>
+                                                {targetType && (
+                                                    <span className={styles.targetType}>{targetType}</span>
+                                                )}
+                                            </div>
                                             <button
                                                 className={styles.unlinkBtn}
                                                 onClick={() => onUnlink(key, id)}
-                                                title="Unlink"
+                                                title="Remove connection"
                                             >
                                                 ×
                                             </button>
@@ -113,7 +222,7 @@ export function RelationshipManager({
                                     )
                                 })
                             ) : (
-                                <div className={styles.emptyState}>No linked objects</div>
+                                <div className={styles.emptyState}>No connections</div>
                             )}
                         </div>
                     </div>

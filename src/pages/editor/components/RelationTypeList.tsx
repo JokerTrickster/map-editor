@@ -14,6 +14,7 @@ interface RelationTypeListProps {
   onAdd: () => void
   onEdit: (key: string) => void
   onDelete: (key: string) => void
+  onAutoLinkAll?: () => void
 }
 
 export function RelationTypeList({
@@ -22,7 +23,8 @@ export function RelationTypeList({
   templateRelationKeys,
   onAdd,
   onEdit,
-  onDelete
+  onDelete,
+  onAutoLinkAll
 }: RelationTypeListProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
@@ -36,6 +38,9 @@ export function RelationTypeList({
       setTimeout(() => setDeleteConfirm(null), 3000)
     }
   }
+
+  // Check if there are any relations with autoLink config
+  const hasAutoLinkRelations = Object.values(relationTypes).some(config => config.autoLink)
 
   if (!relationTypes || Object.keys(relationTypes).length === 0) {
     return (
@@ -52,9 +57,16 @@ export function RelationTypeList({
     <div className={styles.container}>
       <div className={styles.header}>
         <span className={styles.title}>관계 리스트</span>
-        <button className={styles.addButton} onClick={onAdd}>
-          + 새 관계
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {hasAutoLinkRelations && onAutoLinkAll && (
+            <button className={styles.autoLinkButton} onClick={onAutoLinkAll}>
+              🔗 자동 관계 생성
+            </button>
+          )}
+          <button className={styles.addButton} onClick={onAdd}>
+            + 새 관계
+          </button>
+        </div>
       </div>
 
       <div className={styles.list}>

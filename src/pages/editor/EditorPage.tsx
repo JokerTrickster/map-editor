@@ -19,6 +19,7 @@ import { Modal } from '@/shared/ui/Modal'
 import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
 import { EditorHeader } from './components/EditorHeader'
 import { EditorSidebar } from './components/EditorSidebar'
+import { AutoLinkModal } from './components/AutoLinkModal'
 import { useJointJSCanvas } from './hooks/useJointJSCanvas'
 import { useCanvasPanning } from './hooks/useCanvasPanning'
 import { useCanvasZoom } from './hooks/useCanvasZoom'
@@ -35,7 +36,7 @@ import { useObjectTypeSync } from './hooks/useObjectTypeSync'
 import { ObjectType } from '@/shared/store/objectTypeStore'
 import { useTemplate } from '@/features/template/hooks/useTemplate'
 import { TemplateId } from '@/features/template/lib/templateLoader'
-import { autoLinkObjects, updateRelationship } from '@/features/editor/lib/relationshipUtils'
+import { autoLinkObjects, updateRelationship, autoLinkAllObjects, createRadiusCircles } from '@/features/editor/lib/relationshipUtils'
 import styles from './EditorPage.module.css'
 import '@/shared/lib/testHelpers'
 
@@ -75,8 +76,7 @@ export default function EditorPage() {
   const [autoNavigate, setAutoNavigate] = useState(false)
 
   // Relationship State
-  const [isLinking, setIsLinking] = useState(false)
-  const [activeRelationKey, setActiveRelationKey] = useState<string | null>(null)
+  const [showAutoLinkModal, setShowAutoLinkModal] = useState(false)
 
   // Load Template for Relation Types
   const { template } = useTemplate(currentLotData?.templateId as TemplateId)
@@ -115,18 +115,6 @@ export default function EditorPage() {
   }
 
   // Relationship Handlers
-  const handleStartLinking = (relationKey: string) => {
-    if (isLinking && activeRelationKey === relationKey) {
-      // Cancel linking
-      setIsLinking(false)
-      setActiveRelationKey(null)
-    } else {
-      // Start linking
-      setIsLinking(true)
-      setActiveRelationKey(relationKey)
-    }
-  }
-
   const handleUnlink = (relationKey: string, targetId: string) => {
     if (!selectedElementId || !graph || !template?.relationTypes) return
 
@@ -176,6 +164,47 @@ export default function EditorPage() {
       alert(`Automatically linked ${linkedIds.length} objects.`)
     } else {
       alert('No objects found within range.')
+    }
+  }
+
+  const handleOpenAutoLinkModal = () => {
+    setShowAutoLinkModal(true)
+  }
+
+  const handleAutoLinkConfirm = async (adjustedDistances: Record<string, number>) => {
+    if (!graph || !paper || !template?.relationTypes) return
+
+    console.log('🔗 Auto-link all objects started with adjusted distances:', adjustedDistances)
+    console.log('📊 Relation types:', template.relationTypes)
+    console.log('📊 Total elements on canvas:', graph.getElements().length)
+
+    // Debug: log all elements and their typeIds
+    graph.getElements().forEach(el => {
+      const data = el.get('data') || {}
+      console.log('🎯 Element:', {
+        id: el.id,
+        typeId: data.typeId,
+        type: data.type,
+        data
+      })
+    })
+
+    const results = autoLinkAllObjects(graph, template.relationTypes, template, adjustedDistances)
+
+    console.log('✨ Auto-link results:', results)
+
+    if (results.length > 0) {
+      // Show radius circles for 3 seconds
+      const circles = createRadiusCircles(paper, results)
+
+      setTimeout(() => {
+        circles.forEach(circle => circle.remove())
+      }, 3000)
+
+      const totalLinks = results.reduce((sum, r) => sum + r.targetIds.length, 0)
+      console.log(`✅ Successfully created ${totalLinks} relationships from ${results.length} source objects`)
+    } else {
+      console.warn('⚠️ No relationships created. Check if objects exist and types match.')
     }
   }
 
@@ -245,51 +274,9 @@ export default function EditorPage() {
 
   useDragAndDropMapping(paper, graph, currentFloor || 'default', handleError)
 
-  // Custom selection handler to support linking mode
+  // Selection handler
   const handleSelectionChange = (elementId: string | null) => {
-    if (isLinking && activeRelationKey && selectedElementId && elementId && elementId !== selectedElementId) {
-      // We are in linking mode and clicked another element
-      if (!graph || !template?.relationTypes) return
-
-      const relationConfig = template.relationTypes[activeRelationKey]
-      if (!relationConfig) return
-
-      const targetElement = graph.getCell(elementId)
-      const targetTypeId = targetElement.get('data')?.typeId || targetElement.get('data')?.type
-
-      if (targetTypeId === relationConfig.targetType) {
-        const sourceElement = graph.getCell(selectedElementId) as dia.Element
-
-        updateRelationship(
-          sourceElement,
-          relationConfig.propertyKey,
-          elementId,
-          relationConfig.cardinality,
-          'add'
-        )
-
-        // Update UI
-        handleObjectUpdate(selectedElementId, { data: sourceElement.get('data') })
-
-        // If 1:1, finish linking
-        if (relationConfig.cardinality === '1:1') {
-          setIsLinking(false)
-          setActiveRelationKey(null)
-        }
-      } else {
-        // Invalid target type
-        alert(`Invalid target. Expected type: ${relationConfig.targetType}`)
-      }
-    } else {
-      // Normal selection behavior
-      if (isLinking) {
-        // If we click blank or same element, maybe cancel linking? 
-        // For now let's just allow changing selection which effectively cancels linking for previous element
-        setIsLinking(false)
-        setActiveRelationKey(null)
-      }
-      setSelectedElementId(elementId)
-    }
+    setSelectedElementId(elementId)
   }
 
   const { handleElementClick, handleBlankClick } = useElementSelection(
@@ -953,11 +940,9 @@ export default function EditorPage() {
             graph={graph}
             template={template}
             relationTypes={template?.relationTypes}
-            onStartLinking={handleStartLinking}
             onUnlink={handleUnlink}
             onAutoLink={handleAutoLink}
-            isLinking={isLinking}
-            activeRelationKey={activeRelationKey}
+            onAutoLinkAll={handleOpenAutoLinkModal}
           />
         </ResizablePanel>
       </main>
@@ -970,6 +955,19 @@ export default function EditorPage() {
         onClose={() => setShowMappingModal(false)}
         onConfirm={() => setShowMappingModal(false)}
       />
+
+      {/* Auto Link Modal */}
+      {template?.relationTypes && (
+        <AutoLinkModal
+          isOpen={showAutoLinkModal}
+          onClose={() => setShowAutoLinkModal(false)}
+          onConfirm={handleAutoLinkConfirm}
+          relationTypes={template.relationTypes}
+          template={template}
+          graph={graph}
+          paper={paper}
+        />
+      )}
     </div>
   )
 }

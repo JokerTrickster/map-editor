@@ -197,68 +197,70 @@ export function PropertyEditor({
                 {selectedType && (
                     <div className={styles.group}>
                         <label className={styles.groupLabel}>
-                            {isCsvEntity ? 'Object Properties' : 'Custom Properties'}
-                            {isCsvEntity && <span className={styles.csvNote}> (from mapped type)</span>}
+                            {isCsvEntity ? 'Properties' : 'Properties'}
+                            {isCsvEntity && <span className={styles.csvNote}> (mapped)</span>}
                         </label>
-                        {selectedType.properties
-                            .filter(prop => prop.key !== 'name') // Name is shown at top
-                            .map(prop => {
-                                const value = customProperties[prop.key]
+                        <div className={styles.propertyTable}>
+                            {selectedType.properties
+                                .filter(prop => prop.key !== 'name') // Name is shown at top
+                                .map(prop => {
+                                    const value = customProperties[prop.key]
 
-                                return (
-                                    <div key={prop.key} className={styles.propertyRow}>
-                                        <label className={styles.propertyLabel}>
-                                            {prop.key}
-                                            {prop.required && <span className={styles.required}>*</span>}
-                                            <span className={styles.propertyType}> ({prop.type})</span>
-                                        </label>
-                                        {prop.type === 'boolean' ? (
-                                            <input
-                                                type="checkbox"
-                                                checked={!!value}
-                                                onChange={(e) => handlePropertyChange(prop.key, e.target.checked)}
-                                            />
-                                        ) : prop.type === 'number' ? (
-                                            <input
-                                                type="number"
-                                                value={value ?? ''}
-                                                onChange={(e) => {
-                                                    const numValue = e.target.value === '' ? '' : parseFloat(e.target.value)
-                                                    handlePropertyChange(prop.key, numValue)
-                                                }}
-                                                className={styles.input}
-                                                placeholder={`Enter ${prop.key}`}
-                                            />
-                                        ) : prop.type === 'array' ? (
-                                            <input
-                                                type="text"
-                                                value={Array.isArray(value) ? value.join(', ') : value || ''}
-                                                onChange={(e) => {
-                                                    const arrValue = e.target.value.split(',').map(v => v.trim()).filter(v => v)
-                                                    handlePropertyChange(prop.key, arrValue)
-                                                }}
-                                                className={styles.input}
-                                                placeholder="Comma-separated values"
-                                            />
-                                        ) : (
-                                            <input
-                                                type="text"
-                                                value={value ?? ''}
-                                                onChange={(e) => handlePropertyChange(prop.key, e.target.value)}
-                                                className={styles.input}
-                                                placeholder={`Enter ${prop.key}`}
-                                            />
-                                        )}
-                                    </div>
-                                )
-                            })}
+                                    return (
+                                        <div key={prop.key} className={styles.propertyRow}>
+                                            <label className={styles.propertyLabel}>
+                                                {prop.key}
+                                                {prop.required && <span className={styles.required}>*</span>}
+                                                <span className={styles.propertyType}>({prop.type})</span>
+                                            </label>
+                                            <div>
+                                                {prop.type === 'boolean' ? (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={!!value}
+                                                        onChange={(e) => handlePropertyChange(prop.key, e.target.checked)}
+                                                    />
+                                                ) : prop.type === 'number' ? (
+                                                    <input
+                                                        type="number"
+                                                        value={value ?? ''}
+                                                        onChange={(e) => {
+                                                            const numValue = e.target.value === '' ? '' : parseFloat(e.target.value)
+                                                            handlePropertyChange(prop.key, numValue)
+                                                        }}
+                                                        className={styles.input}
+                                                        placeholder={prop.key}
+                                                    />
+                                                ) : prop.type === 'array' ? (
+                                                    <input
+                                                        type="text"
+                                                        value={Array.isArray(value) ? value.join(', ') : value || ''}
+                                                        onChange={(e) => {
+                                                            const arrValue = e.target.value.split(',').map(v => v.trim()).filter(v => v)
+                                                            handlePropertyChange(prop.key, arrValue)
+                                                        }}
+                                                        className={styles.input}
+                                                        placeholder="comma-separated"
+                                                    />
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        value={value ?? ''}
+                                                        onChange={(e) => handlePropertyChange(prop.key, e.target.value)}
+                                                        className={styles.input}
+                                                        placeholder={prop.key}
+                                                    />
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                        </div>
                         {selectedType.properties.length === 0 && (
-                            <div className={styles.emptyProperties}>No properties defined for this type</div>
+                            <div className={styles.emptyProperties}>No properties</div>
                         )}
                     </div>
                 )}
-
-
 
                 <div className={styles.group}>
                     <label className={styles.groupLabel}>Position</label>

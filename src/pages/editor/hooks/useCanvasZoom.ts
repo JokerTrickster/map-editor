@@ -83,25 +83,23 @@ export function useCanvasZoom(
   // Wheel zoom handler
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault()
+      e.preventDefault()
 
-        if (!paper) return
+      if (!paper) return
 
-        const currentScale = paper.scale().sx
-        const delta = e.deltaY > 0 ? 0.9 : 1.1
+      const currentScale = paper.scale().sx
+      const delta = e.deltaY > 0 ? 0.9 : 1.1
 
-        let nextScale = currentScale * delta
-        nextScale = Math.max(0.1, Math.min(nextScale, 5))
+      let nextScale = currentScale * delta
+      nextScale = Math.max(0.1, Math.min(nextScale, 5))
 
-        const rect = paper.el.parentElement?.getBoundingClientRect()
-        if (!rect) return
+      const rect = paper.el.parentElement?.getBoundingClientRect()
+      if (!rect) return
 
-        const ox = e.clientX - rect.left
-        const oy = e.clientY - rect.top
+      const ox = e.clientX - rect.left
+      const oy = e.clientY - rect.top
 
-        zoomToPoint(nextScale, ox, oy)
-      }
+      zoomToPoint(nextScale, ox, oy)
     }
 
     const canvasEl = canvasRef.current

@@ -25,17 +25,15 @@ interface EditorSidebarProps {
   graph: dia.Graph | null
   template?: any
   relationTypes?: Record<string, TemplateRelationType>
-  onStartLinking: (key: string) => void
   onUnlink: (key: string, targetId: string) => void
   onAutoLink: (key: string) => void
-  isLinking: boolean
-  activeRelationKey: string | null
+  onAutoLinkAll?: () => void
 }
 
 export function EditorSidebar({
   loadedFileName,
-  elementCount,
-  zoom,
+  elementCount: _elementCount,
+  zoom: _zoom,
   objectsByLayer,
   selectedElementId,
   onObjectClick,
@@ -43,11 +41,9 @@ export function EditorSidebar({
   graph,
   template,
   relationTypes: initialRelationTypes,
-  onStartLinking,
   onUnlink,
   onAutoLink,
-  isLinking,
-  activeRelationKey
+  onAutoLinkAll
 }: EditorSidebarProps) {
   const [activeTab, setActiveTab] = useState<'properties' | 'relationships'>('properties')
   const [mainTab, setMainTab] = useState<'objects' | 'relations'>('objects')
@@ -198,11 +194,8 @@ export function EditorSidebar({
                 template={template}
                 selectedType={getSelectedType()}
                 relationTypes={relationTypes || {}}
-                onStartLinking={onStartLinking}
                 onUnlink={onUnlink}
                 onAutoLink={onAutoLink}
-                isLinking={isLinking}
-                activeRelationKey={activeRelationKey}
                 graph={graph}
               />
             )}
@@ -316,6 +309,7 @@ export function EditorSidebar({
                     onAdd={handleAddRelation}
                     onEdit={handleEditRelation}
                     onDelete={handleDeleteRelation}
+                    onAutoLinkAll={onAutoLinkAll}
                   />
                 )}
               </>
