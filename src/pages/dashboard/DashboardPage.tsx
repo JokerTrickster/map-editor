@@ -129,7 +129,7 @@ export default function DashboardPage() {
             name: typeData.displayName,
             icon: typeData.icon,
             color: typeData.defaultStyle?.color || '#000000',
-            priority: typeData.priority,
+            priority: (typeData as any).priority ?? 5,
             properties,
           }
         })

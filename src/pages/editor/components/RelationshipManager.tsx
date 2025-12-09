@@ -1,5 +1,3 @@
-
-import React from 'react'
 import { dia } from '@joint/core'
 import { TemplateRelationType } from '@/entities/schema/templateSchema'
 import styles from './RelationshipManager.module.css'
@@ -15,7 +13,7 @@ interface RelationshipManagerProps {
     onAutoLink: (key: string) => void
     isLinking: boolean
     activeRelationKey: string | null
-    graph: dia.Graph
+    graph: dia.Graph | null
 }
 
 export function RelationshipManager({
@@ -38,7 +36,7 @@ export function RelationshipManager({
 
     // Filter relations where this element is the source
     const relevantRelations = Object.entries(relationTypes).filter(
-        ([key, config]) => {
+        ([_key, config]) => {
             // 1. Direct match (if element uses template key as ID)
             if (config.sourceType === elementTypeId) return true
 
@@ -96,7 +94,7 @@ export function RelationshipManager({
                         <div className={styles.linkedList}>
                             {linkedList.length > 0 ? (
                                 linkedList.map((id: string) => {
-                                    const targetCell = graph.getCell(id)
+                                    const targetCell = graph?.getCell(id)
                                     const targetName = targetCell?.get('data')?.properties?.name ||
                                         targetCell?.get('data')?.text ||
                                         id.slice(0, 8)

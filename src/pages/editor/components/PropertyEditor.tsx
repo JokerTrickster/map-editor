@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { dia } from '@joint/core'
 import { useObjectTypeStore } from '@/shared/store/objectTypeStore'
 import styles from './PropertyEditor.module.css'
@@ -6,13 +6,13 @@ import styles from './PropertyEditor.module.css'
 interface PropertyEditorProps {
     element: dia.Element
     onUpdate: (id: string, data: any) => void
-    graph: dia.Graph
+    graph: dia.Graph | null
 }
 
 export function PropertyEditor({
     element,
     onUpdate,
-    graph
+    graph: _graph
 }: PropertyEditorProps) {
     const types = useObjectTypeStore(state => state.types)
 
@@ -23,6 +23,7 @@ export function PropertyEditor({
     const [jsonData, setJsonData] = useState('')
     const [jsonError, setJsonError] = useState<string | null>(null)
     const [isCsvEntity, setIsCsvEntity] = useState(false)
+    const [showJson, setShowJson] = useState(false)
 
     useEffect(() => {
         setPosition(element.position())
@@ -309,14 +310,37 @@ export function PropertyEditor({
             </div>
 
             <div className={styles.section}>
-                <h3 className={styles.title}>Raw Data (JSON)</h3>
-                <textarea
-                    value={jsonData}
-                    onChange={handleJsonChange}
-                    className={`${styles.textarea} ${jsonError ? styles.error : ''}`}
-                    rows={10}
-                />
-                {jsonError && <div className={styles.errorMessage}>{jsonError}</div>}
+                <button
+                    onClick={() => setShowJson(!showJson)}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary)',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '0',
+                        marginBottom: showJson ? '12px' : '0'
+                    }}
+                >
+                    {showJson ? '▼' : '▶'} JSON 미리보기
+                </button>
+
+                {showJson && (
+                    <>
+                        <div className={styles.jsonPreview}>
+                            <textarea
+                                value={jsonData}
+                                onChange={handleJsonChange}
+                                className={`${styles.jsonContent} ${jsonError ? styles.error : ''}`}
+                                rows={10}
+                            />
+                        </div>
+                        {jsonError && <div className={styles.errorMessage}>{jsonError}</div>}
+                    </>
+                )}
             </div>
         </div>
     )

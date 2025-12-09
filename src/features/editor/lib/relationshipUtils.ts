@@ -4,7 +4,7 @@ import { TemplateRelationType } from '@/entities/schema/templateSchema'
 export function autoLinkObjects(
     graph: dia.Graph,
     sourceElement: dia.Element,
-    relationKey: string,
+    _relationKey: string,
     config: TemplateRelationType
 ): string[] {
     if (!config.autoLink) return []

@@ -3,12 +3,14 @@
  * Right sidebar showing map info and object list
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { dia } from '@joint/core'
 import styles from './EditorSidebar.module.css'
 
 import { PropertyEditor } from './PropertyEditor'
 import { RelationshipManager } from './RelationshipManager'
+import { RelationTypeList } from './RelationTypeList'
+import { RelationTypeManager } from './RelationTypeManager'
 import { TemplateRelationType } from '@/entities/schema/templateSchema'
 import { ObjectType, useObjectTypeStore } from '@/shared/store/objectTypeStore'
 
@@ -20,7 +22,7 @@ interface EditorSidebarProps {
   selectedElementId: string | null
   onObjectClick: (elementId: string) => void
   onObjectUpdate?: (id: string, updates: Partial<any>) => void
-  graph: dia.Graph
+  graph: dia.Graph | null
   template?: any
   relationTypes?: Record<string, TemplateRelationType>
   onStartLinking: (key: string) => void
@@ -40,7 +42,7 @@ export function EditorSidebar({
   onObjectUpdate,
   graph,
   template,
-  relationTypes,
+  relationTypes: initialRelationTypes,
   onStartLinking,
   onUnlink,
   onAutoLink,
@@ -48,8 +50,60 @@ export function EditorSidebar({
   activeRelationKey
 }: EditorSidebarProps) {
   const [activeTab, setActiveTab] = useState<'properties' | 'relationships'>('properties')
+  const [mainTab, setMainTab] = useState<'objects' | 'relations'>('objects')
+  const [relationTypes, setRelationTypes] = useState<Record<string, TemplateRelationType>>(initialRelationTypes || {})
+  const [isAddingRelation, setIsAddingRelation] = useState(false)
+  const [editingRelation, setEditingRelation] = useState<{key: string, config: TemplateRelationType} | null>(null)
+  const [selectedLayer, setSelectedLayer] = useState<string>('all')
+
+  // Track template relation keys (cannot be edited or deleted)
+  const [templateRelationKeys] = useState<Set<string>>(
+    new Set(Object.keys(initialRelationTypes || {}))
+  )
+
   const selectedElement = selectedElementId && graph ? graph.getCell(selectedElementId) : null
   const objectTypes = useObjectTypeStore(state => state.types)
+
+  // Sync with initial relationTypes when template changes
+  useEffect(() => {
+    if (initialRelationTypes) {
+      setRelationTypes(initialRelationTypes)
+    }
+  }, [initialRelationTypes])
+
+  // CRUD handlers for relation types
+  const handleAddRelation = () => {
+    setIsAddingRelation(true)
+  }
+
+  const handleEditRelation = (key: string) => {
+    const config = relationTypes[key]
+    if (config) {
+      setEditingRelation({ key, config })
+    }
+  }
+
+  const handleDeleteRelation = (key: string) => {
+    const updated = { ...relationTypes }
+    delete updated[key]
+    setRelationTypes(updated)
+    // TODO: Persist to store/backend
+  }
+
+  const handleSaveRelation = (key: string, config: TemplateRelationType) => {
+    setRelationTypes({
+      ...relationTypes,
+      [key]: config
+    })
+    setIsAddingRelation(false)
+    setEditingRelation(null)
+    // TODO: Persist to store/backend
+  }
+
+  const handleCancelRelation = () => {
+    setIsAddingRelation(false)
+    setEditingRelation(null)
+  }
 
   // Helper to get selected type object for relationship matching
   const getSelectedType = (): ObjectType | undefined => {
@@ -157,33 +211,83 @@ export function EditorSidebar({
       ) : (
         <>
           <div className={styles.sidebarHeader}>Map Info</div>
+
+          {/* Main Tab Navigation */}
+          {loadedFileName && (
+            <div className={styles.tabContainer}>
+              <button
+                className={`${styles.tabButton} ${mainTab === 'objects' ? styles.active : ''}`}
+                onClick={() => setMainTab('objects')}
+              >
+                객체 리스트
+              </button>
+              <button
+                className={`${styles.tabButton} ${mainTab === 'relations' ? styles.active : ''}`}
+                onClick={() => setMainTab('relations')}
+              >
+                관계 리스트
+              </button>
+            </div>
+          )}
+
           <div className={styles.sidebarContent}>
             {loadedFileName ? (
               <>
-                <div className={styles.infoItem}>
-                  <div className={styles.infoLabel}>File</div>
-                  <div className={styles.infoValue}>{loadedFileName}</div>
-                </div>
-                <div className={styles.infoItem}>
-                  <div className={styles.infoLabel}>Elements</div>
-                  <div className={styles.infoValue}>{elementCount}</div>
-                </div>
-                <div className={styles.infoItem}>
-                  <div className={styles.infoLabel}>Zoom</div>
-                  <div className={styles.infoValue}>{Math.round(zoom * 100)}%</div>
-                </div>
+                {mainTab === 'objects' ? (
+                  /* Object List by Layer */
+                  <div className={styles.objectList}>
+                    <div className={styles.objectListHeader}>Objects</div>
 
-                {/* Object List by Layer */}
-                <div className={styles.objectList}>
-                  <div className={styles.objectListHeader}>Objects</div>
-                  <div className={styles.objectListContent}>
-                    {Array.from(objectsByLayer.entries()).map(([layer, elements]) => (
-                      <details key={layer} open>
-                        <summary className={styles.layerSummary}>
-                          {layer} ({elements.length})
-                        </summary>
-                        <div className={styles.layerElements}>
-                          {elements.map((element) => {
+                    {/* Layer Selector */}
+                    <div className={styles.layerSelector}>
+                      <label className={styles.layerSelectorLabel}>레이어</label>
+                      <select
+                        className={styles.layerSelectorDropdown}
+                        value={selectedLayer}
+                        onChange={(e) => setSelectedLayer(e.target.value)}
+                      >
+                        <option value="all">전체 보기</option>
+                        {Array.from(objectsByLayer.keys()).map(layer => (
+                          <option key={layer} value={layer}>
+                            {layer} ({objectsByLayer.get(layer)?.length || 0})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Object List */}
+                    <div className={styles.objectListContent}>
+                      {selectedLayer === 'all' ? (
+                        // Show all layers
+                        Array.from(objectsByLayer.entries()).map(([layer, elements]) => (
+                          <details key={layer} open>
+                            <summary className={styles.layerSummary}>
+                              {layer} ({elements.length})
+                            </summary>
+                            <div className={styles.layerElements}>
+                              {elements.map((element) => {
+                                const elementId = element.id as string
+                                const data = element.get('data')
+                                const text = data?.text || data?.entityHandle || elementId.slice(0, 8)
+                                const isSelected = selectedElementId === elementId
+
+                                return (
+                                  <div
+                                    key={elementId}
+                                    onClick={() => onObjectClick(elementId)}
+                                    className={`${styles.elementItem} ${isSelected ? styles.elementItemSelected : ''}`}
+                                  >
+                                    {text}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </details>
+                        ))
+                      ) : (
+                        // Show selected layer only
+                        <div className={styles.singleLayerView}>
+                          {objectsByLayer.get(selectedLayer)?.map((element) => {
                             const elementId = element.id as string
                             const data = element.get('data')
                             const text = data?.text || data?.entityHandle || elementId.slice(0, 8)
@@ -200,16 +304,36 @@ export function EditorSidebar({
                             )
                           })}
                         </div>
-                      </details>
-                    ))}
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* Relations List */
+                  <RelationTypeList
+                    relationTypes={relationTypes}
+                    template={template}
+                    templateRelationKeys={templateRelationKeys}
+                    onAdd={handleAddRelation}
+                    onEdit={handleEditRelation}
+                    onDelete={handleDeleteRelation}
+                  />
+                )}
               </>
             ) : (
               <p className={styles.emptyMessage}>Upload a CSV file to view the map</p>
             )}
           </div>
         </>
+      )}
+
+      {/* Relation Type Add/Edit Modal */}
+      {(isAddingRelation || editingRelation) && (
+        <RelationTypeManager
+          template={template}
+          initialData={editingRelation || undefined}
+          onSave={handleSaveRelation}
+          onCancel={handleCancelRelation}
+        />
       )}
     </aside>
   )

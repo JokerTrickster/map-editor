@@ -60,7 +60,6 @@ export function createElementsFromCSV(
   bounds: { minX: number; maxX: number; minY: number; maxY: number },
   typeMappings?: TypeMapping[]
 ): RenderResult {
-  const elements: dia.Element[] = []
   const objectsByLayer = new Map<string, dia.Element[]>()
 
   // Create mapping lookup map
@@ -179,8 +178,6 @@ function createElementFromEntity(
     fillColor = getLayerFillColor(layer)
     strokeColor = getLayerStrokeColor(layer)
   }
-
-  const labelText = mappedType?.name || ''
 
   // Check if icon is an actual asset file (from /assets/parking/)
   // Only use Image element for actual SVG/image files, not color codes

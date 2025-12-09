@@ -260,7 +260,8 @@
   },
   "relationTypes": {
     "cctv_monitoring": {
-      "name": "CCTV Monitoring",
+      "name": "CCTV 주차구역 모니터링",
+      "description": "조명 CCTV가 모니터링하는 주차 구역",
       "sourceType": "lightCctv",
       "targetType": "parkingLocation",
       "cardinality": "1:N",
@@ -270,8 +271,37 @@
         "maxDistance": 200
       }
     },
+    "cctv_emergency_bell": {
+      "name": "CCTV 비상벨 연결",
+      "description": "조명 CCTV가 연결된 비상벨",
+      "sourceType": "lightCctv",
+      "targetType": "emergencyBell",
+      "cardinality": "1:N",
+      "propertyKey": "linkedEmergencyBellIds",
+      "autoLink": {
+        "strategy": "nearest",
+        "maxDistance": 150
+      }
+    },
+    "cctv_right_connection": {
+      "name": "CCTV 우측 연결",
+      "description": "조명 CCTV의 우측에 연결된 CCTV",
+      "sourceType": "lightCctv",
+      "targetType": "lightCctv",
+      "cardinality": "1:N",
+      "propertyKey": "rightCctvIds"
+    },
+    "cctv_left_connection": {
+      "name": "CCTV 좌측 연결",
+      "description": "조명 CCTV의 좌측에 연결된 CCTV",
+      "sourceType": "lightCctv",
+      "targetType": "lightCctv",
+      "cardinality": "1:N",
+      "propertyKey": "leftCctvIds"
+    },
     "emergency_bell_cctv": {
-      "name": "Emergency Bell Link",
+      "name": "비상벨 CCTV 연결",
+      "description": "비상벨이 연결된 조명 CCTV",
       "sourceType": "emergencyBell",
       "targetType": "lightCctv",
       "cardinality": "1:1",

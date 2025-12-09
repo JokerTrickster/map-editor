@@ -196,3 +196,31 @@
     color: var(--local-text-tertiary);
     font-weight: 400;
 }
+
+/* JSON Preview */
+.jsonPreview {
+    margin-top: 8px;
+    background: var(--local-surface);
+    border: 1px solid var(--local-border);
+    border-radius: 4px;
+    padding: 12px;
+    overflow: auto;
+}
+
+.jsonContent {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--local-text);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    outline: none;
+    resize: vertical;
+}
+
+.jsonContent.error {
+    border: 1px solid var(--local-error);
+    border-radius: 4px;
+    padding: 8px;
+}

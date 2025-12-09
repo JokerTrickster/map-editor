@@ -147,6 +147,10 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
     updateType(typeId, { priority })
   }
 
+  const handleColorChange = (typeId: string, color: string) => {
+    updateType(typeId, { color })
+  }
+
   const addProperty = () => {
     setFormData({
       ...formData,
@@ -497,6 +501,7 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
                 onEdit={() => startEdit(type)}
                 onDelete={() => handleDelete(type.id)}
                 onPriorityChange={handlePriorityChange}
+                onColorChange={handleColorChange}
                 typeItemClassName={styles.typeItem}
                 selectedClassName={styles.selected}
                 typeHeaderClassName={styles.typeHeader}
