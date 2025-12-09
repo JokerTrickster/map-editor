@@ -33,6 +33,9 @@ import { useCSVProcessing } from './hooks/useCSVProcessing'
 import { useDragAndDropMapping } from './hooks/useDragAndDropMapping'
 import { useObjectTypeSync } from './hooks/useObjectTypeSync'
 import { ObjectType } from '@/shared/store/objectTypeStore'
+import { useTemplate } from '@/features/template/hooks/useTemplate'
+import { TemplateId } from '@/features/template/lib/templateLoader'
+import { autoLinkObjects, updateRelationship } from '@/features/editor/lib/relationshipUtils'
 import styles from './EditorPage.module.css'
 import '@/shared/lib/testHelpers'
 
@@ -68,6 +71,23 @@ export default function EditorPage() {
   const [showNoTypesModal, setShowNoTypesModal] = useState(false)
   const [showMappingModal, setShowMappingModal] = useState(false)
   const [errorModal, setErrorModal] = useState<{ show: boolean; message: string }>({ show: false, message: '' })
+  const [saveCountdown, setSaveCountdown] = useState(3)
+  const [autoNavigate, setAutoNavigate] = useState(false)
+
+  // Relationship State
+  const [isLinking, setIsLinking] = useState(false)
+  const [activeRelationKey, setActiveRelationKey] = useState<string | null>(null)
+
+  // Load Template for Relation Types
+  const { template } = useTemplate(currentLotData?.templateId as TemplateId)
+
+  useEffect(() => {
+    console.log('[EditorPage] Template loaded:', {
+      id: currentLotData?.templateId,
+      hasTemplate: !!template,
+      relationTypes: template?.relationTypes
+    })
+  }, [template, currentLotData])
 
   const handleError = (error: Error) => {
     setErrorModal({ show: true, message: error.message })
@@ -91,6 +111,71 @@ export default function EditorPage() {
 
     if (updates.data) {
       element.set('data', updates.data)
+    }
+  }
+
+  // Relationship Handlers
+  const handleStartLinking = (relationKey: string) => {
+    if (isLinking && activeRelationKey === relationKey) {
+      // Cancel linking
+      setIsLinking(false)
+      setActiveRelationKey(null)
+    } else {
+      // Start linking
+      setIsLinking(true)
+      setActiveRelationKey(relationKey)
+    }
+  }
+
+  const handleUnlink = (relationKey: string, targetId: string) => {
+    if (!selectedElementId || !graph || !template?.relationTypes) return
+
+    const element = graph.getCell(selectedElementId) as dia.Element
+    if (!element) return
+
+    const relationConfig = template.relationTypes[relationKey]
+    if (!relationConfig) return
+
+    updateRelationship(
+      element,
+      relationConfig.propertyKey,
+      targetId,
+      relationConfig.cardinality,
+      'remove'
+    )
+
+    // Trigger update to refresh UI
+    handleObjectUpdate(selectedElementId, { data: element.get('data') })
+  }
+
+  const handleAutoLink = (relationKey: string) => {
+    if (!selectedElementId || !graph || !template?.relationTypes) return
+
+    const element = graph.getCell(selectedElementId) as dia.Element
+    if (!element) return
+
+    const relationConfig = template.relationTypes[relationKey]
+    if (!relationConfig || !relationConfig.autoLink) return
+
+    const linkedIds = autoLinkObjects(graph, element, relationKey, relationConfig)
+
+    if (linkedIds.length > 0) {
+      let newData = element.get('data')
+
+      linkedIds.forEach(targetId => {
+        newData = updateRelationship(
+          element,
+          relationConfig.propertyKey,
+          targetId,
+          relationConfig.cardinality,
+          'add'
+        ).properties ? element.get('data') : newData // updateRelationship updates element, but we need latest data
+      })
+
+      handleObjectUpdate(selectedElementId, { data: newData })
+      alert(`Automatically linked ${linkedIds.length} objects.`)
+    } else {
+      alert('No objects found within range.')
     }
   }
 
@@ -160,11 +245,58 @@ export default function EditorPage() {
 
   useDragAndDropMapping(paper, graph, currentFloor || 'default', handleError)
 
+  // Custom selection handler to support linking mode
+  const handleSelectionChange = (elementId: string | null) => {
+    if (isLinking && activeRelationKey && selectedElementId && elementId && elementId !== selectedElementId) {
+      // We are in linking mode and clicked another element
+      if (!graph || !template?.relationTypes) return
+
+      const relationConfig = template.relationTypes[activeRelationKey]
+      if (!relationConfig) return
+
+      const targetElement = graph.getCell(elementId)
+      const targetTypeId = targetElement.get('data')?.typeId || targetElement.get('data')?.type
+
+      if (targetTypeId === relationConfig.targetType) {
+        const sourceElement = graph.getCell(selectedElementId) as dia.Element
+
+        updateRelationship(
+          sourceElement,
+          relationConfig.propertyKey,
+          elementId,
+          relationConfig.cardinality,
+          'add'
+        )
+
+        // Update UI
+        handleObjectUpdate(selectedElementId, { data: sourceElement.get('data') })
+
+        // If 1:1, finish linking
+        if (relationConfig.cardinality === '1:1') {
+          setIsLinking(false)
+          setActiveRelationKey(null)
+        }
+      } else {
+        // Invalid target type
+        alert(`Invalid target. Expected type: ${relationConfig.targetType}`)
+      }
+    } else {
+      // Normal selection behavior
+      if (isLinking) {
+        // If we click blank or same element, maybe cancel linking? 
+        // For now let's just allow changing selection which effectively cancels linking for previous element
+        setIsLinking(false)
+        setActiveRelationKey(null)
+      }
+      setSelectedElementId(elementId)
+    }
+  }
+
   const { handleElementClick, handleBlankClick } = useElementSelection(
     graph,
     paper,
     selectedElementId,
-    setSelectedElementId,
+    handleSelectionChange,
     () => {
       setSelectedTypeId(null)
       setSelectedElementIds(new Set())
@@ -433,8 +565,10 @@ export default function EditorPage() {
     reader.readAsText(file)
   }
 
-  const handleSave = () => {
+  const handleSave = (shouldAutoNavigate = false) => {
     if (graph && currentFloor && currentLot) {
+      console.log('💾 Saving project:', { currentLot, currentFloor })
+
       const json = graph.toJSON()
       const currentFloorData = floors.find(f => f.id === currentFloor)
       if (currentFloorData) {
@@ -447,6 +581,8 @@ export default function EditorPage() {
             objects: currentFloorData.mapData?.objects || []
           }
         })
+
+        console.log('📊 Floor data saved:', { floorId: currentFloor, elementCount: graph.getCells().length })
 
         // Generate and save canvas thumbnail
         if (paper) {
@@ -498,6 +634,8 @@ export default function EditorPage() {
                   const updateLot = useProjectStore.getState().updateLot
                   updateLot(currentLot, { thumbnail })
 
+                  console.log('🖼️ Thumbnail saved for project:', currentLot)
+
                   URL.revokeObjectURL(url)
                 }
 
@@ -509,6 +647,8 @@ export default function EditorPage() {
           }
         }
 
+        setSaveCountdown(3)
+        setAutoNavigate(shouldAutoNavigate)
         setShowSaveModal(true)
       }
     }
@@ -537,12 +677,8 @@ export default function EditorPage() {
       )
 
       if (confirmed) {
-        // Save before leaving
-        handleSave()
-        // Navigate after a short delay to allow save to complete
-        setTimeout(() => {
-          navigate('/dashboard')
-        }, 500)
+        // Save before leaving with auto-navigation enabled
+        handleSave(true)
       } else {
         navigate('/dashboard')
       }
@@ -550,6 +686,28 @@ export default function EditorPage() {
       navigate('/dashboard')
     }
   }
+
+  const handleSaveModalConfirm = () => {
+    const shouldNavigate = autoNavigate
+    setShowSaveModal(false)
+    setAutoNavigate(false)
+    if (shouldNavigate) {
+      navigate('/dashboard')
+    }
+  }
+
+  // Countdown timer for save modal (only when autoNavigate is enabled)
+  useEffect(() => {
+    if (showSaveModal && autoNavigate && saveCountdown > 0) {
+      const timer = setTimeout(() => {
+        setSaveCountdown(saveCountdown - 1)
+      }, 1000)
+      return () => clearTimeout(timer)
+    } else if (showSaveModal && autoNavigate && saveCountdown === 0) {
+      setShowSaveModal(false)
+      navigate('/dashboard')
+    }
+  }, [showSaveModal, autoNavigate, saveCountdown, navigate])
 
   return (
     <div className={styles.container}>
@@ -570,7 +728,7 @@ export default function EditorPage() {
         onZoomReset={handleZoomReset}
         onFitToScreen={handleFitToScreen}
         onUploadClick={handleUploadClick}
-        onSave={handleSave}
+        onSave={() => handleSave(false)}
         onClearCanvas={handleClearCanvas}
         onThemeToggle={toggleTheme}
         onLogout={handleLogout}
@@ -617,15 +775,101 @@ export default function EditorPage() {
         {/* Save Success Modal */}
         <Modal
           isOpen={showSaveModal}
-          onClose={() => setShowSaveModal(false)}
-          title="Success"
-          footer={
-            <button className={styles.primaryButton} onClick={() => setShowSaveModal(false)}>
-              OK
-            </button>
-          }
+          onClose={() => {
+            setShowSaveModal(false)
+            setAutoNavigate(false)
+          }}
+          title="저장 완료"
         >
-          <p>Map saved successfully!</p>
+          <div style={{
+            padding: '40px 20px',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '24px'
+          }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: 'successPulse 0.6s ease-out',
+              boxShadow: '0 8px 24px rgba(16, 185, 129, 0.3)'
+            }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div>
+              <h3 style={{
+                margin: '0 0 8px 0',
+                fontSize: '20px',
+                fontWeight: '600',
+                color: 'var(--color-text)'
+              }}>
+                저장되었습니다!
+              </h3>
+              <p style={{
+                margin: 0,
+                fontSize: '14px',
+                color: 'var(--color-text-secondary)',
+                lineHeight: '1.6'
+              }}>
+                맵 데이터와 썸네일이 성공적으로 저장되었습니다.
+              </p>
+            </div>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+              width: '100%'
+            }}>
+              <button
+                className={styles.primaryButton}
+                onClick={autoNavigate ? handleSaveModalConfirm : () => {
+                  setShowSaveModal(false)
+                  setAutoNavigate(false)
+                }}
+                style={{
+                  minWidth: '200px',
+                  padding: '12px 32px',
+                  background: 'linear-gradient(135deg, #3b82f6, #60a5fa)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.4)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)'
+                }}
+              >
+                {autoNavigate ? '대시보드로 이동' : '확인'}
+              </button>
+              {autoNavigate && (
+                <p style={{
+                  margin: 0,
+                  fontSize: '12px',
+                  color: 'var(--color-text-tertiary)'
+                }}>
+                  {saveCountdown}초 후 자동으로 이동합니다
+                </p>
+              )}
+            </div>
+          </div>
         </Modal>
 
         {/* Error Modal */}
@@ -694,7 +938,12 @@ export default function EditorPage() {
         </div>
 
         {/* Right Sidebar */}
-        <ResizablePanel side="right" defaultWidth={320} minWidth={250} maxWidth={500} defaultCollapsed={true}>
+        <ResizablePanel
+          side="right"
+          defaultWidth={300}
+          minWidth={200}
+          maxWidth={400}
+        >
           <EditorSidebar
             loadedFileName={loadedFileName}
             elementCount={elementCount}
@@ -704,6 +953,13 @@ export default function EditorPage() {
             onObjectClick={handleElementClick}
             onObjectUpdate={handleObjectUpdate}
             graph={graph}
+            template={template}
+            relationTypes={template?.relationTypes}
+            onStartLinking={handleStartLinking}
+            onUnlink={handleUnlink}
+            onAutoLink={handleAutoLink}
+            isLinking={isLinking}
+            activeRelationKey={activeRelationKey}
           />
         </ResizablePanel>
       </main>

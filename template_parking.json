@@ -35,5 +35,29 @@
     },
     "onePassReader": {},
     "lights": {},
-    "occupancyLight": {}
+    "occupancyLight": {},
+    "relationTypes": {
+        "cctv_monitoring": {
+            "name": "CCTV Monitoring",
+            "sourceType": "lightCctv",
+            "targetType": "parkingLocation",
+            "cardinality": "1:N",
+            "propertyKey": "linkedParkingLocationIds",
+            "autoLink": {
+                "strategy": "nearest",
+                "maxDistance": 200
+            }
+        },
+        "emergency_bell_cctv": {
+            "name": "Emergency Bell Link",
+            "sourceType": "emergencyBell",
+            "targetType": "lightCctv",
+            "cardinality": "1:1",
+            "propertyKey": "linkedCctvId",
+            "autoLink": {
+                "strategy": "nearest",
+                "maxDistance": 100
+            }
+        }
+    }
 }

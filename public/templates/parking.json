@@ -259,31 +259,27 @@
     }
   },
   "relationTypes": {
-    "linkedTo": {
-      "displayName": "연결됨",
-      "description": "두 객체가 논리적으로 연결되어 있음",
-      "allowedPairs": [
-        ["lightCctv", "parkingLocation"],
-        ["lightCctv", "emergencyBell"],
-        ["emergencyBell", "lightCctv"],
-        ["guideBoard", "parkingLocation"],
-        ["guideBoard", "zone"]
-      ]
+    "cctv_monitoring": {
+      "name": "CCTV Monitoring",
+      "sourceType": "lightCctv",
+      "targetType": "parkingLocation",
+      "cardinality": "1:N",
+      "propertyKey": "linkedParkingLocationIds",
+      "autoLink": {
+        "strategy": "nearest",
+        "maxDistance": 200
+      }
     },
-    "contains": {
-      "displayName": "포함",
-      "description": "한 객체가 다른 객체를 포함함",
-      "allowedPairs": [
-        ["zone", "parkingLocation"],
-        ["zone", "lightCctv"]
-      ]
-    },
-    "adjacent": {
-      "displayName": "인접",
-      "description": "두 CCTV가 서로 인접해 있음",
-      "allowedPairs": [
-        ["lightCctv", "lightCctv"]
-      ]
+    "emergency_bell_cctv": {
+      "name": "Emergency Bell Link",
+      "sourceType": "emergencyBell",
+      "targetType": "lightCctv",
+      "cardinality": "1:1",
+      "propertyKey": "linkedCctvId",
+      "autoLink": {
+        "strategy": "nearest",
+        "maxDistance": 100
+      }
     }
   },
   "assets": [
@@ -330,7 +326,28 @@
       "name": "A구역",
       "geometry": {
         "type": "polygon",
-        "coordinates": [[100, 100], [400, 100], [400, 300], [100, 300], [100, 100]]
+        "coordinates": [
+          [
+            100,
+            100
+          ],
+          [
+            400,
+            100
+          ],
+          [
+            400,
+            300
+          ],
+          [
+            100,
+            300
+          ],
+          [
+            100,
+            100
+          ]
+        ]
       },
       "style": {
         "color": "#8B5CF6",
@@ -348,7 +365,28 @@
       "name": "A-1",
       "geometry": {
         "type": "polygon",
-        "coordinates": [[120, 120], [200, 120], [200, 170], [120, 170], [120, 120]]
+        "coordinates": [
+          [
+            120,
+            120
+          ],
+          [
+            200,
+            120
+          ],
+          [
+            200,
+            170
+          ],
+          [
+            120,
+            170
+          ],
+          [
+            120,
+            120
+          ]
+        ]
       },
       "style": {
         "color": "#10B981",
@@ -368,7 +406,28 @@
       "name": "A-2",
       "geometry": {
         "type": "polygon",
-        "coordinates": [[220, 120], [300, 120], [300, 170], [220, 170], [220, 120]]
+        "coordinates": [
+          [
+            220,
+            120
+          ],
+          [
+            300,
+            120
+          ],
+          [
+            300,
+            170
+          ],
+          [
+            220,
+            170
+          ],
+          [
+            220,
+            120
+          ]
+        ]
       },
       "style": {
         "color": "#10B981",
@@ -388,7 +447,10 @@
       "name": "CCTV-1",
       "geometry": {
         "type": "point",
-        "coordinates": [250, 80]
+        "coordinates": [
+          250,
+          80
+        ]
       },
       "style": {
         "color": "#3B82F6",
@@ -397,10 +459,33 @@
       },
       "properties": {
         "ipAddress": "192.168.1.101",
-        "linkedParkingLocationIds": [],
+        "linkedParkingLocationIds": [
+          "parking-a1",
+          "parking-a2"
+        ],
         "linkedEmergencyBellIds": [],
         "rightCctvIds": [],
         "leftCctvIds": []
+      }
+    },
+    {
+      "id": "bell-1",
+      "type": "emergencyBell",
+      "name": "비상벨-1",
+      "geometry": {
+        "type": "point",
+        "coordinates": [
+          250,
+          150
+        ]
+      },
+      "style": {
+        "color": "#DC2626",
+        "size": 28,
+        "icon": "bell"
+      },
+      "properties": {
+        "linkedCctvId": "cctv-1"
       }
     },
     {
@@ -409,7 +494,10 @@
       "name": "메인 입구",
       "geometry": {
         "type": "point",
-        "coordinates": [250, 350]
+        "coordinates": [
+          250,
+          350
+        ]
       },
       "style": {
         "color": "#14B8A6",

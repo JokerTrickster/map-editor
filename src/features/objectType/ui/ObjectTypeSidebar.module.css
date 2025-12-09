@@ -1,19 +1,19 @@
 /**
- * Object Type Sidebar Styles - Enhanced Design (Forced Dark Theme)
+ * Object Type Sidebar Styles - Responsive to Theme
  */
 
 .container {
-  /* Force Dark Theme Tokens */
-  --local-bg: #0b0f19;
-  --local-surface: #151b2b;
-  --local-surface-hover: #1e293b;
-  --local-text: #f8fafc;
-  --local-text-secondary: #94a3b8;
-  --local-text-tertiary: #64748b;
-  --local-border: #1e293b;
-  --local-primary: #3b82f6;
-  --local-primary-hover: #60a5fa;
-  --local-error: #f87171;
+  /* Use theme-aware CSS variables */
+  --local-bg: var(--color-bg);
+  --local-surface: var(--color-surface);
+  --local-surface-hover: var(--color-surface-hover);
+  --local-text: var(--color-text);
+  --local-text-secondary: var(--color-text-secondary);
+  --local-text-tertiary: var(--color-text-tertiary);
+  --local-border: var(--color-border);
+  --local-primary: var(--color-primary);
+  --local-primary-hover: var(--color-primary-hover);
+  --local-error: var(--color-error);
 
   display: flex;
   flex-direction: column;
@@ -117,7 +117,7 @@
 .properties {
   margin-top: 16px;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--local-surface-hover);
   border-radius: 8px;
   border: 1px solid var(--local-border);
 }
@@ -264,7 +264,7 @@
 }
 
 .cancelButton:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--local-surface-hover);
   border-color: var(--local-text-secondary);
 }
 
@@ -413,7 +413,7 @@
 .propertyType {
   color: var(--local-text-secondary);
   font-size: 11px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--local-surface-hover);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -434,7 +434,7 @@
 .jsonPreview {
   margin-top: 20px;
   padding: 12px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--local-surface);
   border-radius: 8px;
   border: 1px solid var(--local-border);
 }

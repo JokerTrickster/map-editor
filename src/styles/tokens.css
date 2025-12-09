@@ -113,10 +113,10 @@
   /* Slate-800 */
   --color-text: #f8fafc;
   /* Slate-50 */
-  --color-text-secondary: #94a3b8;
+  --color-text-secondary: #cbd5e1;
+  /* Slate-300 - Lighter for better visibility */
+  --color-text-tertiary: #94a3b8;
   /* Slate-400 */
-  --color-text-tertiary: #64748b;
-  /* Slate-500 */
 
   /* Brand Colors */
   --color-primary: #3b82f6;

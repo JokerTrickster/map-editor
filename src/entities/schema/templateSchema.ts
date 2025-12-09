@@ -28,9 +28,16 @@ export const TemplateObjectTypeSchema = z.object({
  * Defines allowed relationships between object types
  */
 export const TemplateRelationTypeSchema = z.object({
-  displayName: z.string(),
+  name: z.string(),
   description: z.string().optional(),
-  allowedPairs: z.array(z.tuple([z.string(), z.string()])),
+  sourceType: z.string(),
+  targetType: z.string(),
+  cardinality: z.enum(['1:1', '1:N']),
+  propertyKey: z.string(),
+  autoLink: z.object({
+    strategy: z.enum(['nearest']),
+    maxDistance: z.number()
+  }).optional()
 });
 
 /**

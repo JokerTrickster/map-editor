@@ -8,6 +8,7 @@ import { useObjectTypeStore, ObjectType } from '@/shared/store/objectTypeStore'
 import { useCSVStore } from '@/features/csv/model/csvStore'
 import { useFloorStore } from '@/shared/store/floorStore'
 import { CSVPreviewCanvas } from './components/CSVPreviewCanvas'
+import { ParsedEntity } from '@/features/csv/lib/csvParser'
 import styles from './LayerMappingModal.module.css'
 
 /**
@@ -45,6 +46,90 @@ interface SearchableTypeSelectProps {
   options: ObjectType[]
   onChange: (value: string) => void
   placeholder?: string
+}
+
+interface EntityPreviewProps {
+  entity: ParsedEntity
+  mappedType?: ObjectType
+}
+
+function EntityPreview({ entity, mappedType }: EntityPreviewProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const size = 40
+    canvas.width = size
+    canvas.height = size
+
+    // Fill background
+    ctx.fillStyle = '#0b0f19'
+    ctx.fillRect(0, 0, size, size)
+
+    if (!entity.points || entity.points.length === 0) return
+
+    // Calculate bounds
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+    entity.points.forEach(p => {
+      minX = Math.min(minX, p.x)
+      maxX = Math.max(maxX, p.x)
+      minY = Math.min(minY, p.y)
+      maxY = Math.max(maxY, p.y)
+    })
+
+    const width = maxX - minX
+    const height = maxY - minY
+
+    if (width === 0 || height === 0) return
+
+    // Calculate scale to fit in canvas with padding
+    const scale = Math.min(size / width, size / height) * 0.7
+    const offsetX = (size - width * scale) / 2
+    const offsetY = (size - height * scale) / 2
+
+    // Transform points
+    const transformedPoints = entity.points.map(p => ({
+      x: (p.x - minX) * scale + offsetX,
+      y: (p.y - minY) * scale + offsetY
+    }))
+
+    // Draw entity
+    ctx.beginPath()
+    ctx.moveTo(transformedPoints[0].x, transformedPoints[0].y)
+
+    for (let i = 1; i < transformedPoints.length; i++) {
+      ctx.lineTo(transformedPoints[i].x, transformedPoints[i].y)
+    }
+
+    // Close path for polygons
+    if (entity.entityType === 'LWPOLYLINE' || entity.entityType === 'POLYLINE') {
+      ctx.closePath()
+    }
+
+    // Use mapped type color if available
+    if (mappedType?.icon?.startsWith('#')) {
+      ctx.strokeStyle = mappedType.icon
+      ctx.fillStyle = mappedType.icon + '40' // Add transparency
+    } else {
+      ctx.strokeStyle = '#3b82f6'
+      ctx.fillStyle = '#3b82f640'
+    }
+
+    ctx.lineWidth = 1.5
+    ctx.stroke()
+
+    // Fill if polygon
+    if (entity.entityType === 'LWPOLYLINE' || entity.entityType === 'POLYLINE') {
+      ctx.fill()
+    }
+  }, [entity, mappedType])
+
+  return <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
 }
 
 function SearchableTypeSelect({ value, options, onChange, placeholder = "매핑 안함" }: SearchableTypeSelectProps) {
@@ -304,23 +389,45 @@ export function LayerMappingModal({ isOpen, onClose, onConfirm }: LayerMappingMo
 
           <div className={styles.mappingSection}>
             <div className={styles.mappingList}>
-              {groupedLayers?.map(layer => (
-                <div
-                  key={layer.layer}
-                  className={`${styles.mappingItem} ${selectedLayer === layer.layer ? styles.selectedMappingItem : ''}`}
-                  onClick={() => setSelectedLayer(layer.layer === selectedLayer ? null : layer.layer)}
-                >
-                  <div className={styles.layerInfo}>
-                    <div className={styles.layerName}>{layer.layer}</div>
-                    <div className={styles.layerCount}>{layer.entities.length}개 엔티티</div>
+              {groupedLayers?.map(layer => {
+                // Get first entity for preview
+                const firstEntity = layer.entities[0]
+                const typeId = layerMappings[layer.layer]
+                const mappedType = types.find(t => t.id === typeId)
+
+                return (
+                  <div
+                    key={layer.layer}
+                    className={`${styles.mappingItem} ${selectedLayer === layer.layer ? styles.selectedMappingItem : ''}`}
+                    onClick={() => setSelectedLayer(layer.layer === selectedLayer ? null : layer.layer)}
+                  >
+                    <div className={styles.layerInfo}>
+                      <div className={styles.layerPreview}>
+                        {firstEntity ? (
+                          <EntityPreview entity={firstEntity} mappedType={mappedType} />
+                        ) : (
+                          <div className={styles.previewPlaceholder}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                              <path d="M2 17l10 5 10-5"/>
+                              <path d="M2 12l10 5 10-5"/>
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <div className={styles.layerDetails}>
+                        <div className={styles.layerName}>{layer.layer}</div>
+                        <div className={styles.layerCount}>{layer.entities.length}개 엔티티</div>
+                      </div>
+                    </div>
+                    <SearchableTypeSelect
+                      value={layerMappings[layer.layer] || ''}
+                      options={types}
+                      onChange={(value) => handleMappingChange(layer.layer, value)}
+                    />
                   </div>
-                  <SearchableTypeSelect
-                    value={layerMappings[layer.layer] || ''}
-                    options={types}
-                    onChange={(value) => handleMappingChange(layer.layer, value)}
-                  />
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>

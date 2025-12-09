@@ -1,6 +1,18 @@
 .container {
+    /* Use theme-aware CSS variables */
+    --local-bg: var(--color-bg);
+    --local-surface: var(--color-surface);
+    --local-surface-hover: var(--color-surface-hover);
+    --local-text: var(--color-text);
+    --local-text-secondary: var(--color-text-secondary);
+    --local-text-tertiary: var(--color-text-tertiary);
+    --local-border: var(--color-border);
+    --local-primary: var(--color-primary);
+    --local-primary-hover: var(--color-primary-hover);
+    --local-error: var(--color-error);
+
     padding: 16px;
-    color: #e2e8f0;
+    color: var(--local-text);
 }
 
 .section {
@@ -11,7 +23,7 @@
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 12px;
-    color: #94a3b8;
+    color: var(--local-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -30,7 +42,7 @@
 .groupLabel {
     display: block;
     font-size: 12px;
-    color: #64748b;
+    color: var(--local-text-tertiary);
     margin-bottom: 4px;
 }
 
@@ -43,24 +55,24 @@
 
 .field label {
     font-size: 12px;
-    color: #64748b;
+    color: var(--local-text-tertiary);
     width: 12px;
 }
 
 .input {
     width: 100%;
-    background: #1e293b;
-    border: 1px solid #334155;
+    background: var(--local-surface);
+    border: 1px solid var(--local-border);
     border-radius: 4px;
     padding: 6px 8px;
-    color: #f1f5f9;
+    color: var(--local-text);
     font-size: 13px;
     outline: none;
     transition: border-color 0.2s;
 }
 
 .input:focus {
-    border-color: #3b82f6;
+    border-color: var(--local-primary);
 }
 
 .input:disabled {
@@ -70,11 +82,11 @@
 
 .textarea {
     width: 100%;
-    background: #1e293b;
-    border: 1px solid #334155;
+    background: var(--local-surface);
+    border: 1px solid var(--local-border);
     border-radius: 4px;
     padding: 8px;
-    color: #f1f5f9;
+    color: var(--local-text);
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
     font-size: 12px;
     line-height: 1.5;
@@ -84,20 +96,20 @@
 }
 
 .textarea:focus {
-    border-color: #3b82f6;
+    border-color: var(--local-primary);
 }
 
 .textarea.error {
-    border-color: #ef4444;
+    border-color: var(--local-error);
 }
 
 .select {
     width: 100%;
-    background: #1e293b;
-    border: 1px solid #334155;
+    background: var(--local-surface);
+    border: 1px solid var(--local-border);
     border-radius: 4px;
     padding: 6px 8px;
-    color: #f1f5f9;
+    color: var(--local-text);
     font-size: 13px;
     outline: none;
     transition: border-color 0.2s;
@@ -105,7 +117,7 @@
 }
 
 .select:focus {
-    border-color: #3b82f6;
+    border-color: var(--local-primary);
 }
 
 .propertyRow {
@@ -115,24 +127,24 @@
 .propertyLabel {
     display: block;
     font-size: 12px;
-    color: #94a3b8;
+    color: var(--local-text-secondary);
     margin-bottom: 4px;
 }
 
 .required {
-    color: #ef4444;
+    color: var(--local-error);
     margin-left: 2px;
 }
 
 .emptyProperties {
     font-size: 12px;
-    color: #64748b;
+    color: var(--local-text-tertiary);
     font-style: italic;
     padding: 8px 0;
 }
 
 .errorMessage {
-    color: #ef4444;
+    color: var(--local-error);
     font-size: 12px;
     margin-top: 4px;
 }
@@ -146,18 +158,18 @@
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    background: #1e293b;
-    border: 1px solid #334155;
+    background: var(--local-surface);
+    border: 1px solid var(--local-border);
     border-radius: 4px;
     font-size: 13px;
-    color: #f1f5f9;
+    color: var(--local-text);
 }
 
 .mappedBadge {
     margin-left: auto;
     padding: 2px 8px;
     background: rgba(59, 130, 246, 0.2);
-    color: #3b82f6;
+    color: var(--local-primary);
     border-radius: 4px;
     font-size: 11px;
     font-weight: 500;
@@ -165,22 +177,22 @@
 
 .noType {
     padding: 8px 12px;
-    background: #1e293b;
-    border: 1px solid #334155;
+    background: var(--local-surface);
+    border: 1px solid var(--local-border);
     border-radius: 4px;
     font-size: 13px;
-    color: #64748b;
+    color: var(--local-text-tertiary);
     font-style: italic;
 }
 
 .csvNote {
     font-size: 11px;
-    color: #64748b;
+    color: var(--local-text-tertiary);
     font-weight: 400;
 }
 
 .propertyType {
     font-size: 10px;
-    color: #64748b;
+    color: var(--local-text-tertiary);
     font-weight: 400;
 }

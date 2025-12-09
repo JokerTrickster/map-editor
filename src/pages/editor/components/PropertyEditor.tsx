@@ -5,10 +5,15 @@ import styles from './PropertyEditor.module.css'
 
 interface PropertyEditorProps {
     element: dia.Element
-    onUpdate: (id: string, updates: Partial<any>) => void
+    onUpdate: (id: string, data: any) => void
+    graph: dia.Graph
 }
 
-export function PropertyEditor({ element, onUpdate }: PropertyEditorProps) {
+export function PropertyEditor({
+    element,
+    onUpdate,
+    graph
+}: PropertyEditorProps) {
     const types = useObjectTypeStore(state => state.types)
 
     const [position, setPosition] = useState<{ x: number; y: number }>(element.position())
@@ -31,8 +36,8 @@ export function PropertyEditor({ element, onUpdate }: PropertyEditorProps) {
         setIsCsvEntity(isCSV)
 
         // Initialize selected type and custom properties from data
-        if (data.typeId) {
-            setSelectedTypeId(data.typeId)
+        if (data.typeId || data.type) {
+            setSelectedTypeId(data.typeId || data.type)
         }
 
         // Initialize properties with default values from object type
@@ -197,60 +202,62 @@ export function PropertyEditor({ element, onUpdate }: PropertyEditorProps) {
                         {selectedType.properties
                             .filter(prop => prop.key !== 'name') // Name is shown at top
                             .map(prop => {
-                            const value = customProperties[prop.key]
+                                const value = customProperties[prop.key]
 
-                            return (
-                                <div key={prop.key} className={styles.propertyRow}>
-                                    <label className={styles.propertyLabel}>
-                                        {prop.key}
-                                        {prop.required && <span className={styles.required}>*</span>}
-                                        <span className={styles.propertyType}> ({prop.type})</span>
-                                    </label>
-                                    {prop.type === 'boolean' ? (
-                                        <input
-                                            type="checkbox"
-                                            checked={!!value}
-                                            onChange={(e) => handlePropertyChange(prop.key, e.target.checked)}
-                                        />
-                                    ) : prop.type === 'number' ? (
-                                        <input
-                                            type="number"
-                                            value={value ?? ''}
-                                            onChange={(e) => {
-                                                const numValue = e.target.value === '' ? '' : parseFloat(e.target.value)
-                                                handlePropertyChange(prop.key, numValue)
-                                            }}
-                                            className={styles.input}
-                                            placeholder={`Enter ${prop.key}`}
-                                        />
-                                    ) : prop.type === 'array' ? (
-                                        <input
-                                            type="text"
-                                            value={Array.isArray(value) ? value.join(', ') : value || ''}
-                                            onChange={(e) => {
-                                                const arrValue = e.target.value.split(',').map(v => v.trim()).filter(v => v)
-                                                handlePropertyChange(prop.key, arrValue)
-                                            }}
-                                            className={styles.input}
-                                            placeholder="Comma-separated values"
-                                        />
-                                    ) : (
-                                        <input
-                                            type="text"
-                                            value={value ?? ''}
-                                            onChange={(e) => handlePropertyChange(prop.key, e.target.value)}
-                                            className={styles.input}
-                                            placeholder={`Enter ${prop.key}`}
-                                        />
-                                    )}
-                                </div>
-                            )
-                        })}
+                                return (
+                                    <div key={prop.key} className={styles.propertyRow}>
+                                        <label className={styles.propertyLabel}>
+                                            {prop.key}
+                                            {prop.required && <span className={styles.required}>*</span>}
+                                            <span className={styles.propertyType}> ({prop.type})</span>
+                                        </label>
+                                        {prop.type === 'boolean' ? (
+                                            <input
+                                                type="checkbox"
+                                                checked={!!value}
+                                                onChange={(e) => handlePropertyChange(prop.key, e.target.checked)}
+                                            />
+                                        ) : prop.type === 'number' ? (
+                                            <input
+                                                type="number"
+                                                value={value ?? ''}
+                                                onChange={(e) => {
+                                                    const numValue = e.target.value === '' ? '' : parseFloat(e.target.value)
+                                                    handlePropertyChange(prop.key, numValue)
+                                                }}
+                                                className={styles.input}
+                                                placeholder={`Enter ${prop.key}`}
+                                            />
+                                        ) : prop.type === 'array' ? (
+                                            <input
+                                                type="text"
+                                                value={Array.isArray(value) ? value.join(', ') : value || ''}
+                                                onChange={(e) => {
+                                                    const arrValue = e.target.value.split(',').map(v => v.trim()).filter(v => v)
+                                                    handlePropertyChange(prop.key, arrValue)
+                                                }}
+                                                className={styles.input}
+                                                placeholder="Comma-separated values"
+                                            />
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={value ?? ''}
+                                                onChange={(e) => handlePropertyChange(prop.key, e.target.value)}
+                                                className={styles.input}
+                                                placeholder={`Enter ${prop.key}`}
+                                            />
+                                        )}
+                                    </div>
+                                )
+                            })}
                         {selectedType.properties.length === 0 && (
                             <div className={styles.emptyProperties}>No properties defined for this type</div>
                         )}
                     </div>
                 )}
+
+
 
                 <div className={styles.group}>
                     <label className={styles.groupLabel}>Position</label>

@@ -91,18 +91,18 @@ export function CSVPreviewCanvas({ groupedLayers, layerMappings, objectTypes, se
       const isSelected = selectedLayer === layer.layer
       const baseColor = getLayerColor(layer.layer)
 
-      // Change color when selected
-      const color = isSelected ? '#FFAA00' : baseColor // Bright orange for selected
+      // Change color when selected - bright purple to match the selection color
+      const color = isSelected ? '#a78bfa' : baseColor // Bright purple for selected
 
       layer.entities.forEach(entity => {
         if (entity.points.length === 0) return
 
         // Dim unselected layers when a layer is selected
-        const alpha = selectedLayer && !isSelected ? 0.2 : 1
+        const alpha = selectedLayer && !isSelected ? 0.15 : 1
 
         ctx.strokeStyle = color
         ctx.fillStyle = color
-        ctx.lineWidth = isSelected ? 4 : 2
+        ctx.lineWidth = isSelected ? 5 : 2
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
         ctx.globalAlpha = alpha
@@ -128,7 +128,7 @@ export function CSVPreviewCanvas({ groupedLayers, layerMappings, objectTypes, se
         if (isClosed) {
           ctx.closePath()
           // Fill with semi-transparent color
-          const fillAlpha = isSelected ? 0.3 : 0.2
+          const fillAlpha = isSelected ? 0.4 : 0.2
           ctx.globalAlpha = alpha * fillAlpha
           ctx.fill()
           ctx.globalAlpha = alpha
@@ -136,12 +136,20 @@ export function CSVPreviewCanvas({ groupedLayers, layerMappings, objectTypes, se
 
         ctx.stroke()
 
+        // Draw glow effect for selected layer
+        if (isSelected) {
+          ctx.shadowColor = '#a78bfa'
+          ctx.shadowBlur = 15
+          ctx.stroke()
+          ctx.shadowBlur = 0
+        }
+
         // Draw points for visibility
         if (entity.points.length === 1) {
           // Single point - draw circle
           const p = transformedPoints[0]
           ctx.beginPath()
-          ctx.arc(p.x, p.y, isSelected ? 5 : 4, 0, Math.PI * 2)
+          ctx.arc(p.x, p.y, isSelected ? 6 : 4, 0, Math.PI * 2)
           ctx.fill()
         }
       })
