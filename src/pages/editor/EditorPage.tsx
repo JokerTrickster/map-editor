@@ -927,11 +927,9 @@ export default function EditorPage() {
           <div ref={canvasRef} className={styles.canvas} />
 
           {/* Minimap Container */}
-          {(loadedFileName || elementCount > 0) && (
-            <div className={styles.minimapContainer} ref={minimapContainerRef}>
-              <div className={styles.minimapViewport} ref={viewportRectRef} />
-            </div>
-          )}
+          <div className={styles.minimapContainer} ref={minimapContainerRef}>
+            <div className={styles.minimapViewport} ref={viewportRectRef} />
+          </div>
 
           {/* Loading Overlay */}
           {isRestoring && <LoadingOverlay message="Loading floor..." />}

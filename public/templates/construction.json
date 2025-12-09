@@ -179,29 +179,29 @@
     }
   },
   "relationTypes": {
-    "monitors": {
-      "displayName": "감시",
+    "cctv_monitors_zone": {
+      "name": "CCTV Monitoring",
       "description": "CCTV가 특정 구역을 감시함",
-      "allowedPairs": [
-        ["safetyCctv", "hazardZone"],
-        ["safetyCctv", "constructionEntrance"]
-      ]
+      "sourceType": "safetyCctv",
+      "targetType": "hazardZone",
+      "cardinality": "1:N",
+      "propertyKey": "monitoredZones"
     },
-    "protects": {
-      "displayName": "보호",
-      "description": "안전 장비가 구역을 보호함",
-      "allowedPairs": [
-        ["barrier", "hazardZone"],
-        ["safetyCone", "hazardZone"]
-      ]
+    "barrier_protects_zone": {
+      "name": "Barrier Protection",
+      "description": "바리케이드가 위험 구역을 보호함",
+      "sourceType": "barrier",
+      "targetType": "hazardZone",
+      "cardinality": "1:N",
+      "propertyKey": "protectedZones"
     },
-    "accessTo": {
-      "displayName": "접근",
+    "entrance_access": {
+      "name": "Entrance Access",
       "description": "출입구에서 접근 가능한 구역",
-      "allowedPairs": [
-        ["constructionEntrance", "safetyZone"],
-        ["constructionEntrance", "hazardZone"]
-      ]
+      "sourceType": "constructionEntrance",
+      "targetType": "safetyZone",
+      "cardinality": "1:N",
+      "propertyKey": "accessibleZones"
     }
   },
   "assets": [
