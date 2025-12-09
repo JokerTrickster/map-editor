@@ -651,10 +651,57 @@ export default function EditorPage() {
 
   const handleClearCanvas = () => {
     if (graph) {
-      if (confirm('정말 초기화 하시겠습니까?')) {
-        graph.clear()
-        setElementCount(0)
-        setObjectsByLayer(new Map())
+      if (confirm('레이어 매핑된 객체를 삭제하고 템플릿 객체의 속성과 관계를 초기화하시겠습니까?')) {
+        // Remove all CSV-imported (layer-mapped) objects
+        const elementsToRemove: dia.Element[] = []
+        const templateElements: dia.Element[] = []
+
+        graph.getElements().forEach(element => {
+          const data = element.get('data') || {}
+          if (data.type === 'csv-entity') {
+            // Mark CSV entities for removal
+            elementsToRemove.push(element)
+          } else {
+            // Keep template objects but reset them
+            templateElements.push(element)
+          }
+        })
+
+        // Remove CSV entities
+        elementsToRemove.forEach(element => element.remove())
+
+        // Reset template objects (clear properties and relationships)
+        templateElements.forEach(element => {
+          const data = element.get('data') || {}
+          const resetData = {
+            ...data,
+            properties: {
+              name: data.properties?.name || '' // Keep name but reset other properties
+            }
+          }
+          element.set('data', resetData)
+        })
+
+        // Remove all links (relationships)
+        graph.getLinks().forEach(link => link.remove())
+
+        // Update counts
+        setElementCount(graph.getElements().length)
+
+        // Rebuild objectsByLayer map (only template objects remain)
+        const newObjectsByLayer = new Map<string, dia.Element[]>()
+        graph.getElements().forEach(element => {
+          const data = element.get('data') || {}
+          const layer = data.layer || 'default'
+
+          if (!newObjectsByLayer.has(layer)) {
+            newObjectsByLayer.set(layer, [])
+          }
+          newObjectsByLayer.get(layer)!.push(element)
+        })
+        setObjectsByLayer(newObjectsByLayer)
+
+        console.log(`✅ Cleared ${elementsToRemove.length} CSV objects, kept ${templateElements.length} template objects`)
       }
     }
   }
