@@ -23,3 +23,4 @@ Append the implementation results to the feature documentation file:
 ---
 
 Use the Edit tool to append to the existing file.
+한국어로 작성해줘야 된다.

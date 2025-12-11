@@ -47,3 +47,4 @@ Document structure:
 _This section will be updated after implementation_
 
 Use clear, structured markdown with proper headings and formatting.
+한국어로 작성해줘야 된다.

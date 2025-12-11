@@ -13,7 +13,10 @@ import styles from './AutoLinkModal.module.css'
 interface AutoLinkModalProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm: (adjustedDistances: Record<string, number>) => Promise<void> | void
+  onConfirm: (
+    adjustedDistances: Record<string, number>,
+    enabledRelations: Record<string, boolean>
+  ) => Promise<void> | void
   relationTypes: Record<string, TemplateRelationType>
   template?: any
   graph: dia.Graph | null
@@ -69,6 +72,17 @@ export function AutoLinkModal({
     Object.keys(relationTypes).forEach(key => {
       if (relationTypes[key].autoLink) {
         initial[key] = true
+      }
+    })
+    return initial
+  })
+
+  // Individual enable toggle for each relation type (default: all enabled)
+  const [enabledRelations, setEnabledRelations] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {}
+    Object.keys(relationTypes).forEach(key => {
+      if (relationTypes[key].autoLink) {
+        initial[key] = true  // Default: all enabled
       }
     })
     return initial
@@ -189,13 +203,22 @@ export function AutoLinkModal({
   }
 
   const handleConfirm = async () => {
+    // Validation: Check if at least one relation is enabled
+    const hasEnabledRelation = Object.values(enabledRelations).some(enabled => enabled)
+
+    if (!hasEnabledRelation) {
+      alert('최소 1개 이상의 관계 타입을 활성화해야 합니다.')
+      return
+    }
+
     setIsLoading(true)
 
     // Allow UI to update before heavy computation
     await new Promise(resolve => setTimeout(resolve, 100))
 
     try {
-      await onConfirm(distances)
+      // Pass both adjusted distances and enabled relations
+      await onConfirm(distances, enabledRelations)
       // Close modal after successful completion
       onClose()
     } catch (error) {
@@ -222,6 +245,13 @@ export function AutoLinkModal({
     }))
   }
 
+  const handleToggleEnabled = (relationKey: string) => {
+    setEnabledRelations(prev => ({
+      ...prev,
+      [relationKey]: !prev[relationKey]
+    }))
+  }
+
   return (
     <>
       {/* Render circle previews on canvas */}
@@ -235,7 +265,9 @@ export function AutoLinkModal({
           pointerEvents: 'none',
           zIndex: 5
         }}>
-          {circles.filter(circle => showPreview[circle.relationKey]).map((circle, index) => (
+          {circles
+            .filter(circle => showPreview[circle.relationKey] && enabledRelations[circle.relationKey])
+            .map((circle, index) => (
             <div key={index}>
               {/* Outer circle (filled) */}
               <div
@@ -322,23 +354,52 @@ export function AutoLinkModal({
                 const counts = objectCounts[key] || { sources: 0, targets: 0 }
 
                 return (
-                  <div key={key} className={styles.relationItem}>
+                  <div
+                    key={key}
+                    className={`${styles.relationItem} ${!enabledRelations[key] ? styles.disabled : ''}`}
+                  >
                     <div className={styles.relationHeader}>
                       <div className={styles.relationHeaderTop}>
                         <div className={styles.relationNameGroup}>
                           <span className={styles.relationName}>{config.name}</span>
                           <span className={styles.cardinalityBadge}>{config.cardinality}</span>
+                          <span
+                            className={`${styles.duplicatesBadge} ${
+                              config.autoLink?.allowDuplicates
+                                ? styles.duplicatesBadgeAllowed
+                                : styles.duplicatesBadgeNotAllowed
+                            }`}
+                          >
+                            {config.autoLink?.allowDuplicates ? '중복 허용' : '중복 불가'}
+                          </span>
                         </div>
-                        <label className={styles.previewToggleSmall}>
-                          <input
-                            type="checkbox"
-                            checked={showPreview[key] ?? true}
-                            onChange={() => handleTogglePreview(key)}
-                            className={styles.toggleCheckboxSmall}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <span className={styles.toggleTextSmall}>미리보기</span>
-                        </label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          {/* Enable toggle */}
+                          <label
+                            className={`${styles.enableToggle} ${!enabledRelations[key] ? styles.disabled : ''}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={enabledRelations[key] ?? true}
+                              onChange={() => handleToggleEnabled(key)}
+                              className={styles.enableCheckbox}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className={styles.enableText}>활성화</span>
+                          </label>
+
+                          {/* Preview toggle */}
+                          <label className={styles.previewToggleSmall}>
+                            <input
+                              type="checkbox"
+                              checked={showPreview[key] ?? true}
+                              onChange={() => handleTogglePreview(key)}
+                              className={styles.toggleCheckboxSmall}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className={styles.toggleTextSmall}>미리보기</span>
+                          </label>
+                        </div>
                       </div>
                       <span className={styles.relationFlow}>
                         {sourceTypeName} → {targetTypeName}
@@ -365,6 +426,7 @@ export function AutoLinkModal({
                         value={currentDistance}
                         onChange={(e) => handleDistanceChange(key, parseInt(e.target.value))}
                         className={styles.slider}
+                        disabled={!enabledRelations[key]}
                       />
                       <div className={styles.sliderMarks}>
                         <span>50px</span>

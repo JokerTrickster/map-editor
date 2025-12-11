@@ -37,3 +37,4 @@ Find the "Implementation History" section and add:
 - [Lessons learned]
 
 Maintain document formatting and structure.
+한국어로 작성해줘야 된다.

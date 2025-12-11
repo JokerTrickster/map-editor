@@ -18,3 +18,4 @@ Append the following to the feature documentation file:
 [Detailed implementation plan]
 
 Use the Edit tool to append to the existing file, preserving all previous history.
+한국어로 작성해줘야 된다.

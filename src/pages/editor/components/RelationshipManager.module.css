@@ -16,9 +16,10 @@
     border-bottom: 2px solid var(--color-primary);
 }
 
+/* Simplified card styling */
 .relationGroup {
     margin-bottom: 12px;
-    background-color: var(--color-bg);
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 6px;
     overflow: hidden;
@@ -32,29 +33,34 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 10px;
+    padding: 10px 12px;
     background-color: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
+    gap: 10px;
 }
 
 .headerLeft {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex: 1;
+    min-width: 0;
 }
 
 .relationName {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--color-text);
+    flex-shrink: 0;
 }
 
+/* Simplified cardinality badge */
 .cardinalityBadge {
     font-size: 10px;
     font-weight: 600;
-    padding: 2px 6px;
+    padding: 3px 8px;
     background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    border: 1px solid rgba(59, 130, 246, 0.2);
     color: var(--color-primary);
     border-radius: 4px;
 }
@@ -68,33 +74,113 @@
 .actions {
     display: flex;
     gap: 6px;
+    align-items: center;
 }
 
-.autoLinkBtn {
-    padding: 4px 8px;
+/* Edit button */
+.editTypeBtn {
+    padding: 5px 10px;
     border-radius: 4px;
     border: 1px solid var(--color-border);
-    background: var(--color-surface);
-    color: var(--color-text-secondary);
-    font-size: 11px;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.editTypeBtn:hover {
+    background: var(--color-surface);
+    border-color: var(--color-text-tertiary);
+}
+
+.editTypeBtnActive {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--color-primary);
+    background: var(--color-primary);
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.editTypeBtnActive:hover {
+    background: rgba(59, 130, 246, 0.9);
+}
+
+/* Auto link button */
+.autoLinkBtn {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
 }
 
 .autoLinkBtn:hover {
-    background: var(--color-primary);
-    color: white;
-    border-color: var(--color-primary);
+    background: rgba(34, 197, 94, 0.15);
+    border-color: #16a34a;
 }
 
-/* Add section with dropdown */
+/* Phase 4: "+ 연결" button section */
 .addSection {
-    padding: 6px 8px;
-    background: var(--color-surface);
+    padding: 8px;
+    background: var(--color-bg);
     border-bottom: 1px solid var(--color-border);
+    position: relative;
 }
 
+/* Add connection button */
+.addConnectionBtn {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px dashed var(--color-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.15s;
+}
+
+.addConnectionBtn:hover {
+    background: var(--color-surface);
+    border-color: var(--color-text-tertiary);
+    border-style: solid;
+    color: var(--color-text);
+}
+
+.addIcon {
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+/* Phase 4: Hidden select (inline dropdown approach) */
+.targetSelectHidden {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+}
+
+/* Legacy select styles (for backward compatibility) */
 .targetSelect {
     width: 100%;
     padding: 5px 8px;
@@ -117,59 +203,84 @@
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
-/* Linked items list */
+/* Phase 1 & 5: Linked items list with improved spacing and scrollbar */
 .linkedList {
-    padding: 6px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
 }
 
+.linkedList::-webkit-scrollbar {
+    width: 6px;
+}
+
+.linkedList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.linkedList::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+}
+
+.linkedList::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-tertiary);
+}
+
+/* Simplified chip design */
 .linkedItem {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
+    display: flex;
     align-items: center;
-    padding: 6px 8px;
-    background: var(--color-surface);
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--color-bg);
     border-radius: 4px;
-    border: 1px solid transparent;
-    transition: all 0.15s;
+    border: 1px solid var(--color-border);
+    gap: 12px;
+    min-height: 44px;
 }
 
 .linkedItem:hover {
-    border-color: var(--color-border);
-    background: var(--color-surface-hover);
+    border-color: var(--color-text-tertiary);
+    background: var(--color-surface);
 }
 
+/* Phase 3: Enhanced chip info area */
 .linkedInfo {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     min-width: 0;
+    flex: 1;
 }
 
 .targetName {
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     color: var(--color-text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    word-break: break-word;
+    line-height: 1.4;
 }
 
 .targetType {
-    font-size: 10px;
-    color: var(--color-text-tertiary);
-    opacity: 0.8;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    opacity: 1;
+    font-weight: 500;
 }
 
+/* Unlink button */
 .unlinkBtn {
-    background: none;
-    border: none;
-    color: var(--color-text-tertiary);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
     cursor: pointer;
-    padding: 4px;
+    padding: 0;
     border-radius: 4px;
     display: flex;
     align-items: center;
@@ -177,22 +288,24 @@
     transition: all 0.15s;
     font-size: 18px;
     line-height: 1;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     flex-shrink: 0;
 }
 
 .unlinkBtn:hover {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: var(--color-error);
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
 }
 
+/* Empty state message */
 .emptyState {
-    font-size: 11px;
-    color: var(--color-text-tertiary);
-    font-style: italic;
-    padding: 8px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    padding: 12px;
     text-align: center;
+    font-style: normal;
 }
 
 .maxReachedInfo {
@@ -250,33 +363,23 @@
     transform: scale(0.95);
 }
 
-/* Update actions container to flex layout */
-.actions {
-    display: flex;
-    gap: 4px;
-    align-items: center;
+/* Status icon styles */
+.statusConnected {
+    font-size: 14px;
+    font-weight: normal;
+    color: #10b981;
+    margin-right: 6px;
+    line-height: 1;
+    opacity: 0.8;
 }
 
-/* Update linkedItem for better flex layout */
-.linkedItem {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 8px;
-    background: var(--color-surface);
-    border-radius: 4px;
-    border: 1px solid transparent;
-    transition: all 0.15s;
-    gap: 8px;
-}
-
-/* Update linkedInfo for flex growth */
-.linkedInfo {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-    flex: 1;
+.statusEmpty {
+    font-size: 14px;
+    font-weight: normal;
+    color: #ef4444;
+    margin-right: 6px;
+    line-height: 1;
+    opacity: 0.8;
 }
 
 /* Disabled option styles */
@@ -284,4 +387,21 @@
     color: #64748b;
     font-style: italic;
     background-color: #1e293b;
+}
+
+/* Phase 5: Responsive adjustments */
+@media (max-width: 400px) {
+    .linkedItem {
+        padding: 6px 8px;
+    }
+
+    .targetName {
+        font-size: 12px;
+    }
+
+    .unlinkBtn {
+        width: 24px;
+        height: 24px;
+        font-size: 16px;
+    }
 }

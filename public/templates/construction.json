@@ -184,7 +184,7 @@
       "description": "CCTV가 특정 구역을 감시함",
       "sourceType": "safetyCctv",
       "targetType": "hazardZone",
-      "cardinality": "1:N",
+      "cardinality": "N",
       "propertyKey": "monitoredZones"
     },
     "barrier_protects_zone": {
@@ -192,7 +192,7 @@
       "description": "바리케이드가 위험 구역을 보호함",
       "sourceType": "barrier",
       "targetType": "hazardZone",
-      "cardinality": "1:N",
+      "cardinality": "N",
       "propertyKey": "protectedZones"
     },
     "entrance_access": {
@@ -200,7 +200,7 @@
       "description": "출입구에서 접근 가능한 구역",
       "sourceType": "constructionEntrance",
       "targetType": "safetyZone",
-      "cardinality": "1:N",
+      "cardinality": "N",
       "propertyKey": "accessibleZones"
     }
   },

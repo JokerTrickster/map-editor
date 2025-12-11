@@ -295,12 +295,26 @@ export default function EditorPage() {
     setShowExportModal(true)
   }
 
-  const handleAutoLinkConfirm = async (adjustedDistances: Record<string, number>) => {
+  const handleAutoLinkConfirm = async (
+    adjustedDistances: Record<string, number>,
+    enabledRelations: Record<string, boolean>
+  ) => {
     if (!graph || !paper) return
 
-    console.log('🔗 Auto-link all objects started with adjusted distances:', adjustedDistances)
+    console.log('🔗 Auto-link all objects started')
+    console.log('📊 Adjusted distances:', adjustedDistances)
+    console.log('📊 Enabled relations:', enabledRelations)
     console.log('📊 Relation types:', mutableRelationTypes)
     console.log('📊 Total elements on canvas:', graph.getElements().length)
+
+    // Filter out disabled relation types
+    const activeRelationTypes = Object.fromEntries(
+      Object.entries(mutableRelationTypes).filter(([key]) => enabledRelations[key] !== false)
+    )
+
+    const enabledCount = Object.keys(activeRelationTypes).length
+    const totalCount = Object.keys(mutableRelationTypes).length
+    console.log(`✅ Processing ${enabledCount}/${totalCount} enabled relation types`)
 
     // Debug: log all elements and their typeIds
     graph.getElements().forEach(el => {
@@ -313,7 +327,8 @@ export default function EditorPage() {
       })
     })
 
-    const results = autoLinkAllObjects(graph, mutableRelationTypes, template, adjustedDistances)
+    // Only pass enabled relation types to autoLinkAllObjects
+    const results = autoLinkAllObjects(graph, activeRelationTypes, template, adjustedDistances)
 
     console.log('✨ Auto-link results:', results)
 
@@ -327,8 +342,16 @@ export default function EditorPage() {
 
       const totalLinks = results.reduce((sum, r) => sum + r.targetIds.length, 0)
       console.log(`✅ Successfully created ${totalLinks} relationships from ${results.length} source objects`)
+
+      // Show success message with detailed info
+      const disabledCount = totalCount - enabledCount
+      const message = disabledCount > 0
+        ? `${totalLinks}개 관계를 생성했습니다.\n(활성화: ${enabledCount}개 / 비활성화: ${disabledCount}개)`
+        : `${totalLinks}개 관계를 생성했습니다.`
+      alert(message)
     } else {
       console.warn('⚠️ No relationships created. Check if objects exist and types match.')
+      alert('생성된 관계가 없습니다. 객체와 타입을 확인하세요.')
     }
   }
 

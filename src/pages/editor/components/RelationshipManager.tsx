@@ -5,6 +5,19 @@ import { parseCardinality, isTargetLinkedGlobally } from '@/features/editor/lib/
 import styles from './RelationshipManager.module.css'
 import { ObjectType } from '@/shared/store/objectTypeStore'
 
+// Phase 2: Status Icon Component
+const StatusIcon = ({ hasConnections }: { hasConnections: boolean }) => {
+    return (
+        <span
+            className={hasConnections ? styles.statusConnected : styles.statusEmpty}
+            title={hasConnections ? "연결됨" : "연결 없음"}
+            aria-label={hasConnections ? "연결됨" : "연결 없음"}
+        >
+            {hasConnections ? "✓" : "*"}
+        </span>
+    )
+}
+
 interface RelationshipManagerProps {
     element: dia.Element
     template?: any
@@ -26,16 +39,17 @@ export function RelationshipManager({
     onAddLink,
     graph
 }: RelationshipManagerProps) {
+    // State for editing individual relation item (changing target)
     const [editingRelation, setEditingRelation] = useState<{
         relationKey: string
         targetId: string
     } | null>(null)
 
+    // State for editing mode of entire relation type
+    const [editingRelationType, setEditingRelationType] = useState<string | null>(null)
+
     const elementData = element.get('data') || {}
     const elementTypeId = elementData.typeId || elementData.type
-
-    console.log(`[RelationshipManager] Debug: elementId = ${element.id}, typeId = ${elementData.typeId}, type = ${elementData.type}, resolvedType = ${elementTypeId} `)
-    console.log(`[RelationshipManager] SelectedType: `, selectedType)
 
     // Filter relations where this element is the source
     const relevantRelations = Object.entries(relationTypes).filter(
@@ -47,7 +61,6 @@ export function RelationshipManager({
             if (selectedType && template?.objectTypes) {
                 const templateType = template.objectTypes[config.sourceType]
                 if (templateType && (templateType.displayName === selectedType.name || templateType.name === selectedType.name)) {
-                    console.log(`[RelationshipManager] Match found via name: ${config.sourceType} -> ${selectedType.name} `)
                     return true
                 }
             }
@@ -55,8 +68,6 @@ export function RelationshipManager({
             return false
         }
     )
-
-    console.log('Relevant Relations:', relevantRelations)
 
     // Get available targets for each relation type
     const getAvailableTargets = (config: TemplateRelationType) => {
@@ -125,8 +136,6 @@ export function RelationshipManager({
         oldTargetId: string,
         newTargetId: string
     ) => {
-        console.log(`🔄 Replacing relationship: ${oldTargetId} → ${newTargetId}`)
-
         // Remove old link
         onUnlink(relationKey, oldTargetId)
 
@@ -134,8 +143,6 @@ export function RelationshipManager({
         setTimeout(() => {
             onAddLink(config.propertyKey, newTargetId)
         }, 50)
-
-        console.log(`✅ Relationship replaced`)
     }
 
     if (relevantRelations.length === 0) return null
@@ -158,11 +165,18 @@ export function RelationshipManager({
                     <div key={key} className={styles.relationGroup}>
                         <div className={styles.header}>
                             <div className={styles.headerLeft}>
+                                {/* Phase 2: Add status icon */}
+                                <StatusIcon hasConnections={linkedList.length > 0} />
                                 <span className={styles.relationName}>{config.name}</span>
                                 <span className={styles.cardinalityBadge}>
                                     {config.cardinality}
                                     {maxCount !== null && (
-                                        <span className={styles.count}>
+                                        <span
+                                            className={styles.count}
+                                            style={{
+                                                color: linkedList.length >= maxCount ? '#f59e0b' : 'inherit'
+                                            }}
+                                        >
                                             {' '}({linkedList.length}/{maxCount})
                                         </span>
                                     )}
@@ -174,28 +188,55 @@ export function RelationshipManager({
                                         className={styles.autoLinkBtn}
                                         onClick={() => onAutoLink(key)}
                                         title="Auto Link"
+                                        aria-label="Auto Link"
                                     >
-                                        🔗 Auto
+                                        Auto
                                     </button>
                                 )}
+                                {/* Edit mode toggle button */}
+                                <button
+                                    className={editingRelationType === key ? styles.editTypeBtnActive : styles.editTypeBtn}
+                                    onClick={() => setEditingRelationType(editingRelationType === key ? null : key)}
+                                    title={editingRelationType === key ? "완료" : "편집"}
+                                    aria-label={editingRelationType === key ? "편집 완료" : "관계 편집"}
+                                >
+                                    {editingRelationType === key ? "완료" : "편집"}
+                                </button>
                             </div>
                         </div>
 
-                        {/* Dropdown for adding connections */}
-                        {availableTargets.length > 0 && canAddMore ? (
+                        {/* Phase 4: "+ 연결" button with inline dropdown - Only show in edit mode */}
+                        {editingRelationType === key && availableTargets.length > 0 && canAddMore ? (
                             <div className={styles.addSection}>
+                                <button
+                                    className={styles.addConnectionBtn}
+                                    onClick={(e) => {
+                                        const button = e.currentTarget
+                                        const select = button.nextElementSibling as HTMLSelectElement
+                                        if (select && select.tagName === 'SELECT') {
+                                            select.focus()
+                                            select.click()
+                                        }
+                                    }}
+                                    title="연결 추가"
+                                    aria-label="연결 추가"
+                                >
+                                    <span className={styles.addIcon}>+</span>
+                                    <span>연결</span>
+                                </button>
                                 <select
-                                    className={styles.targetSelect}
+                                    className={styles.targetSelectHidden}
                                     onChange={(e) => {
                                         if (e.target.value) {
                                             handleAddLink(config, e.target.value)
-                                            e.target.value = '' // Reset
+                                            e.target.value = ''
                                         }
                                     }}
                                     defaultValue=""
+                                    aria-label={`${config.name} 연결 대상 선택`}
                                 >
                                     <option value="" disabled>
-                                        {maxCount === 1 ? 'Select connection...' : '+ Add connection...'}
+                                        선택하세요...
                                     </option>
                                     {availableTargets.map(target => {
                                         // Check if target is globally linked
@@ -267,6 +308,7 @@ export function RelationshipManager({
                                                     }}
                                                     onBlur={() => setEditingRelation(null)}
                                                     autoFocus
+                                                    aria-label={`${targetName} 연결 편집`}
                                                 >
                                                     <option value={id}>{targetName}</option>
                                                     {getAvailableTargets(config).map(target => (
@@ -276,7 +318,7 @@ export function RelationshipManager({
                                                     ))}
                                                 </select>
                                             ) : (
-                                                // View mode: Show name + buttons
+                                                // View mode: Show name + buttons (only in edit mode)
                                                 <>
                                                     <div className={styles.linkedInfo}>
                                                         <span className={styles.targetName}>{targetName}</span>
@@ -284,29 +326,25 @@ export function RelationshipManager({
                                                             <span className={styles.targetType}>{targetType}</span>
                                                         )}
                                                     </div>
-                                                    <div className={styles.actions}>
-                                                        <button
-                                                            className={styles.editBtn}
-                                                            onClick={() => setEditingRelation({ relationKey: key, targetId: id })}
-                                                            title="Edit connection"
-                                                        >
-                                                            ✏️
-                                                        </button>
+                                                    {/* Show remove button only when relation type is in edit mode */}
+                                                    {editingRelationType === key && (
                                                         <button
                                                             className={styles.unlinkBtn}
                                                             onClick={() => onUnlink(key, id)}
-                                                            title="Remove connection"
+                                                            title="연결 제거"
+                                                            aria-label={`${targetName} 연결 제거`}
                                                         >
                                                             ×
                                                         </button>
-                                                    </div>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
                                     )
                                 })
                             ) : (
-                                <div className={styles.emptyState}>No connections</div>
+                                // Phase 2: Updated empty state message
+                                <div className={styles.emptyState}>연결된 항목 없음</div>
                             )}
                         </div>
                     </div>

@@ -22,3 +22,4 @@ Update the EXISTING specification document with new requirements.
 - Reason: [Brief explanation]
 
 Maintain document structure and formatting consistency.
+한국어로 작성해줘야 된다.
