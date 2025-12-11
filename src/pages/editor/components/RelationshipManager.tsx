@@ -164,10 +164,11 @@ export function RelationshipManager({
                 return (
                     <div key={key} className={styles.relationGroup}>
                         <div className={styles.header}>
-                            <div className={styles.headerLeft}>
-                                {/* Phase 2: Add status icon */}
+                            <div className={styles.headerTop}>
                                 <StatusIcon hasConnections={linkedList.length > 0} />
                                 <span className={styles.relationName}>{config.name}</span>
+                            </div>
+                            <div className={styles.headerBottom}>
                                 <span className={styles.cardinalityBadge}>
                                     {config.cardinality}
                                     {maxCount !== null && (
@@ -181,8 +182,6 @@ export function RelationshipManager({
                                         </span>
                                     )}
                                 </span>
-                            </div>
-                            <div className={styles.actions}>
                                 <button
                                     className={editingRelationType === key ? styles.editTypeBtnActive : styles.editTypeBtn}
                                     onClick={() => setEditingRelationType(editingRelationType === key ? null : key)}
