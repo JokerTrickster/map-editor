@@ -36,7 +36,7 @@ export function RelationshipManager({
     selectedType,
     relationTypes,
     onUnlink,
-    onAutoLink,
+    onAutoLink: _onAutoLink,
     onAddLink,
     graph,
     onEditModeChange

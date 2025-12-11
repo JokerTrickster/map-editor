@@ -38,7 +38,7 @@ import { ObjectType } from '@/shared/store/objectTypeStore'
 import { useTemplate } from '@/features/template/hooks/useTemplate'
 import { TemplateId } from '@/features/template/lib/templateLoader'
 import { TemplateRelationType } from '@/entities/schema/templateSchema'
-import { autoLinkObjects, updateRelationship, autoLinkAllObjects, createRadiusCircles, getExistingRelationships, parseCardinality } from '@/features/editor/lib/relationshipUtils'
+import { autoLinkObjects, updateRelationship, autoLinkAllObjects, createRadiusCircles, getExistingRelationships, parseCardinality, isTargetLinkedGlobally } from '@/features/editor/lib/relationshipUtils'
 import {
   createRelationshipLinks,
   clearRelationshipLinks,
@@ -86,6 +86,19 @@ export default function EditorPage() {
 
   // Relationship State
   const [showAutoLinkModal, setShowAutoLinkModal] = useState(false)
+
+  // Relationship Edit Mode State
+  const [relationshipEditState, setRelationshipEditState] = useState<{
+    editing: boolean
+    relationKey: string | null
+    propertyKey: string | null
+    targetIds: string[]
+  }>({
+    editing: false,
+    relationKey: null,
+    propertyKey: null,
+    targetIds: []
+  })
 
   // Export State
   const [showExportModal, setShowExportModal] = useState(false)
@@ -293,6 +306,28 @@ export default function EditorPage() {
 
   const handleExport = () => {
     setShowExportModal(true)
+  }
+
+  // Handle relationship edit mode change from RelationshipManager
+  const handleRelationEditModeChange = (
+    editing: boolean,
+    relationKey: string | null,
+    availableTargetIds: string[]
+  ) => {
+    console.log('🎯 Relationship edit mode changed:', { editing, relationKey, availableTargetIds })
+
+    // Get property key from relationKey
+    let propertyKey: string | null = null
+    if (relationKey && mutableRelationTypes[relationKey]) {
+      propertyKey = mutableRelationTypes[relationKey].propertyKey
+    }
+
+    setRelationshipEditState({
+      editing,
+      relationKey,
+      propertyKey,
+      targetIds: availableTargetIds
+    })
   }
 
   const handleAutoLinkConfirm = async (
@@ -585,6 +620,220 @@ export default function EditorPage() {
       clearTargetHighlights(graph, paper)
     }
   }, [selectedElementId, graph, paper, mutableRelationTypes, dataVersion])
+
+  // Highlight available targets when in relationship edit mode
+  useEffect(() => {
+    if (!graph || !paper) return
+
+    if (relationshipEditState.editing && relationshipEditState.targetIds.length > 0) {
+      console.log('🎨 Highlighting available targets for editing:', relationshipEditState.targetIds)
+
+      // Add custom highlight to available targets with edit mode styling
+      relationshipEditState.targetIds.forEach(targetId => {
+        const targetElement = graph.getCell(targetId)
+        if (targetElement && targetElement.isElement()) {
+          const view = paper.findViewByModel(targetElement)
+          if (view) {
+            // Use a different highlight style for edit mode (green/clickable)
+            view.highlight(null, {
+              highlighter: {
+                name: 'stroke',
+                options: {
+                  padding: 8,
+                  rx: 8,
+                  ry: 8,
+                  attrs: {
+                    'stroke-width': 4,
+                    stroke: '#10b981', // Green color for available targets
+                    'stroke-dasharray': '0', // Solid line (not dashed)
+                    filter: 'drop-shadow(0 0 10px rgba(16, 185, 129, 0.5))', // Glow effect
+                  }
+                }
+              }
+            })
+
+            // Change cursor to pointer for clickable targets
+            if (view.el) {
+              view.el.style.cursor = 'pointer'
+            }
+          }
+        }
+      })
+    } else {
+      // Clear edit mode highlights and restore cursor
+      graph.getElements().forEach(element => {
+        const view = paper.findViewByModel(element)
+        if (view && view.el) {
+          view.el.style.cursor = ''
+        }
+      })
+    }
+
+    // Cleanup
+    return () => {
+      if (!graph || !paper) return
+      graph.getElements().forEach(element => {
+        const view = paper.findViewByModel(element)
+        if (view && view.el) {
+          view.el.style.cursor = ''
+        }
+      })
+    }
+  }, [relationshipEditState, graph, paper])
+
+  // Handle canvas clicks when in relationship edit mode
+  useEffect(() => {
+    if (!paper || !graph) return
+    if (!relationshipEditState.editing || !relationshipEditState.propertyKey || !selectedElementId) return
+
+    const handleEditModeClick = (elementView: dia.ElementView) => {
+      const clickedId = elementView.model.id as string
+
+      // Check if clicked element is an available target
+      if (relationshipEditState.targetIds.includes(clickedId)) {
+        console.log('🔗 Creating relationship:', {
+          source: selectedElementId,
+          target: clickedId,
+          propertyKey: relationshipEditState.propertyKey,
+          relationKey: relationshipEditState.relationKey
+        })
+
+        // Get the selected element
+        const selectedElement = graph.getCell(selectedElementId)
+        if (!selectedElement || !selectedElement.isElement()) return
+
+        // Get current data
+        const currentData = selectedElement.get('data') || {}
+        const currentProps = currentData.properties || {}
+        const value = currentProps[relationshipEditState.propertyKey!]
+
+        // Get relation config for cardinality check
+        const relationConfig = relationshipEditState.relationKey
+          ? mutableRelationTypes[relationshipEditState.relationKey]
+          : null
+
+        if (!relationConfig) {
+          console.error('❌ Relation config not found')
+          return
+        }
+
+        const maxCount = parseCardinality(relationConfig.cardinality)
+
+        // Check for duplicate global links (if not allowed)
+        if (relationConfig.autoLink && !relationConfig.autoLink.allowDuplicates) {
+          const { isLinked, linkedBySourceId } = isTargetLinkedGlobally(
+            graph,
+            relationConfig,
+            clickedId,
+            selectedElementId,
+            undefined
+          )
+
+          if (isLinked) {
+            const sourceEl = graph.getCell(linkedBySourceId!)
+            const sourceName = sourceEl?.get('data')?.properties?.name || linkedBySourceId
+            alert(
+              `이 객체는 이미 다른 객체(${sourceName})와 연결되어 있습니다.\n` +
+              `관계 설정에서 "중복 연결 허용"이 비활성화되어 있습니다.`
+            )
+            return
+          }
+        }
+
+        let newValue: string | string[]
+        let shouldUpdate = false
+
+        if (maxCount === 1) {
+          // Single relationship - replace
+          newValue = clickedId
+          shouldUpdate = true
+        } else {
+          // Multiple relationships - add to list
+          const list = Array.isArray(value) ? [...value] : (value ? [value] : [])
+
+          // Check if already exists
+          if (list.includes(clickedId)) {
+            console.log('⚠️ Relationship already exists')
+            return
+          }
+
+          // Check max count
+          if (maxCount !== null && list.length >= maxCount) {
+            alert(`최대 ${maxCount}개까지만 연결할 수 있습니다.`)
+            return
+          }
+
+          list.push(clickedId)
+          newValue = list
+          shouldUpdate = true
+        }
+
+        if (shouldUpdate) {
+          // Update the element
+          const newData = {
+            ...currentData,
+            properties: {
+              ...currentProps,
+              [relationshipEditState.propertyKey!]: newValue
+            }
+          }
+
+          selectedElement.set('data', newData)
+          handleObjectUpdate(selectedElementId, { data: newData })
+
+          console.log('✅ Relationship created successfully')
+
+          // Exit edit mode after successful creation
+          setRelationshipEditState({
+            editing: false,
+            relationKey: null,
+            propertyKey: null,
+            targetIds: []
+          })
+
+          // Show visual feedback with a brief flash animation
+          const view = paper.findViewByModel(elementView.model)
+          if (view) {
+            // Flash the target element
+            view.highlight(null, {
+              highlighter: {
+                name: 'stroke',
+                options: {
+                  padding: 10,
+                  rx: 10,
+                  ry: 10,
+                  attrs: {
+                    'stroke-width': 6,
+                    stroke: '#10b981',
+                    'stroke-dasharray': '0'
+                  }
+                }
+              }
+            })
+
+            // Remove flash after a short delay
+            setTimeout(() => {
+              view.unhighlight()
+            }, 500)
+          }
+        }
+      }
+    }
+
+    // Add listener with high priority (before selection handler)
+    paper.on('element:pointerclick', handleEditModeClick)
+
+    return () => {
+      paper.off('element:pointerclick', handleEditModeClick)
+    }
+  }, [
+    paper,
+    graph,
+    relationshipEditState,
+    selectedElementId,
+    mutableRelationTypes,
+    handleObjectUpdate
+  ])
 
   // Set current lot in objectTypeStore when project loads
   useEffect(() => {
@@ -1181,6 +1430,7 @@ export default function EditorPage() {
             onAutoLinkAll={handleOpenAutoLinkModal}
             onUpdateRelationType={handleUpdateRelationType}
             onDeleteRelationType={handleDeleteRelationType}
+            onRelationEditModeChange={handleRelationEditModeChange}
           />
         </ResizablePanel>
       </main>
