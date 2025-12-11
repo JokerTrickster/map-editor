@@ -183,17 +183,6 @@ export function RelationshipManager({
                                 </span>
                             </div>
                             <div className={styles.actions}>
-                                {config.autoLink && (
-                                    <button
-                                        className={styles.autoLinkBtn}
-                                        onClick={() => onAutoLink(key)}
-                                        title="Auto Link"
-                                        aria-label="Auto Link"
-                                    >
-                                        Auto
-                                    </button>
-                                )}
-                                {/* Edit mode toggle button */}
                                 <button
                                     className={editingRelationType === key ? styles.editTypeBtnActive : styles.editTypeBtn}
                                     onClick={() => setEditingRelationType(editingRelationType === key ? null : key)}
