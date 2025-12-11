@@ -42,7 +42,8 @@ export const TemplateRelationTypeSchema = z.object({
   propertyKey: z.string(),
   autoLink: z.object({
     strategy: z.enum(['nearest']),
-    maxDistance: z.number()
+    maxDistance: z.number(),
+    allowDuplicates: z.boolean().optional().default(false)
   }).optional()
 });
 

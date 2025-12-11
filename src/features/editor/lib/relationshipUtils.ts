@@ -8,6 +8,12 @@ interface AutoLinkResult {
     relationKey: string
     maxDistance: number
     sourceCenter: { x: number; y: number }
+    skipped?: {
+        sourceIds: string[]
+        reasons: Record<string, string>
+    }
+    existingCount?: number
+    addedCount?: number
 }
 
 /**
@@ -29,18 +35,92 @@ export function parseCardinality(cardinality: string): number | null {
     return null
 }
 
+/**
+ * Get existing relationships for an element's property
+ * @param element - The source element
+ * @param propertyKey - The property key that stores relationships
+ * @returns Array of target IDs (empty array if none)
+ */
+export function getExistingRelationships(
+    element: dia.Element,
+    propertyKey: string
+): string[] {
+    const currentData = element.get('data') || {}
+    const currentProps = currentData.properties || {}
+    const value = currentProps[propertyKey]
+
+    if (!value) return []
+    if (Array.isArray(value)) return value
+    return [value]
+}
+
+/**
+ * Calculate remaining capacity for relationships
+ * @param element - The source element
+ * @param propertyKey - The property key that stores relationships
+ * @param cardinality - The cardinality constraint
+ * @returns Remaining slots (null for unlimited)
+ */
+export function getRemainingCapacity(
+    element: dia.Element,
+    propertyKey: string,
+    cardinality: string
+): number | null {
+    const maxCount = parseCardinality(cardinality)
+
+    // Unlimited capacity
+    if (maxCount === null) return null
+
+    const existing = getExistingRelationships(element, propertyKey)
+    const remaining = maxCount - existing.length
+
+    console.log(`  📊 Capacity check: max=${maxCount}, existing=${existing.length}, remaining=${remaining}`)
+    return Math.max(0, remaining)
+}
+
+/**
+ * Check if a target is already linked
+ * @param element - The source element
+ * @param propertyKey - The property key that stores relationships
+ * @param targetId - The target ID to check
+ * @returns true if already linked
+ */
+export function isAlreadyLinked(
+    element: dia.Element,
+    propertyKey: string,
+    targetId: string
+): boolean {
+    const existing = getExistingRelationships(element, propertyKey)
+    return existing.includes(targetId)
+}
+
 export function autoLinkObjects(
     graph: dia.Graph,
     sourceElement: dia.Element,
     _relationKey: string,
     config: TemplateRelationType,
-    uuidToTemplateType?: Map<string, string>
+    uuidToTemplateType?: Map<string, string>,
+    maxLinksToCreate?: number
 ): string[] {
     if (!config.autoLink) return []
 
     const sourceCenter = sourceElement.getBBox().center()
+    const allowDuplicates = config.autoLink.allowDuplicates ?? false
+
+    // Get existing relationships to filter out duplicates (unless allowed)
+    const existingTargets = getExistingRelationships(sourceElement, config.propertyKey)
+    console.log(`  🔍 Existing relationships for ${sourceElement.id}:`, existingTargets)
+    console.log(`  🔄 Allow duplicates: ${allowDuplicates}`)
+
     const candidates = graph.getElements().filter(el => {
         if (el.id === sourceElement.id) return false
+
+        // Filter out already linked targets (unless duplicates are allowed)
+        if (!allowDuplicates && existingTargets.includes(el.id as string)) {
+            console.log(`  ⏭️ Skipping ${el.id} - already linked (duplicates not allowed)`)
+            return false
+        }
+
         const typeId = el.get('data')?.typeId
         const templateTypeKey = uuidToTemplateType?.get(typeId) || typeId
         return templateTypeKey === config.targetType
@@ -64,19 +144,32 @@ export function autoLinkObjects(
             return distA - distB
         })
 
+        // Determine the actual limit
         const maxCount = parseCardinality(config.cardinality)
+        let effectiveLimit: number | null = maxCount
 
-        if (maxCount === 1) {
+        // If maxLinksToCreate is provided and is more restrictive, use it
+        if (maxLinksToCreate !== undefined) {
+            if (effectiveLimit === null) {
+                effectiveLimit = maxLinksToCreate
+            } else {
+                effectiveLimit = Math.min(effectiveLimit, maxLinksToCreate)
+            }
+        }
+
+        console.log(`  📏 Link limits: cardinality=${maxCount}, maxLinksToCreate=${maxLinksToCreate}, effective=${effectiveLimit}`)
+
+        if (effectiveLimit === 1) {
             // Single relationship - link only nearest
             if (inRange.length > 0) {
                 linkedIds.push(inRange[0].id as string)
             }
-        } else if (maxCount === null) {
+        } else if (effectiveLimit === null) {
             // Unlimited - link all in range
             linkedIds.push(...inRange.map(el => el.id as string))
         } else {
-            // Limited count - link up to maxCount nearest
-            linkedIds.push(...inRange.slice(0, maxCount).map(el => el.id as string))
+            // Limited count - link up to effectiveLimit nearest
+            linkedIds.push(...inRange.slice(0, effectiveLimit).map(el => el.id as string))
         }
     }
 
@@ -149,6 +242,7 @@ export function autoLinkAllObjects(
     adjustedDistances?: Record<string, number>
 ): AutoLinkResult[] {
     const results: AutoLinkResult[] = []
+    const skippedSources: Record<string, { sourceIds: string[], reasons: Record<string, string> }> = {}
 
     console.log('🔄 autoLinkAllObjects called with', Object.keys(relationTypes).length, 'relation types')
 
@@ -192,16 +286,50 @@ export function autoLinkAllObjects(
 
         console.log(`  📊 Found ${sourceElements.length} source elements for ${key}`)
 
+        // Initialize skip tracking for this relation type
+        if (!skippedSources[key]) {
+            skippedSources[key] = { sourceIds: [], reasons: {} }
+        }
+
         // Auto-link each source element
         sourceElements.forEach(sourceElement => {
             console.log(`  🎯 Processing source element:`, sourceElement.id)
+
+            // Calculate remaining capacity
+            const remainingCapacity = getRemainingCapacity(
+                sourceElement,
+                config.propertyKey,
+                config.cardinality
+            )
+
+            console.log(`  📊 Remaining capacity for ${sourceElement.id}: ${remainingCapacity}`)
+
+            // Skip if already at max capacity
+            if (remainingCapacity !== null && remainingCapacity === 0) {
+                console.log(`  ⏭️ Skipping ${sourceElement.id} - already at max capacity`)
+                skippedSources[key].sourceIds.push(sourceElement.id as string)
+                skippedSources[key].reasons[sourceElement.id as string] = 'max_capacity_reached'
+                return
+            }
+
+            // Get existing relationships count
+            const existingCount = getExistingRelationships(sourceElement, config.propertyKey).length
 
             // Use adjusted distance if provided
             const configWithAdjustedDistance = adjustedDistances?.[key]
                 ? { ...config, autoLink: { ...config.autoLink!, maxDistance: adjustedDistances[key] } }
                 : config
 
-            const linkedIds = autoLinkObjects(graph, sourceElement, key, configWithAdjustedDistance, uuidToTemplateType)
+            // Pass remaining capacity to autoLinkObjects
+            const linkedIds = autoLinkObjects(
+                graph,
+                sourceElement,
+                key,
+                configWithAdjustedDistance,
+                uuidToTemplateType,
+                remainingCapacity ?? undefined
+            )
+
             console.log(`  🔗 Linked ${linkedIds.length} targets:`, linkedIds)
 
             if (linkedIds.length > 0) {
@@ -237,11 +365,37 @@ export function autoLinkAllObjects(
                     targetIds: linkedIds,
                     relationKey: key,
                     maxDistance: maxDistance,
-                    sourceCenter: { x: sourceCenter.x, y: sourceCenter.y }
+                    sourceCenter: { x: sourceCenter.x, y: sourceCenter.y },
+                    existingCount,
+                    addedCount: linkedIds.length
                 })
+            } else if (existingCount > 0) {
+                // Element has existing relationships but no new ones added
+                console.log(`  ℹ️ ${sourceElement.id} has ${existingCount} existing relationships, no new ones added`)
             }
         })
+
+        // Add skip information to results if any sources were skipped
+        if (skippedSources[key].sourceIds.length > 0) {
+            console.log(`  ⏭️ Skipped ${skippedSources[key].sourceIds.length} sources for ${key}:`, skippedSources[key])
+        }
     })
+
+    // Add aggregated skip information to results
+    const totalSkipped = Object.values(skippedSources).reduce((sum, skip) => sum + skip.sourceIds.length, 0)
+    if (totalSkipped > 0) {
+        console.log(`\n⏭️ Total skipped sources: ${totalSkipped}`)
+        // Add skip info to first result or create a summary result
+        if (results.length > 0) {
+            results[0].skipped = Object.entries(skippedSources).reduce((acc, [_key, skip]) => {
+                if (skip.sourceIds.length > 0) {
+                    acc.sourceIds.push(...skip.sourceIds)
+                    Object.assign(acc.reasons, skip.reasons)
+                }
+                return acc
+            }, { sourceIds: [] as string[], reasons: {} as Record<string, string> })
+        }
+    }
 
     console.log(`\n✨ Total auto-link results: ${results.length}`)
     return results
