@@ -37,7 +37,7 @@ import { useObjectTypeSync } from './hooks/useObjectTypeSync'
 import { ObjectType } from '@/shared/store/objectTypeStore'
 import { useTemplate } from '@/features/template/hooks/useTemplate'
 import { TemplateId } from '@/features/template/lib/templateLoader'
-import { autoLinkObjects, updateRelationship, autoLinkAllObjects, createRadiusCircles, getExistingRelationships, getRemainingCapacity, parseCardinality } from '@/features/editor/lib/relationshipUtils'
+import { autoLinkObjects, updateRelationship, autoLinkAllObjects, createRadiusCircles, getExistingRelationships, parseCardinality } from '@/features/editor/lib/relationshipUtils'
 import styles from './EditorPage.module.css'
 import '@/shared/lib/testHelpers'
 
@@ -154,48 +154,22 @@ export default function EditorPage() {
     const relationConfig = template.relationTypes[relationKey]
     if (!relationConfig || !relationConfig.autoLink) return
 
+    console.log(`\n🚀 Auto-link started for relation: ${relationKey}`)
+    console.log(`   Property key: ${relationConfig.propertyKey}`)
+    console.log(`   Cardinality: ${relationConfig.cardinality}`)
+
     // Get existing relationships
     const existingTargets = getExistingRelationships(element, relationConfig.propertyKey)
     const existingCount = existingTargets.length
 
-    // Calculate remaining capacity
-    const remainingCapacity = getRemainingCapacity(
-      element,
-      relationConfig.propertyKey,
-      relationConfig.cardinality
-    )
+    console.log(`   Existing relationships: ${existingCount}`, existingTargets)
 
-    // If clearing existing, use full capacity, otherwise use remaining
-    const maxLinks = existingCount > 0 ? parseCardinality(relationConfig.cardinality) : remainingCapacity
+    // Calculate max links
+    const maxLinks = parseCardinality(relationConfig.cardinality)
 
-    // Check if at max capacity and no existing to clear
-    if (existingCount === 0 && remainingCapacity !== null && remainingCapacity === 0) {
-      alert('이 객체는 이미 최대 관계 개수에 도달했습니다.')
-      return
-    }
+    console.log(`   Max links allowed: ${maxLinks}`)
 
-    // Clear existing relationships
-    if (existingCount > 0) {
-      console.log(`🧹 Clearing ${existingCount} existing relationships`)
-      let currentData = element.get('data')
-
-      existingTargets.forEach(targetId => {
-        currentData = updateRelationship(
-          element,
-          relationConfig.propertyKey,
-          targetId,
-          relationConfig.cardinality,
-          'remove'
-        )
-        console.log(`   ✓ Removed relationship to ${targetId}`)
-      })
-
-      // Save the cleared state before auto-linking
-      handleObjectUpdate(selectedElementId, { data: currentData })
-      console.log(`💾 Saved cleared state - ${existingCount} relationships removed`)
-    }
-
-    // Auto-link with full capacity (since we cleared existing)
+    // Auto-link with capacity limit
     const linkedIds = autoLinkObjects(
       graph,
       element,
@@ -205,33 +179,61 @@ export default function EditorPage() {
       maxLinks ?? undefined
     )
 
-    console.log(`🔗 Auto-link returned ${linkedIds.length} new relationships (max: ${maxLinks})`)
+    console.log(`🔗 Auto-link returned ${linkedIds.length} IDs (max: ${maxLinks}):`, linkedIds)
 
-    if (linkedIds.length > 0) {
-      let newData = element.get('data')
+    if (linkedIds.length === 0) {
+      console.warn('⚠️ No relationships created by auto-link')
+      alert('범위 내에서 연결 가능한 객체를 찾지 못했습니다.')
+      return
+    }
 
-      linkedIds.forEach(targetId => {
-        newData = updateRelationship(
+    // Clear existing relationships first
+    let currentData = element.get('data')
+
+    if (existingCount > 0) {
+      console.log(`🧹 Clearing ${existingCount} existing relationships`)
+
+      existingTargets.forEach(targetId => {
+        currentData = updateRelationship(
           element,
           relationConfig.propertyKey,
           targetId,
           relationConfig.cardinality,
-          'add'
+          'remove'
         )
-        console.log(`   ✓ Added relationship to ${targetId}`)
+        console.log(`   ✓ Removed: ${targetId}`)
       })
-
-      handleObjectUpdate(selectedElementId, { data: newData })
-      console.log(`💾 Final save - ${linkedIds.length} new relationships added`)
-
-      const message = existingCount > 0
-        ? `기존 ${existingCount}개 관계를 삭제하고 ${linkedIds.length}개 새 관계를 생성했습니다.`
-        : `${linkedIds.length}개 관계를 자동으로 생성했습니다.`
-      alert(message)
-    } else {
-      console.warn('⚠️ No relationships created by auto-link')
-      alert('범위 내에서 연결 가능한 객체를 찾지 못했습니다.')
     }
+
+    // Now add the new relationships one by one
+    console.log(`➕ Adding ${linkedIds.length} new relationships`)
+
+    linkedIds.forEach((targetId, index) => {
+      console.log(`   [${index + 1}/${linkedIds.length}] Adding: ${targetId}`)
+
+      currentData = updateRelationship(
+        element,
+        relationConfig.propertyKey,
+        targetId,
+        relationConfig.cardinality,
+        'add'
+      )
+
+      console.log(`   ✓ Added. Current list:`, currentData.properties[relationConfig.propertyKey])
+    })
+
+    // Single update at the end
+    handleObjectUpdate(selectedElementId, { data: currentData })
+
+    console.log(`💾 Final save completed`)
+    console.log(`   Total relationships: ${linkedIds.length}`)
+    console.log(`   Final data:`, currentData.properties[relationConfig.propertyKey])
+
+    const message = existingCount > 0
+      ? `기존 ${existingCount}개 관계를 삭제하고 ${linkedIds.length}개 새 관계를 생성했습니다.`
+      : `${linkedIds.length}개 관계를 자동으로 생성했습니다.`
+
+    alert(message)
   }
 
   const handleOpenAutoLinkModal = () => {
