@@ -27,6 +27,7 @@ interface RelationshipManagerProps {
     onAutoLink: (key: string) => void
     onAddLink: (relationKey: string, targetId: string) => void
     graph: dia.Graph | null
+    onEditModeChange?: (editing: boolean, relationKey: string | null, availableTargetIds: string[]) => void
 }
 
 export function RelationshipManager({
@@ -37,7 +38,8 @@ export function RelationshipManager({
     onUnlink,
     onAutoLink,
     onAddLink,
-    graph
+    graph,
+    onEditModeChange
 }: RelationshipManagerProps) {
     // State for editing individual relation item (changing target)
     const [editingRelation, setEditingRelation] = useState<{
@@ -82,15 +84,20 @@ export function RelationshipManager({
                 const elData = el.get('data') || {}
                 const elTypeId = elData.typeId || elData.type
 
-                // Check if element type matches target type
+                // Direct type match (UUID or template key)
                 if (elTypeId === config.targetType) return true
 
-                // Also check by name
-                if (template?.objectTypes) {
-                    const templateType = template.objectTypes[config.targetType]
-                    if (templateType && elData.properties?.name) {
-                        // This is a simple check, might need more robust matching
-                        return true
+                // Check by matching template type name/displayName
+                if (template?.objectTypes && selectedType) {
+                    const targetTemplateType = template.objectTypes[config.targetType]
+                    const elTemplateType = template.objectTypes[elTypeId]
+
+                    if (targetTemplateType && elTemplateType) {
+                        // Match by template displayName or name
+                        return (
+                            targetTemplateType.displayName === elTemplateType.displayName ||
+                            targetTemplateType.name === elTemplateType.name
+                        )
                     }
                 }
 
@@ -184,7 +191,16 @@ export function RelationshipManager({
                                 </span>
                                 <button
                                     className={editingRelationType === key ? styles.editTypeBtnActive : styles.editTypeBtn}
-                                    onClick={() => setEditingRelationType(editingRelationType === key ? null : key)}
+                                    onClick={() => {
+                                        const newEditingState = editingRelationType === key ? null : key
+                                        setEditingRelationType(newEditingState)
+
+                                        // Notify parent about edit mode change
+                                        if (onEditModeChange) {
+                                            const availableIds = availableTargets.map(t => t.id)
+                                            onEditModeChange(newEditingState !== null, newEditingState, availableIds)
+                                        }
+                                    }}
                                     title={editingRelationType === key ? "완료" : "편집"}
                                     aria-label={editingRelationType === key ? "편집 완료" : "관계 편집"}
                                 >

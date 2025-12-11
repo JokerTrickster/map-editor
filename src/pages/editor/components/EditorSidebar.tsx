@@ -31,6 +31,7 @@ interface EditorSidebarProps {
   onAutoLinkAll?: () => void
   onUpdateRelationType?: (key: string, config: TemplateRelationType) => void
   onDeleteRelationType?: (key: string) => void
+  onRelationEditModeChange?: (editing: boolean, relationKey: string | null, availableTargetIds: string[]) => void
 }
 
 export function EditorSidebar({
@@ -48,7 +49,8 @@ export function EditorSidebar({
   onAutoLink,
   onAutoLinkAll,
   onUpdateRelationType,
-  onDeleteRelationType
+  onDeleteRelationType,
+  onRelationEditModeChange
 }: EditorSidebarProps) {
   const [activeTab, setActiveTab] = useState<'properties' | 'relationships'>('properties')
   const [mainTab, setMainTab] = useState<'objects' | 'relations'>('objects')
@@ -289,6 +291,7 @@ export function EditorSidebar({
                 onAutoLink={onAutoLink}
                 onAddLink={handleAddLink}
                 graph={graph}
+                onEditModeChange={onRelationEditModeChange}
               />
             )}
           </div>
