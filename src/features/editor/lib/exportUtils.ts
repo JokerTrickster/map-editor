@@ -339,21 +339,46 @@ function extractRelations(properties: Record<string, any>) {
         type: 'reference',
         meta: { propertyKey: key }
       })
+      return
     }
-    // Handle multiple IDs (array of strings)
-    else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
-      console.log(`  ✅ Found multi relation: ${key} = [${value.length} items]`)
-      value.forEach(targetId => {
-        relations.push({
-          targetId,
-          type: 'reference',
-          meta: { propertyKey: key }
-        })
+
+    // Handle single ID (number - convert to string)
+    if (typeof value === 'number') {
+      const stringId = String(value)
+      console.log(`  ✅ Found single relation (numeric): ${key} = ${stringId}`)
+      relations.push({
+        targetId: stringId,
+        type: 'reference',
+        meta: { propertyKey: key }
       })
+      return
     }
-    else {
-      console.log(`  ⏭️ Skipping ${key} - empty or invalid value:`, value)
+
+    // Handle multiple IDs (array)
+    if (Array.isArray(value) && value.length > 0) {
+      // Filter to only valid string IDs (handles strings and numbers)
+      const validIds = value
+        .filter(id => typeof id === 'string' || typeof id === 'number')
+        .map(id => String(id))
+        .filter(id => id.length > 0)
+
+      if (validIds.length > 0) {
+        console.log(`  ✅ Found multi relation: ${key} = [${validIds.length} valid of ${value.length} total]`)
+        validIds.forEach(targetId => {
+          relations.push({
+            targetId,
+            type: 'reference',
+            meta: { propertyKey: key }
+          })
+        })
+      } else {
+        console.log(`  ⏭️ Skipping ${key} - array contains no valid IDs (${value.length} invalid items)`)
+      }
+      return
     }
+
+    // Log skip for other cases
+    console.log(`  ⏭️ Skipping ${key} - empty or invalid value:`, value)
   })
 
   console.log(`📊 Extracted ${relations.length} relations`)

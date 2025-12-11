@@ -94,9 +94,8 @@ describe('Auto-link cardinality enforcement', () => {
     expect(linkedIds).toEqual(['space-0', 'space-1']) // Nearest two
 
     // Verify the data was updated correctly
-    let newData = source.get('data')
     linkedIds.forEach(targetId => {
-      newData = updateRelationship(
+      updateRelationship(
         source,
         relationConfig.propertyKey,
         targetId,
@@ -136,9 +135,8 @@ describe('Auto-link cardinality enforcement', () => {
       maxLinks ?? undefined
     )
 
-    let newData = source.get('data')
     linkedIds.forEach(targetId => {
-      newData = updateRelationship(
+      updateRelationship(
         source,
         relationConfig.propertyKey,
         targetId,
@@ -152,9 +150,8 @@ describe('Auto-link cardinality enforcement', () => {
     expect(existingTargets).toHaveLength(2)
 
     // Simulate clearing existing relationships (like handleAutoLink does)
-    let currentData = source.get('data')
     existingTargets.forEach(targetId => {
-      currentData = updateRelationship(
+      updateRelationship(
         source,
         relationConfig.propertyKey,
         targetId,
@@ -177,9 +174,8 @@ describe('Auto-link cardinality enforcement', () => {
       maxLinks ?? undefined
     )
 
-    newData = source.get('data')
     linkedIds.forEach(targetId => {
-      newData = updateRelationship(
+      updateRelationship(
         source,
         relationConfig.propertyKey,
         targetId,
@@ -222,9 +218,8 @@ describe('Auto-link cardinality enforcement', () => {
     expect(linkedIds).toHaveLength(1)
     expect(linkedIds).toEqual(['space-0']) // Nearest one
 
-    let newData = source.get('data')
     linkedIds.forEach(targetId => {
-      newData = updateRelationship(
+      updateRelationship(
         source,
         relationConfig.propertyKey,
         targetId,
@@ -270,9 +265,8 @@ describe('Auto-link cardinality enforcement', () => {
     // Should create links to all 7 targets
     expect(linkedIds).toHaveLength(7)
 
-    let newData = source.get('data')
     linkedIds.forEach(targetId => {
-      newData = updateRelationship(
+      updateRelationship(
         source,
         relationConfig.propertyKey,
         targetId,
@@ -301,9 +295,8 @@ describe('Auto-link cardinality enforcement', () => {
     }
 
     // Add 3 relationships manually
-    let newData = source.get('data')
     ;['space-0', 'space-1', 'space-2'].forEach(targetId => {
-      newData = updateRelationship(
+      updateRelationship(
         source,
         relationConfig.propertyKey,
         targetId,
