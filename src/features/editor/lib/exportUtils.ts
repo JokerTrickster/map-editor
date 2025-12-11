@@ -298,19 +298,51 @@ function convertElementToMapObject(element: dia.Element): MapObject {
 }
 
 /**
+ * Check if a property key represents a relationship
+ * Relationship keys typically end with: Id, Ids, Ref, Refs
+ */
+function isRelationshipProperty(key: string): boolean {
+  const relationPatterns = [
+    /Id$/,      // zoneId, sensorId, controlId
+    /Ids$/,     // columnIds, parkingLocationIds
+    /Ref$/,     // assetRef
+    /Refs$/     // assetRefs
+  ]
+
+  // Explicitly exclude known non-relationship properties
+  const excludeList = ['name', 'description', 'serialNumber', 'ipAddress', 'model', 'resolution', 'powerOutput', 'chargingType', 'connectorType', 'status', 'type', 'angle', 'label', 'content', 'direction', 'floors', 'readerId', 'lightType', 'sensorType', 'range', 'spotNumber', 'spotType', 'zoneName', 'capacity', 'handicappedSpots', 'lineType', 'entranceType']
+
+  if (excludeList.includes(key)) return false
+
+  return relationPatterns.some(pattern => pattern.test(key))
+}
+
+/**
  * Extract relations from element properties
  */
 function extractRelations(properties: Record<string, any>) {
   const relations: Array<{ targetId: string; type: 'required' | 'optional' | 'reference'; meta?: Record<string, any> }> = []
 
+  console.log('🔍 Extracting relations from properties:', Object.keys(properties))
+
   Object.entries(properties).forEach(([key, value]) => {
-    if (typeof value === 'string' && value.length > 0 && !['name', 'description'].includes(key)) {
+    // Only process relationship properties
+    if (!isRelationshipProperty(key)) {
+      return
+    }
+
+    // Handle single ID (string)
+    if (typeof value === 'string' && value.length > 0) {
+      console.log(`  ✅ Found single relation: ${key} = ${value}`)
       relations.push({
         targetId: value,
         type: 'reference',
         meta: { propertyKey: key }
       })
-    } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
+    }
+    // Handle multiple IDs (array of strings)
+    else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
+      console.log(`  ✅ Found multi relation: ${key} = [${value.length} items]`)
       value.forEach(targetId => {
         relations.push({
           targetId,
@@ -319,8 +351,12 @@ function extractRelations(properties: Record<string, any>) {
         })
       })
     }
+    else {
+      console.log(`  ⏭️ Skipping ${key} - empty or invalid value:`, value)
+    }
   })
 
+  console.log(`📊 Extracted ${relations.length} relations`)
   return relations.length > 0 ? relations : undefined
 }
 

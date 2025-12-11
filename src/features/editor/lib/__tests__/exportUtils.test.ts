@@ -386,5 +386,156 @@ describe('exportUtils', () => {
       expect(mapData.zones).toHaveLength(1)
       expect(mapData.chargers).toHaveLength(1)
     })
+
+    test('extracts relationships from properties with Id/Ids/Ref/Refs patterns', () => {
+      // Create CCTV with relationships
+      const cctv = new dia.Element({
+        type: 'standard.Rectangle',
+        position: { x: 100, y: 100 },
+        size: { width: 50, height: 50 },
+        data: {
+          typeId: 'CCTV',
+          properties: {
+            name: 'Camera 1',
+            controlId: 'control-123',
+            zoneId: 'zone-456'
+          }
+        }
+      })
+      graph.addCell(cctv)
+
+      // Create Zone with multiple relationships
+      const zone = new dia.Element({
+        type: 'standard.Polygon',
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 },
+        data: {
+          typeId: 'Zone',
+          properties: {
+            name: 'Zone A',
+            columnIds: ['col-1', 'col-2', 'col-3'],
+            parkingLocationIds: ['spot-1', 'spot-2']
+          }
+        }
+      })
+      graph.addCell(zone)
+
+      // Create Sensor with relationship
+      const sensor = new dia.Element({
+        type: 'standard.Rectangle',
+        position: { x: 200, y: 200 },
+        size: { width: 30, height: 30 },
+        data: {
+          typeId: 'Sensor',
+          properties: {
+            name: 'Sensor 1',
+            linkedSpotId: 'spot-1'
+          }
+        }
+      })
+      graph.addCell(sensor)
+
+      const metadata = {
+        lotName: 'Test Lot',
+        lotCreated: '2025-12-04T05:41:00.194Z',
+        floorName: 'B1'
+      }
+
+      const result = exportGraphToJSON(graph, metadata)
+      const mapData = result.data.parkingLotLevels[0].mapData
+
+      // Verify CCTV relationships
+      expect(mapData.cctvs?.lightCctvs).toHaveLength(1)
+      const cctvExport = mapData.cctvs!.lightCctvs[0]
+      expect(cctvExport.controlId).toBe('control-123')
+      expect(cctvExport.zoneId).toBe('zone-456')
+
+      // Verify Zone relationships
+      expect(mapData.zones).toHaveLength(1)
+      const zoneExport = mapData.zones![0]
+      expect(zoneExport.columnIds).toEqual(['col-1', 'col-2', 'col-3'])
+      expect(zoneExport.parkingLocationIds).toEqual(['spot-1', 'spot-2'])
+
+      // Verify Sensor relationships
+      expect(mapData.sensors).toHaveLength(1)
+      const sensorExport = mapData.sensors![0]
+      expect(sensorExport.linkedSpotId).toBe('spot-1')
+    })
+
+    test('excludes non-relationship properties from relation extraction', () => {
+      // Create object with mix of relationship and non-relationship properties
+      const cctv = new dia.Element({
+        type: 'standard.Rectangle',
+        position: { x: 100, y: 100 },
+        size: { width: 50, height: 50 },
+        data: {
+          typeId: 'CCTV',
+          properties: {
+            name: 'Camera 1',
+            serialNumber: 'CAM-001', // Should NOT be treated as relation
+            ipAddress: '192.168.1.1', // Should NOT be treated as relation
+            model: 'Hikvision',       // Should NOT be treated as relation
+            readerId: 'READER-123',   // Should NOT be treated as relation
+            controlId: 'control-123', // SHOULD be treated as relation
+            zoneId: 'zone-456'        // SHOULD be treated as relation
+          }
+        }
+      })
+      graph.addCell(cctv)
+
+      const metadata = {
+        lotName: 'Test Lot',
+        lotCreated: '2025-12-04T05:41:00.194Z',
+        floorName: 'B1'
+      }
+
+      const result = exportGraphToJSON(graph, metadata)
+      const mapData = result.data.parkingLotLevels[0].mapData
+
+      // Verify CCTV has correct properties
+      const cctvExport = mapData.cctvs!.lightCctvs[0]
+
+      // Regular properties should be in the export
+      expect(cctvExport.serialNumber).toBe('CAM-001')
+      expect(cctvExport.ipAddress).toBe('192.168.1.1')
+      expect(cctvExport.model).toBe('Hikvision')
+
+      // Relationship properties should also be in the export
+      expect(cctvExport.controlId).toBe('control-123')
+      expect(cctvExport.zoneId).toBe('zone-456')
+    })
+
+    test('handles empty and null relationship values', () => {
+      // Create object with empty/null relationship properties
+      const cctv = new dia.Element({
+        type: 'standard.Rectangle',
+        position: { x: 100, y: 100 },
+        size: { width: 50, height: 50 },
+        data: {
+          typeId: 'CCTV',
+          properties: {
+            name: 'Camera 1',
+            controlId: '', // Empty string - should not create relation
+            zoneId: null,  // Null - should not create relation
+            sensorId: undefined // Undefined - should not create relation
+          }
+        }
+      })
+      graph.addCell(cctv)
+
+      const metadata = {
+        lotName: 'Test Lot',
+        lotCreated: '2025-12-04T05:41:00.194Z',
+        floorName: 'B1'
+      }
+
+      const result = exportGraphToJSON(graph, metadata)
+      const mapData = result.data.parkingLotLevels[0].mapData
+
+      // Verify CCTV has no relationships
+      const cctvExport = mapData.cctvs!.lightCctvs[0]
+      expect(cctvExport.controlId).toBeUndefined()
+      expect(cctvExport.zoneId).toBeUndefined()
+    })
   })
 })

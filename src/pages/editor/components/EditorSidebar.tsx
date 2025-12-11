@@ -13,6 +13,7 @@ import { RelationTypeList } from './RelationTypeList'
 import { RelationTypeManager } from './RelationTypeManager'
 import { TemplateRelationType } from '@/entities/schema/templateSchema'
 import { ObjectType, useObjectTypeStore } from '@/shared/store/objectTypeStore'
+import { parseCardinality } from '@/features/editor/lib/relationshipUtils'
 
 interface EditorSidebarProps {
   loadedFileName: string | null
@@ -127,6 +128,47 @@ export function EditorSidebar({
 
   const selectedType = getSelectedType()
 
+  // Handler for adding relationship links
+  const handleAddLink = (relationKey: string, targetId: string) => {
+    if (!selectedElement || !onObjectUpdate) return
+
+    const currentData = selectedElement.get('data') || {}
+    const currentProps = currentData.properties || {}
+    const value = currentProps[relationKey]
+
+    let newValue: string | string[]
+
+    // Determine if this is a single or multiple relationship
+    const relationConfig = relationTypes[relationKey]
+    const maxCount = relationConfig ? parseCardinality(relationConfig.cardinality) : null
+
+    if (maxCount === 1) {
+      // Single relationship
+      newValue = targetId
+    } else {
+      // Multiple relationships
+      const list = Array.isArray(value) ? [...value] : (value ? [value] : [])
+      if (!list.includes(targetId)) {
+        list.push(targetId)
+      }
+      newValue = list
+    }
+
+    // Update the element
+    const newData = {
+      ...currentData,
+      properties: {
+        ...currentProps,
+        [relationKey]: newValue
+      }
+    }
+
+    selectedElement.set('data', newData)
+
+    // Trigger re-render through handleObjectUpdate
+    onObjectUpdate(selectedElement.id as string, { data: newData })
+  }
+
   // Check if there are any relevant relationships for this object type
   const hasRelationships = selectedElement && relationTypes ? Object.values(relationTypes).some(config => {
     // 1. Direct match
@@ -196,6 +238,7 @@ export function EditorSidebar({
                 relationTypes={relationTypes || {}}
                 onUnlink={onUnlink}
                 onAutoLink={onAutoLink}
+                onAddLink={handleAddLink}
                 graph={graph}
               />
             )}

@@ -11,6 +11,7 @@ interface RelationshipManagerProps {
     relationTypes: Record<string, TemplateRelationType>
     onUnlink: (key: string, targetId: string) => void
     onAutoLink: (key: string) => void
+    onAddLink: (relationKey: string, targetId: string) => void
     graph: dia.Graph | null
 }
 
@@ -21,6 +22,7 @@ export function RelationshipManager({
     relationTypes,
     onUnlink,
     onAutoLink,
+    onAddLink,
     graph
 }: RelationshipManagerProps) {
     const elementData = element.get('data') || {}
@@ -89,42 +91,26 @@ export function RelationshipManager({
     }
 
     const handleAddLink = (config: TemplateRelationType, targetId: string) => {
-        // Use the existing linking mechanism through updating element data
+        // Check cardinality limits before calling callback
         const currentData = element.get('data') || {}
         const currentProps = currentData.properties || {}
         const value = currentProps[config.propertyKey]
 
         const maxCount = parseCardinality(config.cardinality)
-        let newValue: string | string[]
 
-        if (maxCount === 1) {
-            // Single relationship
-            newValue = targetId
-        } else {
-            // Multiple relationships
+        if (maxCount !== 1) {
+            // For multiple relationships, check max count limit
             const list = Array.isArray(value) ? [...value] : (value ? [value] : [])
 
-            // Check max count limit
             if (maxCount !== null && list.length >= maxCount) {
                 alert(`최대 ${maxCount}개까지만 연결할 수 있습니다.`)
                 return
             }
-
-            if (!list.includes(targetId)) {
-                list.push(targetId)
-            }
-            newValue = list
         }
 
-        const newData = {
-            ...currentData,
-            properties: {
-                ...currentProps,
-                [config.propertyKey]: newValue
-            }
-        }
-
-        element.set('data', newData)
+        // Call the callback to let EditorSidebar handle the update
+        // This ensures proper state flow through handleObjectUpdate
+        onAddLink(config.propertyKey, targetId)
     }
 
     if (relevantRelations.length === 0) return null
