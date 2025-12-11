@@ -197,8 +197,9 @@ function buildMapData(
 
 /**
  * Route object to appropriate category based on type or layer
+ * Exported for use in auto-link functionality
  */
-function routeObjectByType(typeOrLayer: string): string {
+export function routeObjectByType(typeOrLayer: string): string {
   // Direct type name mapping
   const typeMapping: Record<string, string> = {
     'CCTV': 'cctv',

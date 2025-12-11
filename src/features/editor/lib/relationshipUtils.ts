@@ -1,6 +1,7 @@
 import { dia, shapes } from '@joint/core'
 import { TemplateRelationType } from '@/entities/schema/templateSchema'
 import { useObjectTypeStore } from '@/shared/store/objectTypeStore'
+import { routeObjectByType } from './exportUtils'
 
 interface AutoLinkResult {
     sourceId: string
@@ -115,6 +116,7 @@ export function autoLinkObjects(
 
         // Filter out already linked targets (unless duplicates are allowed)
         if (!allowDuplicates && existingTargets.includes(el.id as string)) {
+            console.log(`    ⏭️ Skipping ${el.id} - already linked`)
             return false
         }
 
@@ -128,25 +130,47 @@ export function autoLinkObjects(
                 uuidToTemplateType
             )
             if (isLinked && linkedBySourceId) {
+                console.log(`    ⏭️ Skipping ${el.id} - globally linked by ${linkedBySourceId}`)
                 return false
             }
         }
 
-        const typeId = el.get('data')?.typeId
-        const templateTypeKey = uuidToTemplateType?.get(typeId) || typeId
-        return templateTypeKey === config.targetType
+        const data = el.get('data')
+        const typeId = data?.typeId
+        const layer = data?.layer
+
+        // Try to get template type key
+        let templateTypeKey = uuidToTemplateType?.get(typeId) || typeId
+
+        // If no typeId but has layer, try to normalize layer name
+        if (!templateTypeKey && layer && /^[cep]-/i.test(layer)) {
+            templateTypeKey = routeObjectByType(layer)
+            console.log(`    🔄 Using layer for target: "${layer}" -> "${templateTypeKey}"`)
+        }
+
+        const matches = templateTypeKey === config.targetType
+
+        console.log(`    🔍 Candidate ${el.id}: typeId=${typeId}, layer=${layer}, templateKey=${templateTypeKey}, targetType=${config.targetType}, matches=${matches}`)
+
+        return matches
     })
 
     const { strategy, maxDistance } = config.autoLink
     const linkedIds: string[] = []
+
+    console.log(`  📊 Found ${candidates.length} matching candidates for targetType=${config.targetType}`)
 
     if (strategy === 'nearest') {
         // Find all candidates within range
         const inRange = candidates.filter(target => {
             const targetCenter = target.getBBox().center()
             const distance = sourceCenter.distance(targetCenter)
-            return distance <= maxDistance
+            const withinRange = distance <= maxDistance
+            console.log(`    📏 Distance to ${target.id}: ${distance.toFixed(1)}px (max: ${maxDistance}px) ${withinRange ? '✅' : '❌'}`)
+            return withinRange
         })
+
+        console.log(`  ✅ ${inRange.length} candidates within range (${maxDistance}px)`)
 
         // Sort by distance
         inRange.sort((a, b) => {
@@ -263,16 +287,39 @@ export function autoLinkAllObjects(
         // Get object type store to map UUIDs
         const objectTypes = useObjectTypeStore.getState().types
 
+        console.log(`\n🗺️ Building UUID to template type mapping...`)
+        console.log(`  ObjectTypes in store: ${objectTypes.length}`)
         objectTypes.forEach(objType => {
-            // Find matching template type by name
-            const templateEntry = Object.entries(template.objectTypes).find(([_, tmplType]: [string, any]) =>
+            console.log(`  📝 ObjectType: id=${objType.id}, name="${objType.name}"`)
+        })
+        console.log(`  Template types: ${Object.keys(template.objectTypes).join(', ')}`)
+
+        objectTypes.forEach(objType => {
+            // Try 1: Direct name match with template displayName or name
+            let templateEntry = Object.entries(template.objectTypes).find(([_, tmplType]: [string, any]) =>
                 tmplType.displayName === objType.name || tmplType.name === objType.name
             )
+
+            // Try 2: If objectType name looks like a layer name (c-*, e-*, p-*), normalize it
+            if (!templateEntry && /^[cep]-/i.test(objType.name)) {
+                const normalizedType = routeObjectByType(objType.name)
+                console.log(`  🔄 Normalizing layer name: "${objType.name}" -> "${normalizedType}"`)
+
+                // Find template entry by normalized type
+                templateEntry = Object.entries(template.objectTypes).find(([key, _]: [string, any]) =>
+                    key === normalizedType
+                )
+            }
+
             if (templateEntry) {
                 uuidToTemplateType.set(objType.id, templateEntry[0])
-                console.log(`  🗺️ UUID mapping: ${objType.id} -> ${templateEntry[0]} (${objType.name})`)
+                console.log(`  ✅ UUID mapping: ${objType.id} -> ${templateEntry[0]} (${objType.name})`)
+            } else {
+                console.log(`  ❌ No template match for: ${objType.id} (${objType.name})`)
             }
         })
+
+        console.log(`  Total mappings created: ${uuidToTemplateType.size}`)
     }
 
     // Process each relation type with autoLink config
@@ -288,10 +335,21 @@ export function autoLinkAllObjects(
 
         // Find all source elements
         const sourceElements = graph.getElements().filter(el => {
-            const typeId = el.get('data')?.typeId
-            const templateTypeKey = uuidToTemplateType.get(typeId) || typeId
+            const data = el.get('data')
+            const typeId = data?.typeId
+            const layer = data?.layer
+
+            // Try to get template type key
+            let templateTypeKey = uuidToTemplateType.get(typeId) || typeId
+
+            // If no typeId but has layer, try to normalize layer name
+            if (!templateTypeKey && layer && /^[cep]-/i.test(layer)) {
+                templateTypeKey = routeObjectByType(layer)
+                console.log(`    🔄 Using layer for source: "${layer}" -> "${templateTypeKey}"`)
+            }
+
             const match = templateTypeKey === config.sourceType
-            console.log(`    🔍 Element ${el.id}: typeId=${typeId}, templateType=${templateTypeKey}, sourceType=${config.sourceType}, match=${match}`)
+            console.log(`    🔍 Element ${el.id}: typeId=${typeId}, layer=${layer}, templateType=${templateTypeKey}, sourceType=${config.sourceType}, match=${match}`)
             return match
         })
 
@@ -437,9 +495,18 @@ export function isTargetLinkedGlobally(
 
     // Find all source elements of this relation type
     const sourceElements = graph.getElements().filter(el => {
-        const typeId = el.get('data')?.typeId || el.get('data')?.type
-        // Use UUID mapping if provided, otherwise use typeId directly
-        const templateTypeKey = uuidToTemplateType?.get(typeId) || typeId
+        const data = el.get('data')
+        const typeId = data?.typeId || data?.type
+        const layer = data?.layer
+
+        // Try to get template type key
+        let templateTypeKey = uuidToTemplateType?.get(typeId) || typeId
+
+        // If no typeId but has layer, try to normalize layer name
+        if (!templateTypeKey && layer && /^[cep]-/i.test(layer)) {
+            templateTypeKey = routeObjectByType(layer)
+        }
+
         return templateTypeKey === sourceType && el.id !== excludeSourceId
     })
 

@@ -43,7 +43,9 @@ import {
   createRelationshipLinks,
   clearRelationshipLinks,
   highlightRelationshipTargets,
-  clearTargetHighlights
+  clearTargetHighlights,
+  dimNonRelatedElements,
+  clearElementDimming
 } from '@/features/editor/lib/relationshipVisualization'
 import styles from './EditorPage.module.css'
 import '@/shared/lib/testHelpers'
@@ -588,6 +590,7 @@ export default function EditorPage() {
       if (graph && paper) {
         clearRelationshipLinks(graph)
         clearTargetHighlights(graph, paper)
+        clearElementDimming(graph, paper)
       }
       return
     }
@@ -600,6 +603,7 @@ export default function EditorPage() {
     // Clear previous visualizations
     clearRelationshipLinks(graph)
     clearTargetHighlights(graph, paper)
+    clearElementDimming(graph, paper)
 
     // Create new visualizations
     const links = createRelationshipLinks(
@@ -608,9 +612,12 @@ export default function EditorPage() {
       mutableRelationTypes
     )
 
-    // Highlight target elements
+    // Highlight target elements with relationship-specific colors
+    highlightRelationshipTargets(graph, paper, links)
+
+    // Dim non-related elements to make relationships stand out
     const targetIds = links.map(link => link.targetId)
-    highlightRelationshipTargets(graph, paper, targetIds)
+    dimNonRelatedElements(graph, paper, selectedElementId, targetIds)
 
     console.log(`✨ Showing relationships for ${selectedElementId}: ${links.length} links`)
 
@@ -618,6 +625,7 @@ export default function EditorPage() {
     return () => {
       clearRelationshipLinks(graph)
       clearTargetHighlights(graph, paper)
+      clearElementDimming(graph, paper)
     }
   }, [selectedElementId, graph, paper, mutableRelationTypes, dataVersion])
 
@@ -759,7 +767,7 @@ export default function EditorPage() {
 
           // Check max count
           if (maxCount !== null && list.length >= maxCount) {
-            alert(`최대 ${maxCount}개까지만 연결할 수 있습니다.`)
+            console.log(`⚠️ 최대 ${maxCount}개까지만 연결할 수 있습니다.`)
             return
           }
 
@@ -841,6 +849,36 @@ export default function EditorPage() {
       setCurrentLot(currentLot)
     }
   }, [currentLot, setCurrentLot])
+
+  // Update element z-index when object type priority changes
+  useEffect(() => {
+    if (!graph) return
+
+    const cells = graph.getCells()
+    let updateCount = 0
+
+    cells.forEach(cell => {
+      if (!cell.isElement()) return
+
+      const element = cell as dia.Element
+      const objectTypeId = element.prop('objectTypeId')
+
+      if (objectTypeId) {
+        const objectType = types.find(t => t.id === objectTypeId)
+        if (objectType && objectType.priority !== undefined) {
+          const currentZ = element.get('z')
+          if (currentZ !== objectType.priority) {
+            element.set('z', objectType.priority)
+            updateCount++
+          }
+        }
+      }
+    })
+
+    if (updateCount > 0) {
+      console.log(`📊 Updated z-index for ${updateCount} elements`)
+    }
+  }, [graph, types])
 
   // Auto-save current floor when switching floors
   useEffect(() => {

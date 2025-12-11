@@ -23,6 +23,7 @@ interface RelationshipManagerProps {
     template?: any
     selectedType?: ObjectType
     relationTypes: Record<string, TemplateRelationType>
+    objectTypes?: ObjectType[]
     onUnlink: (key: string, targetId: string) => void
     onAutoLink: (key: string) => void
     onAddLink: (relationKey: string, targetId: string) => void
@@ -35,6 +36,7 @@ export function RelationshipManager({
     template,
     selectedType,
     relationTypes,
+    objectTypes,
     onUnlink,
     onAutoLink: _onAutoLink,
     onAddLink,
@@ -78,22 +80,34 @@ export function RelationshipManager({
         const linkedIds = elementData.properties?.[config.propertyKey]
         const linkedList = Array.isArray(linkedIds) ? linkedIds : linkedIds ? [linkedIds] : []
 
+        // Get target template type info
+        const targetTemplateType = template?.objectTypes?.[config.targetType]
+
         return graph.getElements()
             .filter(el => el.id !== element.id) // Not self
             .filter(el => {
                 const elData = el.get('data') || {}
                 const elTypeId = elData.typeId || elData.type
 
-                // Direct type match (UUID or template key)
+                // Direct type match (template key)
                 if (elTypeId === config.targetType) return true
 
-                // Check by matching template type name/displayName
-                if (template?.objectTypes && selectedType) {
-                    const targetTemplateType = template.objectTypes[config.targetType]
-                    const elTemplateType = template.objectTypes[elTypeId]
+                // UUID-based typeId: lookup in objectTypes store
+                if (objectTypes) {
+                    const elObjectType = objectTypes.find(t => t.id === elTypeId)
+                    if (elObjectType && targetTemplateType) {
+                        // Match by name
+                        return (
+                            elObjectType.name === targetTemplateType.displayName ||
+                            elObjectType.name === targetTemplateType.name
+                        )
+                    }
+                }
 
-                    if (targetTemplateType && elTemplateType) {
-                        // Match by template displayName or name
+                // Fallback: lookup in template objectTypes (for template-key based typeIds)
+                if (template?.objectTypes && targetTemplateType) {
+                    const elTemplateType = template.objectTypes[elTypeId]
+                    if (elTemplateType) {
                         return (
                             targetTemplateType.displayName === elTemplateType.displayName ||
                             targetTemplateType.name === elTemplateType.name

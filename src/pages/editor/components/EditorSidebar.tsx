@@ -287,6 +287,7 @@ export function EditorSidebar({
                 template={template}
                 selectedType={getSelectedType()}
                 relationTypes={relationTypes || {}}
+                objectTypes={objectTypes}
                 onUnlink={onUnlink}
                 onAutoLink={onAutoLink}
                 onAddLink={handleAddLink}

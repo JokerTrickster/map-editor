@@ -289,7 +289,11 @@
       "sourceType": "lightCctv",
       "targetType": "lightCctv",
       "cardinality": "1:2",
-      "propertyKey": "rightCctvIds"
+      "propertyKey": "rightCctvIds",
+      "autoLink": {
+        "strategy": "nearest",
+        "maxDistance": 300
+      }
     },
     "cctv_left_connection": {
       "name": "CCTV 좌측 연결",
@@ -297,7 +301,11 @@
       "sourceType": "lightCctv",
       "targetType": "lightCctv",
       "cardinality": "1:2",
-      "propertyKey": "leftCctvIds"
+      "propertyKey": "leftCctvIds",
+      "autoLink": {
+        "strategy": "nearest",
+        "maxDistance": 300
+      }
     },
     "emergency_bell_cctv": {
       "name": "비상벨 CCTV 연결",
