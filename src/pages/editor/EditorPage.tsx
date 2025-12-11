@@ -172,15 +172,22 @@ export default function EditorPage() {
     // Clear existing relationships
     if (existingCount > 0) {
       console.log(`🧹 Clearing ${existingCount} existing relationships`)
+      let currentData = element.get('data')
+
       existingTargets.forEach(targetId => {
-        updateRelationship(
+        currentData = updateRelationship(
           element,
           relationConfig.propertyKey,
           targetId,
           relationConfig.cardinality,
           'remove'
         )
+        console.log(`   ✓ Removed relationship to ${targetId}`)
       })
+
+      // Save the cleared state before auto-linking
+      handleObjectUpdate(selectedElementId, { data: currentData })
+      console.log(`💾 Saved cleared state - ${existingCount} relationships removed`)
     }
 
     // Auto-link with full capacity (since we cleared existing)
@@ -193,6 +200,8 @@ export default function EditorPage() {
       maxLinks ?? undefined
     )
 
+    console.log(`🔗 Auto-link returned ${linkedIds.length} new relationships (max: ${maxLinks})`)
+
     if (linkedIds.length > 0) {
       let newData = element.get('data')
 
@@ -203,16 +212,19 @@ export default function EditorPage() {
           targetId,
           relationConfig.cardinality,
           'add'
-        ).properties ? element.get('data') : newData
+        )
+        console.log(`   ✓ Added relationship to ${targetId}`)
       })
 
       handleObjectUpdate(selectedElementId, { data: newData })
+      console.log(`💾 Final save - ${linkedIds.length} new relationships added`)
 
       const message = existingCount > 0
         ? `기존 ${existingCount}개 관계를 삭제하고 ${linkedIds.length}개 새 관계를 생성했습니다.`
         : `${linkedIds.length}개 관계를 자동으로 생성했습니다.`
       alert(message)
     } else {
+      console.warn('⚠️ No relationships created by auto-link')
       alert('범위 내에서 연결 가능한 객체를 찾지 못했습니다.')
     }
   }
