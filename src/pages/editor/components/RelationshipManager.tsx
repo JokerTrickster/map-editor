@@ -193,27 +193,11 @@ export function RelationshipManager({
                             </div>
                         </div>
 
-                        {/* Phase 4: "+ 연결" button with inline dropdown - Only show in edit mode */}
+                        {/* Show select dropdown in edit mode */}
                         {editingRelationType === key && availableTargets.length > 0 && canAddMore ? (
                             <div className={styles.addSection}>
-                                <button
-                                    className={styles.addConnectionBtn}
-                                    onClick={(e) => {
-                                        const button = e.currentTarget
-                                        const select = button.nextElementSibling as HTMLSelectElement
-                                        if (select && select.tagName === 'SELECT') {
-                                            select.focus()
-                                            select.click()
-                                        }
-                                    }}
-                                    title="연결 추가"
-                                    aria-label="연결 추가"
-                                >
-                                    <span className={styles.addIcon}>+</span>
-                                    <span>연결</span>
-                                </button>
                                 <select
-                                    className={styles.targetSelectHidden}
+                                    className={styles.targetSelect}
                                     onChange={(e) => {
                                         if (e.target.value) {
                                             handleAddLink(config, e.target.value)
