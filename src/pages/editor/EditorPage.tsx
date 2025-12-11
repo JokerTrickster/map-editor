@@ -128,7 +128,10 @@ export default function EditorPage() {
     const relationConfig = template.relationTypes[relationKey]
     if (!relationConfig) return
 
-    updateRelationship(
+    console.log(`🗑️ Unlinking relationship: ${relationKey} -> ${targetId}`)
+
+    // Capture the updated data from updateRelationship
+    const newData = updateRelationship(
       element,
       relationConfig.propertyKey,
       targetId,
@@ -136,8 +139,10 @@ export default function EditorPage() {
       'remove'
     )
 
-    // Trigger update to refresh UI
-    handleObjectUpdate(selectedElementId, { data: element.get('data') })
+    console.log(`✅ Relationship removed. Updated data:`, newData)
+
+    // Trigger update to refresh UI with the new data
+    handleObjectUpdate(selectedElementId, { data: newData })
   }
 
   const handleAutoLink = (relationKey: string) => {

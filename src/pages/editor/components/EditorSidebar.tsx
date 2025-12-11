@@ -129,29 +129,56 @@ export function EditorSidebar({
   const selectedType = getSelectedType()
 
   // Handler for adding relationship links
-  const handleAddLink = (relationKey: string, targetId: string) => {
+  const handleAddLink = (propertyKey: string, targetId: string) => {
     if (!selectedElement || !onObjectUpdate) return
+
+    console.log(`➕ Adding relationship: propertyKey=${propertyKey}, targetId=${targetId}`)
 
     const currentData = selectedElement.get('data') || {}
     const currentProps = currentData.properties || {}
-    const value = currentProps[relationKey]
+    const value = currentProps[propertyKey]
+
+    // Find the relation config by propertyKey
+    const relationEntry = Object.entries(relationTypes).find(
+      ([_, config]) => config.propertyKey === propertyKey
+    )
+
+    if (!relationEntry) {
+      console.error(`❌ No relation config found for propertyKey: ${propertyKey}`)
+      return
+    }
+
+    const [relationKey, relationConfig] = relationEntry
+    const maxCount = parseCardinality(relationConfig.cardinality)
+
+    console.log(`📊 Relation: ${relationKey}, cardinality: ${relationConfig.cardinality}, maxCount: ${maxCount}`)
 
     let newValue: string | string[]
-
-    // Determine if this is a single or multiple relationship
-    const relationConfig = relationTypes[relationKey]
-    const maxCount = relationConfig ? parseCardinality(relationConfig.cardinality) : null
 
     if (maxCount === 1) {
       // Single relationship
       newValue = targetId
+      console.log(`✅ Setting single relationship: ${targetId}`)
     } else {
       // Multiple relationships
       const list = Array.isArray(value) ? [...value] : (value ? [value] : [])
-      if (!list.includes(targetId)) {
-        list.push(targetId)
+
+      // Check if already exists
+      if (list.includes(targetId)) {
+        console.log(`⚠️ Relationship already exists: ${targetId}`)
+        return
       }
+
+      // Check max count
+      if (maxCount !== null && list.length >= maxCount) {
+        alert(`최대 ${maxCount}개까지만 연결할 수 있습니다. (현재: ${list.length}개)`)
+        console.log(`❌ Max count reached: ${list.length}/${maxCount}`)
+        return
+      }
+
+      list.push(targetId)
       newValue = list
+      console.log(`✅ Added to list (${list.length}/${maxCount || '∞'}): ${targetId}`)
     }
 
     // Update the element
@@ -159,7 +186,7 @@ export function EditorSidebar({
       ...currentData,
       properties: {
         ...currentProps,
-        [relationKey]: newValue
+        [propertyKey]: newValue
       }
     }
 
