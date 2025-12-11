@@ -35,6 +35,11 @@ export function RelationTypeManager({
   const [propertyKey, setPropertyKey] = useState(initialData?.config.propertyKey || '')
   const [isCustomPropertyKey, setIsCustomPropertyKey] = useState(false)
 
+  // Auto-link settings
+  const [enableAutoLink, setEnableAutoLink] = useState(!!initialData?.config.autoLink)
+  const [maxDistance, setMaxDistance] = useState(initialData?.config.autoLink?.maxDistance || 200)
+  const [allowDuplicates, setAllowDuplicates] = useState(initialData?.config.autoLink?.allowDuplicates || false)
+
   const isEditMode = !!initialData
 
   // Get available property keys from source type
@@ -87,7 +92,14 @@ export function RelationTypeManager({
       sourceType,
       targetType,
       cardinality,
-      propertyKey
+      propertyKey,
+      ...(enableAutoLink && {
+        autoLink: {
+          strategy: 'nearest' as const,
+          maxDistance,
+          allowDuplicates
+        }
+      })
     }
 
     onSave(key, config)
@@ -247,6 +259,60 @@ export function RelationTypeManager({
               )}
             </div>
           </div>
+
+          {/* Auto-link Configuration */}
+          <div className={styles.field}>
+            <label className={styles.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={enableAutoLink}
+                onChange={(e) => setEnableAutoLink(e.target.checked)}
+                style={{ width: 'auto', margin: 0 }}
+              />
+              자동 연결 활성화
+            </label>
+            <div className={styles.hint}>
+              활성화하면 자동 관계 생성 기능을 사용할 수 있습니다
+            </div>
+          </div>
+
+          {enableAutoLink && (
+            <>
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  탐색 반경 (픽셀)
+                </label>
+                <input
+                  type="number"
+                  className={styles.input}
+                  value={maxDistance}
+                  onChange={(e) => setMaxDistance(parseInt(e.target.value) || 200)}
+                  min="50"
+                  max="1000"
+                  step="10"
+                  placeholder="200"
+                />
+                <div className={styles.hint}>
+                  자동 연결 시 이 반경 내에 있는 객체만 연결됩니다 (기본: 200px)
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={allowDuplicates}
+                    onChange={(e) => setAllowDuplicates(e.target.checked)}
+                    style={{ width: 'auto', margin: 0 }}
+                  />
+                  중복 연결 허용
+                </label>
+                <div className={styles.hint}>
+                  이미 연결된 객체를 다시 연결할 수 있습니다 (일반적으로 비활성화)
+                </div>
+              </div>
+            </>
+          )}
 
           <div className={styles.actions}>
             <button type="button" className={styles.cancelButton} onClick={onCancel}>

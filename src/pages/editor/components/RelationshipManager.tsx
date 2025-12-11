@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { dia } from '@joint/core'
 import { TemplateRelationType } from '@/entities/schema/templateSchema'
-import { parseCardinality } from '@/features/editor/lib/relationshipUtils'
+import { parseCardinality, isTargetLinkedGlobally } from '@/features/editor/lib/relationshipUtils'
 import styles from './RelationshipManager.module.css'
 import { ObjectType } from '@/shared/store/objectTypeStore'
 
@@ -25,6 +26,11 @@ export function RelationshipManager({
     onAddLink,
     graph
 }: RelationshipManagerProps) {
+    const [editingRelation, setEditingRelation] = useState<{
+        relationKey: string
+        targetId: string
+    } | null>(null)
+
     const elementData = element.get('data') || {}
     const elementTypeId = elementData.typeId || elementData.type
 
@@ -113,6 +119,25 @@ export function RelationshipManager({
         onAddLink(config.propertyKey, targetId)
     }
 
+    const handleReplaceLink = (
+        relationKey: string,
+        config: TemplateRelationType,
+        oldTargetId: string,
+        newTargetId: string
+    ) => {
+        console.log(`🔄 Replacing relationship: ${oldTargetId} → ${newTargetId}`)
+
+        // Remove old link
+        onUnlink(relationKey, oldTargetId)
+
+        // Add new link (after a small delay to ensure removal completes)
+        setTimeout(() => {
+            onAddLink(config.propertyKey, newTargetId)
+        }, 50)
+
+        console.log(`✅ Relationship replaced`)
+    }
+
     if (relevantRelations.length === 0) return null
 
     return (
@@ -172,11 +197,39 @@ export function RelationshipManager({
                                     <option value="" disabled>
                                         {maxCount === 1 ? 'Select connection...' : '+ Add connection...'}
                                     </option>
-                                    {availableTargets.map(target => (
-                                        <option key={target.id} value={target.id}>
-                                            {target.name}
-                                        </option>
-                                    ))}
+                                    {availableTargets.map(target => {
+                                        // Check if target is globally linked
+                                        const { isLinked, linkedBySourceId } = graph
+                                            ? isTargetLinkedGlobally(
+                                                graph,
+                                                config,
+                                                target.id,
+                                                element.id as string,
+                                                undefined  // No UUID mapping needed for manual linking
+                                            )
+                                            : { isLinked: false, linkedBySourceId: undefined }
+
+                                        let linkedSourceName = ''
+                                        if (isLinked && linkedBySourceId) {
+                                            const sourceEl = graph?.getCell(linkedBySourceId)
+                                            linkedSourceName = sourceEl?.get('data')?.properties?.name || linkedBySourceId
+                                        }
+
+                                        return (
+                                            <option
+                                                key={target.id}
+                                                value={target.id}
+                                                disabled={isLinked}
+                                                style={{
+                                                    color: isLinked ? '#666' : undefined,
+                                                    fontStyle: isLinked ? 'italic' : undefined
+                                                }}
+                                            >
+                                                {target.name}
+                                                {isLinked && ` (${linkedSourceName}와 연결됨)`}
+                                            </option>
+                                        )
+                                    })}
                                 </select>
                             </div>
                         ) : !canAddMore && maxCount !== null ? (
@@ -196,21 +249,59 @@ export function RelationshipManager({
                                         id.slice(0, 8)
                                     const targetType = targetData.typeId || targetData.type
 
+                                    const isEditing = editingRelation?.relationKey === key && editingRelation.targetId === id
+
                                     return (
                                         <div key={id} className={styles.linkedItem}>
-                                            <div className={styles.linkedInfo}>
-                                                <span className={styles.targetName}>{targetName}</span>
-                                                {targetType && (
-                                                    <span className={styles.targetType}>{targetType}</span>
-                                                )}
-                                            </div>
-                                            <button
-                                                className={styles.unlinkBtn}
-                                                onClick={() => onUnlink(key, id)}
-                                                title="Remove connection"
-                                            >
-                                                ×
-                                            </button>
+                                            {isEditing ? (
+                                                // Edit mode: Show dropdown
+                                                <select
+                                                    className={styles.editSelect}
+                                                    value={id}
+                                                    onChange={(e) => {
+                                                        if (e.target.value !== id) {
+                                                            // Replace relationship
+                                                            handleReplaceLink(key, config, id, e.target.value)
+                                                            setEditingRelation(null)
+                                                        }
+                                                    }}
+                                                    onBlur={() => setEditingRelation(null)}
+                                                    autoFocus
+                                                >
+                                                    <option value={id}>{targetName}</option>
+                                                    {getAvailableTargets(config).map(target => (
+                                                        <option key={target.id} value={target.id}>
+                                                            {target.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                // View mode: Show name + buttons
+                                                <>
+                                                    <div className={styles.linkedInfo}>
+                                                        <span className={styles.targetName}>{targetName}</span>
+                                                        {targetType && (
+                                                            <span className={styles.targetType}>{targetType}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className={styles.actions}>
+                                                        <button
+                                                            className={styles.editBtn}
+                                                            onClick={() => setEditingRelation({ relationKey: key, targetId: id })}
+                                                            title="Edit connection"
+                                                        >
+                                                            ✏️
+                                                        </button>
+                                                        <button
+                                                            className={styles.unlinkBtn}
+                                                            onClick={() => onUnlink(key, id)}
+                                                            title="Remove connection"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     )
                                 })

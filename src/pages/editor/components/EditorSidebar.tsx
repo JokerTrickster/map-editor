@@ -3,7 +3,7 @@
  * Right sidebar showing map info and object list
  */
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { dia } from '@joint/core'
 import styles from './EditorSidebar.module.css'
 
@@ -13,7 +13,7 @@ import { RelationTypeList } from './RelationTypeList'
 import { RelationTypeManager } from './RelationTypeManager'
 import { TemplateRelationType } from '@/entities/schema/templateSchema'
 import { ObjectType, useObjectTypeStore } from '@/shared/store/objectTypeStore'
-import { parseCardinality } from '@/features/editor/lib/relationshipUtils'
+import { parseCardinality, isTargetLinkedGlobally } from '@/features/editor/lib/relationshipUtils'
 
 interface EditorSidebarProps {
   loadedFileName: string | null
@@ -29,6 +29,8 @@ interface EditorSidebarProps {
   onUnlink: (key: string, targetId: string) => void
   onAutoLink: (key: string) => void
   onAutoLinkAll?: () => void
+  onUpdateRelationType?: (key: string, config: TemplateRelationType) => void
+  onDeleteRelationType?: (key: string) => void
 }
 
 export function EditorSidebar({
@@ -41,32 +43,26 @@ export function EditorSidebar({
   onObjectUpdate,
   graph,
   template,
-  relationTypes: initialRelationTypes,
+  relationTypes,
   onUnlink,
   onAutoLink,
-  onAutoLinkAll
+  onAutoLinkAll,
+  onUpdateRelationType,
+  onDeleteRelationType
 }: EditorSidebarProps) {
   const [activeTab, setActiveTab] = useState<'properties' | 'relationships'>('properties')
   const [mainTab, setMainTab] = useState<'objects' | 'relations'>('objects')
-  const [relationTypes, setRelationTypes] = useState<Record<string, TemplateRelationType>>(initialRelationTypes || {})
   const [isAddingRelation, setIsAddingRelation] = useState(false)
   const [editingRelation, setEditingRelation] = useState<{key: string, config: TemplateRelationType} | null>(null)
   const [selectedLayer, setSelectedLayer] = useState<string>('all')
 
   // Track template relation keys (cannot be edited or deleted)
   const [templateRelationKeys] = useState<Set<string>>(
-    new Set(Object.keys(initialRelationTypes || {}))
+    new Set(Object.keys(relationTypes || {}))
   )
 
   const selectedElement = selectedElementId && graph ? graph.getCell(selectedElementId) : null
   const objectTypes = useObjectTypeStore(state => state.types)
-
-  // Sync with initial relationTypes when template changes
-  useEffect(() => {
-    if (initialRelationTypes) {
-      setRelationTypes(initialRelationTypes)
-    }
-  }, [initialRelationTypes])
 
   // CRUD handlers for relation types
   const handleAddRelation = () => {
@@ -74,6 +70,7 @@ export function EditorSidebar({
   }
 
   const handleEditRelation = (key: string) => {
+    if (!relationTypes) return
     const config = relationTypes[key]
     if (config) {
       setEditingRelation({ key, config })
@@ -81,20 +78,17 @@ export function EditorSidebar({
   }
 
   const handleDeleteRelation = (key: string) => {
-    const updated = { ...relationTypes }
-    delete updated[key]
-    setRelationTypes(updated)
-    // TODO: Persist to store/backend
+    if (onDeleteRelationType) {
+      onDeleteRelationType(key)
+    }
   }
 
   const handleSaveRelation = (key: string, config: TemplateRelationType) => {
-    setRelationTypes({
-      ...relationTypes,
-      [key]: config
-    })
+    if (onUpdateRelationType) {
+      onUpdateRelationType(key, config)
+    }
     setIsAddingRelation(false)
     setEditingRelation(null)
-    // TODO: Persist to store/backend
   }
 
   const handleCancelRelation = () => {
@@ -130,13 +124,19 @@ export function EditorSidebar({
 
   // Handler for adding relationship links
   const handleAddLink = (propertyKey: string, targetId: string) => {
-    if (!selectedElement || !onObjectUpdate) return
+    if (!selectedElement || !onObjectUpdate || !graph) return
 
     console.log(`➕ Adding relationship: propertyKey=${propertyKey}, targetId=${targetId}`)
 
     const currentData = selectedElement.get('data') || {}
     const currentProps = currentData.properties || {}
     const value = currentProps[propertyKey]
+
+    // Guard against undefined relationTypes
+    if (!relationTypes) {
+      console.error('❌ No relation types available')
+      return
+    }
 
     // Find the relation config by propertyKey
     const relationEntry = Object.entries(relationTypes).find(
@@ -150,6 +150,28 @@ export function EditorSidebar({
 
     const [relationKey, relationConfig] = relationEntry
     const maxCount = parseCardinality(relationConfig.cardinality)
+
+    // Check global uniqueness (if allowDuplicates = false)
+    const { isLinked, linkedBySourceId } = isTargetLinkedGlobally(
+      graph,
+      relationConfig,
+      targetId,
+      selectedElement.id as string,
+      undefined  // No UUID mapping needed for manual linking
+    )
+
+    if (isLinked) {
+      // Get source element info for better error message
+      const sourceEl = graph.getCell(linkedBySourceId!)
+      const sourceName = sourceEl?.get('data')?.properties?.name || linkedBySourceId
+
+      alert(
+        `이 객체는 이미 다른 객체(${sourceName})와 연결되어 있습니다.\n` +
+        `관계 설정에서 "중복 연결 허용"이 비활성화되어 있습니다.`
+      )
+      console.log(`❌ Target ${targetId} already linked by ${linkedBySourceId}`)
+      return
+    }
 
     console.log(`📊 Relation: ${relationKey}, cardinality: ${relationConfig.cardinality}, maxCount: ${maxCount}`)
 
@@ -373,7 +395,7 @@ export function EditorSidebar({
                 ) : (
                   /* Relations List */
                   <RelationTypeList
-                    relationTypes={relationTypes}
+                    relationTypes={relationTypes || {}}
                     template={template}
                     templateRelationKeys={templateRelationKeys}
                     onAdd={handleAddRelation}

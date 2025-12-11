@@ -37,7 +37,14 @@ import { useObjectTypeSync } from './hooks/useObjectTypeSync'
 import { ObjectType } from '@/shared/store/objectTypeStore'
 import { useTemplate } from '@/features/template/hooks/useTemplate'
 import { TemplateId } from '@/features/template/lib/templateLoader'
+import { TemplateRelationType } from '@/entities/schema/templateSchema'
 import { autoLinkObjects, updateRelationship, autoLinkAllObjects, createRadiusCircles, getExistingRelationships, parseCardinality } from '@/features/editor/lib/relationshipUtils'
+import {
+  createRelationshipLinks,
+  clearRelationshipLinks,
+  highlightRelationshipTargets,
+  clearTargetHighlights
+} from '@/features/editor/lib/relationshipVisualization'
 import styles from './EditorPage.module.css'
 import '@/shared/lib/testHelpers'
 
@@ -67,6 +74,7 @@ export default function EditorPage() {
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
   const [selectedElementIds, setSelectedElementIds] = useState<Set<string>>(new Set())
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
+  const [dataVersion, setDataVersion] = useState(0) // Force re-renders when data changes
   const [pendingGraphJson, setPendingGraphJson] = useState<any | null>(null)
   const [isRestoring] = useState(false)
   const [showSaveModal, setShowSaveModal] = useState(false)
@@ -85,12 +93,24 @@ export default function EditorPage() {
   // Load Template for Relation Types
   const { template } = useTemplate(currentLotData?.templateId as TemplateId)
 
+  // Mutable copy of relationTypes (can be edited at runtime)
+  const [mutableRelationTypes, setMutableRelationTypes] = useState<Record<string, TemplateRelationType>>({})
+
+  // Initialize mutableRelationTypes from template
   useEffect(() => {
     console.log('[EditorPage] Template loaded:', {
       id: currentLotData?.templateId,
       hasTemplate: !!template,
       relationTypes: template?.relationTypes
     })
+
+    // Initialize mutable copy from template
+    if (template?.relationTypes) {
+      setMutableRelationTypes(template.relationTypes)
+      console.log('[EditorPage] Initialized mutableRelationTypes:', template.relationTypes)
+    } else {
+      setMutableRelationTypes({})
+    }
   }, [template, currentLotData])
 
   const handleError = (error: Error) => {
@@ -115,20 +135,48 @@ export default function EditorPage() {
 
     if (updates.data) {
       element.set('data', updates.data)
+      // Force React re-render when data changes
+      setDataVersion(v => v + 1)
     }
+  }
+
+  // Relation Type Management Handlers
+  const handleUpdateRelationType = (key: string, config: TemplateRelationType) => {
+    setMutableRelationTypes(prev => ({
+      ...prev,
+      [key]: config
+    }))
+    console.log(`✅ Updated relation type: ${key}`, config)
+  }
+
+  const handleDeleteRelationType = (key: string) => {
+    setMutableRelationTypes(prev => {
+      const updated = { ...prev }
+      delete updated[key]
+      return updated
+    })
+    console.log(`🗑️ Deleted relation type: ${key}`)
   }
 
   // Relationship Handlers
   const handleUnlink = (relationKey: string, targetId: string) => {
-    if (!selectedElementId || !graph || !template?.relationTypes) return
+    if (!selectedElementId || !graph) return
 
     const element = graph.getCell(selectedElementId) as dia.Element
     if (!element) return
 
-    const relationConfig = template.relationTypes[relationKey]
-    if (!relationConfig) return
+    const relationConfig = mutableRelationTypes[relationKey]
+    if (!relationConfig) {
+      console.error(`❌ Relation config not found for key: ${relationKey}`)
+      return
+    }
 
     console.log(`🗑️ Unlinking relationship: ${relationKey} -> ${targetId}`)
+    console.log(`  Config:`, relationConfig)
+    console.log(`  Property Key:`, relationConfig.propertyKey)
+
+    const currentData = element.get('data') || {}
+    console.log(`  Current data before removal:`, currentData)
 
     // Capture the updated data from updateRelationship
     const newData = updateRelationship(
@@ -141,17 +189,20 @@ export default function EditorPage() {
 
     console.log(`✅ Relationship removed. Updated data:`, newData)
 
-    // Trigger update to refresh UI with the new data
+    // Force a re-render by triggering a change event
+    element.trigger('change:data', element, newData)
+
+    // Trigger update to refresh UI with the new data (this will update dataVersion)
     handleObjectUpdate(selectedElementId, { data: newData })
   }
 
   const handleAutoLink = (relationKey: string) => {
-    if (!selectedElementId || !graph || !template?.relationTypes) return
+    if (!selectedElementId || !graph) return
 
     const element = graph.getCell(selectedElementId) as dia.Element
     if (!element) return
 
-    const relationConfig = template.relationTypes[relationKey]
+    const relationConfig = mutableRelationTypes[relationKey]
     if (!relationConfig || !relationConfig.autoLink) return
 
     console.log(`\n🚀 Auto-link started for relation: ${relationKey}`)
@@ -222,7 +273,7 @@ export default function EditorPage() {
       console.log(`   ✓ Added. Current list:`, currentData.properties[relationConfig.propertyKey])
     })
 
-    // Single update at the end
+    // Single update at the end (this will update dataVersion)
     handleObjectUpdate(selectedElementId, { data: currentData })
 
     console.log(`💾 Final save completed`)
@@ -245,10 +296,10 @@ export default function EditorPage() {
   }
 
   const handleAutoLinkConfirm = async (adjustedDistances: Record<string, number>) => {
-    if (!graph || !paper || !template?.relationTypes) return
+    if (!graph || !paper) return
 
     console.log('🔗 Auto-link all objects started with adjusted distances:', adjustedDistances)
-    console.log('📊 Relation types:', template.relationTypes)
+    console.log('📊 Relation types:', mutableRelationTypes)
     console.log('📊 Total elements on canvas:', graph.getElements().length)
 
     // Debug: log all elements and their typeIds
@@ -262,7 +313,7 @@ export default function EditorPage() {
       })
     })
 
-    const results = autoLinkAllObjects(graph, template.relationTypes, template, adjustedDistances)
+    const results = autoLinkAllObjects(graph, mutableRelationTypes, template, adjustedDistances)
 
     console.log('✨ Auto-link results:', results)
 
@@ -471,6 +522,46 @@ export default function EditorPage() {
       console.log('🧹 Cleared all highlights (no selection)')
     }
   }, [graph, paper, selectedTypeId, selectedElementIds])
+
+  // Show relationship visualizations when object is selected
+  useEffect(() => {
+    if (!graph || !paper || !selectedElementId) {
+      // Clear visualizations when nothing selected
+      if (graph && paper) {
+        clearRelationshipLinks(graph)
+        clearTargetHighlights(graph, paper)
+      }
+      return
+    }
+
+    const selectedElement = graph.getCell(selectedElementId)
+    if (!selectedElement || !selectedElement.isElement()) return
+
+    console.log(`👁️ Showing relationships for selected element: ${selectedElementId}`)
+
+    // Clear previous visualizations
+    clearRelationshipLinks(graph)
+    clearTargetHighlights(graph, paper)
+
+    // Create new visualizations
+    const links = createRelationshipLinks(
+      graph,
+      selectedElement as dia.Element,
+      mutableRelationTypes
+    )
+
+    // Highlight target elements
+    const targetIds = links.map(link => link.targetId)
+    highlightRelationshipTargets(graph, paper, targetIds)
+
+    console.log(`✨ Showing relationships for ${selectedElementId}: ${links.length} links`)
+
+    // Cleanup: when selection changes or component unmounts
+    return () => {
+      clearRelationshipLinks(graph)
+      clearTargetHighlights(graph, paper)
+    }
+  }, [selectedElementId, graph, paper, mutableRelationTypes, dataVersion])
 
   // Set current lot in objectTypeStore when project loads
   useEffect(() => {
@@ -1061,10 +1152,12 @@ export default function EditorPage() {
             onObjectUpdate={handleObjectUpdate}
             graph={graph}
             template={template}
-            relationTypes={template?.relationTypes}
+            relationTypes={mutableRelationTypes}
             onUnlink={handleUnlink}
             onAutoLink={handleAutoLink}
             onAutoLinkAll={handleOpenAutoLinkModal}
+            onUpdateRelationType={handleUpdateRelationType}
+            onDeleteRelationType={handleDeleteRelationType}
           />
         </ResizablePanel>
       </main>
@@ -1079,12 +1172,12 @@ export default function EditorPage() {
       />
 
       {/* Auto Link Modal */}
-      {template?.relationTypes && (
+      {Object.keys(mutableRelationTypes).length > 0 && (
         <AutoLinkModal
           isOpen={showAutoLinkModal}
           onClose={() => setShowAutoLinkModal(false)}
           onConfirm={handleAutoLinkConfirm}
-          relationTypes={template.relationTypes}
+          relationTypes={mutableRelationTypes}
           template={template}
           graph={graph}
           paper={paper}

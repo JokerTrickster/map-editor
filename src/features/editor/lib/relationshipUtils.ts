@@ -109,16 +109,27 @@ export function autoLinkObjects(
 
     // Get existing relationships to filter out duplicates (unless allowed)
     const existingTargets = getExistingRelationships(sourceElement, config.propertyKey)
-    console.log(`  🔍 Existing relationships for ${sourceElement.id}:`, existingTargets)
-    console.log(`  🔄 Allow duplicates: ${allowDuplicates}`)
 
     const candidates = graph.getElements().filter(el => {
         if (el.id === sourceElement.id) return false
 
         // Filter out already linked targets (unless duplicates are allowed)
         if (!allowDuplicates && existingTargets.includes(el.id as string)) {
-            console.log(`  ⏭️ Skipping ${el.id} - already linked (duplicates not allowed)`)
             return false
+        }
+
+        // Check if target is globally linked by another source (when duplicates not allowed)
+        if (!allowDuplicates) {
+            const { isLinked, linkedBySourceId } = isTargetLinkedGlobally(
+                graph,
+                config,
+                el.id as string,
+                sourceElement.id as string,
+                uuidToTemplateType
+            )
+            if (isLinked && linkedBySourceId) {
+                return false
+            }
         }
 
         const typeId = el.get('data')?.typeId
@@ -399,6 +410,51 @@ export function autoLinkAllObjects(
 
     console.log(`\n✨ Total auto-link results: ${results.length}`)
     return results
+}
+
+/**
+ * Check if a target is already linked by any other object (global uniqueness check)
+ * @param graph - The JointJS graph
+ * @param relationConfig - The relation type configuration
+ * @param targetId - The target ID to check
+ * @param excludeSourceId - Source ID to exclude from check (for current object)
+ * @returns { isLinked: boolean, linkedBySourceId?: string }
+ */
+export function isTargetLinkedGlobally(
+    graph: dia.Graph,
+    relationConfig: TemplateRelationType,
+    targetId: string,
+    excludeSourceId?: string,
+    uuidToTemplateType?: Map<string, string>
+): { isLinked: boolean; linkedBySourceId?: string } {
+    const { sourceType, propertyKey, autoLink } = relationConfig
+    const allowDuplicates = autoLink?.allowDuplicates ?? false
+
+    // If duplicates are allowed, skip check
+    if (allowDuplicates) {
+        return { isLinked: false }
+    }
+
+    // Find all source elements of this relation type
+    const sourceElements = graph.getElements().filter(el => {
+        const typeId = el.get('data')?.typeId || el.get('data')?.type
+        // Use UUID mapping if provided, otherwise use typeId directly
+        const templateTypeKey = uuidToTemplateType?.get(typeId) || typeId
+        return templateTypeKey === sourceType && el.id !== excludeSourceId
+    })
+
+    // Check if any source already has this target linked
+    for (const sourceEl of sourceElements) {
+        const existingTargets = getExistingRelationships(sourceEl, propertyKey)
+        if (existingTargets.includes(targetId)) {
+            return {
+                isLinked: true,
+                linkedBySourceId: sourceEl.id as string
+            }
+        }
+    }
+
+    return { isLinked: false }
 }
 
 /**
