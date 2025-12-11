@@ -59,6 +59,12 @@
     border-radius: 4px;
 }
 
+.count {
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
 .actions {
     display: flex;
     gap: 6px;
@@ -187,4 +193,14 @@
     font-style: italic;
     padding: 8px;
     text-align: center;
+}
+
+.maxReachedInfo {
+    padding: 6px 8px;
+    background: rgba(251, 191, 36, 0.1);
+    border-bottom: 1px solid var(--color-border);
+    font-size: 11px;
+    color: var(--color-warning, #f59e0b);
+    text-align: center;
+    font-weight: 500;
 }

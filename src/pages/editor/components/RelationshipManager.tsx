@@ -1,5 +1,6 @@
 import { dia } from '@joint/core'
 import { TemplateRelationType } from '@/entities/schema/templateSchema'
+import { parseCardinality } from '@/features/editor/lib/relationshipUtils'
 import styles from './RelationshipManager.module.css'
 import { ObjectType } from '@/shared/store/objectTypeStore'
 
@@ -93,12 +94,22 @@ export function RelationshipManager({
         const currentProps = currentData.properties || {}
         const value = currentProps[config.propertyKey]
 
+        const maxCount = parseCardinality(config.cardinality)
         let newValue: string | string[]
-        if (config.cardinality === '1:1') {
+
+        if (maxCount === 1) {
+            // Single relationship
             newValue = targetId
         } else {
-            // 1:N
+            // Multiple relationships
             const list = Array.isArray(value) ? [...value] : (value ? [value] : [])
+
+            // Check max count limit
+            if (maxCount !== null && list.length >= maxCount) {
+                alert(`최대 ${maxCount}개까지만 연결할 수 있습니다.`)
+                return
+            }
+
             if (!list.includes(targetId)) {
                 list.push(targetId)
             }
@@ -129,12 +140,22 @@ export function RelationshipManager({
                     : linkedIds ? [linkedIds] : []
                 const availableTargets = getAvailableTargets(config)
 
+                const maxCount = parseCardinality(config.cardinality)
+                const canAddMore = maxCount === null || linkedList.length < maxCount
+
                 return (
                     <div key={key} className={styles.relationGroup}>
                         <div className={styles.header}>
                             <div className={styles.headerLeft}>
                                 <span className={styles.relationName}>{config.name}</span>
-                                <span className={styles.cardinalityBadge}>{config.cardinality}</span>
+                                <span className={styles.cardinalityBadge}>
+                                    {config.cardinality}
+                                    {maxCount !== null && (
+                                        <span className={styles.count}>
+                                            {' '}({linkedList.length}/{maxCount})
+                                        </span>
+                                    )}
+                                </span>
                             </div>
                             <div className={styles.actions}>
                                 {config.autoLink && (
@@ -150,7 +171,7 @@ export function RelationshipManager({
                         </div>
 
                         {/* Dropdown for adding connections */}
-                        {availableTargets.length > 0 && config.cardinality === '1:N' ? (
+                        {availableTargets.length > 0 && canAddMore ? (
                             <div className={styles.addSection}>
                                 <select
                                     className={styles.targetSelect}
@@ -162,7 +183,9 @@ export function RelationshipManager({
                                     }}
                                     defaultValue=""
                                 >
-                                    <option value="" disabled>+ Add connection...</option>
+                                    <option value="" disabled>
+                                        {maxCount === 1 ? 'Select connection...' : '+ Add connection...'}
+                                    </option>
                                     {availableTargets.map(target => (
                                         <option key={target.id} value={target.id}>
                                             {target.name}
@@ -170,25 +193,9 @@ export function RelationshipManager({
                                     ))}
                                 </select>
                             </div>
-                        ) : config.cardinality === '1:1' && linkedList.length === 0 && availableTargets.length > 0 ? (
-                            <div className={styles.addSection}>
-                                <select
-                                    className={styles.targetSelect}
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            handleAddLink(config, e.target.value)
-                                            e.target.value = ''
-                                        }
-                                    }}
-                                    defaultValue=""
-                                >
-                                    <option value="" disabled>Select connection...</option>
-                                    {availableTargets.map(target => (
-                                        <option key={target.id} value={target.id}>
-                                            {target.name}
-                                        </option>
-                                    ))}
-                                </select>
+                        ) : !canAddMore && maxCount !== null ? (
+                            <div className={styles.maxReachedInfo}>
+                                최대 {maxCount}개 연결됨
                             </div>
                         ) : null}
 

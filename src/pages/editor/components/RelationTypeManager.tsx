@@ -31,7 +31,7 @@ export function RelationTypeManager({
   const [description, setDescription] = useState(initialData?.config.description || '')
   const [sourceType, setSourceType] = useState(initialData?.config.sourceType || '')
   const [targetType, setTargetType] = useState(initialData?.config.targetType || '')
-  const [cardinality, setCardinality] = useState<'1:1' | '1:N'>(initialData?.config.cardinality || '1:N')
+  const [cardinality, setCardinality] = useState<string>(initialData?.config.cardinality || '1:1')
   const [propertyKey, setPropertyKey] = useState(initialData?.config.propertyKey || '')
   const [isCustomPropertyKey, setIsCustomPropertyKey] = useState(false)
 
@@ -164,27 +164,18 @@ export function RelationTypeManager({
             <label className={styles.label}>
               Cardinality <span className={styles.required}>*</span>
             </label>
-            <div className={styles.radioGroup}>
-              <label className={styles.radioLabel}>
-                <input
-                  type="radio"
-                  name="cardinality"
-                  value="1:1"
-                  checked={cardinality === '1:1'}
-                  onChange={(e) => setCardinality(e.target.value as '1:1' | '1:N')}
-                />
-                <span>1:1 (하나만)</span>
-              </label>
-              <label className={styles.radioLabel}>
-                <input
-                  type="radio"
-                  name="cardinality"
-                  value="1:N"
-                  checked={cardinality === '1:N'}
-                  onChange={(e) => setCardinality(e.target.value as '1:1' | '1:N')}
-                />
-                <span>1:N (여러개)</span>
-              </label>
+            <input
+              type="text"
+              className={styles.input}
+              value={cardinality}
+              onChange={(e) => setCardinality(e.target.value)}
+              placeholder='예: "1:1", "1:5", "N" (무제한)'
+              pattern="^(N|1:\d+)$"
+              title='형식: "N" (무제한) 또는 "1:숫자" (예: "1:1", "1:5")'
+              required
+            />
+            <div className={styles.hint}>
+              "N" = 무제한 | "1:1" = 최대 1개 | "1:5" = 최대 5개
             </div>
           </div>
 

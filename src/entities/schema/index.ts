@@ -21,6 +21,28 @@ export {
   validateAsset,
 } from './mapSchema';
 
+export {
+  ExportDataSchema,
+  ParkingLotLevelSchema,
+  MapDataExportSchema,
+  LightCCTVSchema,
+  CCTVsSchema,
+  ZoneSchema,
+  ColumnSchema,
+  ParkingLocationSchema,
+  SensorSchema,
+  ChargerSchema,
+  GuideBoardSchema,
+  ElevatorSchema,
+  EmergencyBellSchema,
+  ArrowSchema,
+  LineSchema,
+  EntranceSchema,
+  OnePassReaderSchema,
+  OccupancyLightSchema,
+  LightSchema,
+} from './exportSchema';
+
 // Export all types
 export type {
   Metadata,
@@ -38,6 +60,29 @@ export type {
   ParkingSpotProperties,
   SensorProperties,
 } from './types';
+
+export type {
+  ExportData,
+  ParkingLotLevel,
+  MapDataExport,
+  Position,
+  LightCCTV,
+  CCTVs,
+  Zone,
+  Column,
+  ParkingLocation,
+  Sensor,
+  Charger,
+  GuideBoard,
+  Elevator,
+  EmergencyBell,
+  Arrow,
+  Line,
+  Entrance,
+  OnePassReader,
+  OccupancyLight,
+  Light,
+} from './exportSchema';
 
 // Export type guards
 export { isPointGeometry, isPolylineGeometry, isPolygonGeometry } from './types';

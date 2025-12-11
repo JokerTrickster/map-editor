@@ -2,14 +2,16 @@ import { useState, useMemo, useEffect } from 'react'
 import { Modal } from '@/shared/ui/Modal'
 import { dia } from '@joint/core'
 import { exportGraphToJSON, downloadJSON } from '@/features/editor/lib/exportUtils'
+import { ExportDataSchema } from '@/entities/schema/exportSchema'
 import styles from './ExportModal.module.css'
 
 interface ExportModalProps {
   isOpen: boolean
   onClose: () => void
   graph: dia.Graph | null
-  lotName?: string
-  floorName?: string
+  lotName: string
+  lotCreated: string
+  floorName: string
   floorOrder?: number
 }
 
@@ -18,27 +20,79 @@ export function ExportModal({
   onClose,
   graph,
   lotName,
+  lotCreated,
   floorName,
   floorOrder
 }: ExportModalProps) {
+  // Early return BEFORE any hooks
+  if (!graph) return null
+
   const [isExporting, setIsExporting] = useState(false)
   const [jsonData, setJsonData] = useState<any>(null)
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   // Update JSON data when modal opens
   useEffect(() => {
     if (isOpen && graph) {
-      const data = exportGraphToJSON(graph, {
-        lotName,
-        floorName,
-        floorOrder
-      })
-      setJsonData(data)
+      try {
+        const data = exportGraphToJSON(graph, {
+          lotName,
+          lotCreated,
+          floorName,
+          floorOrder
+        })
+
+        // Validate the exported data
+        const validationResult = ExportDataSchema.safeParse(data)
+        if (!validationResult.success) {
+          const errorMessages = validationResult.error.errors.map(err =>
+            `${err.path.join('.')}: ${err.message}`
+          ).join('\n')
+          setValidationError(errorMessages)
+          console.error('Validation failed:', validationResult.error)
+        } else {
+          setValidationError(null)
+        }
+
+        setJsonData(data)
+      } catch (error) {
+        console.error('Export generation failed:', error)
+        setValidationError(error instanceof Error ? error.message : 'Unknown error')
+      }
     }
-  }, [isOpen, graph, lotName, floorName, floorOrder])
+  }, [isOpen, graph, lotName, lotCreated, floorName, floorOrder])
 
   const jsonString = useMemo(() => {
     if (!jsonData) return ''
     return JSON.stringify(jsonData, null, 2)
+  }, [jsonData])
+
+  // Extract object count from new type-specific structure
+  const objectCount = useMemo(() => {
+    if (!jsonData?.data?.parkingLotLevels?.[0]?.mapData) return 0
+
+    const mapData = jsonData.data.parkingLotLevels[0].mapData
+    let count = 0
+
+    if (mapData.cctvs?.lightCctvs) count += mapData.cctvs.lightCctvs.length
+    if (mapData.zones) count += mapData.zones.length
+    if (mapData.columns) count += mapData.columns.length
+    if (mapData.parkingLocations) count += mapData.parkingLocations.length
+    if (mapData.sensors) count += mapData.sensors.length
+    if (mapData.chargers) count += mapData.chargers.length
+    if (mapData.guideBoards) count += mapData.guideBoards.length
+    if (mapData.elevators) count += mapData.elevators.length
+    if (mapData.emergencyBells) count += mapData.emergencyBells.length
+    if (mapData.arrows) count += mapData.arrows.length
+    if (mapData.outLines) count += mapData.outLines.length
+    if (mapData.innerLines) count += mapData.innerLines.length
+    if (mapData.entrances) count += mapData.entrances.length
+    if (mapData.onePassReaders) count += mapData.onePassReaders.length
+    if (mapData.occupancyLights) count += mapData.occupancyLights.length
+    if (mapData.lights) count += mapData.lights.length
+    if (mapData.carChargers) count += mapData.carChargers.length
+
+    return count
   }, [jsonData])
 
   const handleExport = async () => {
@@ -49,7 +103,7 @@ export function ExportModal({
     try {
       // Generate filename with timestamp
       const timestamp = new Date().toISOString().split('T')[0]
-      const filename = `map-${lotName || 'export'}-${floorName || 'floor'}-${timestamp}.json`
+      const filename = `map-${lotName}-${floorName}-${timestamp}.json`
 
       // Download JSON file
       downloadJSON(jsonData, filename)
@@ -76,9 +130,6 @@ export function ExportModal({
     }
   }
 
-  if (!graph) return null
-
-  const objectCount = jsonData?.objects?.length || 0
   const linkCount = graph.getLinks().length
 
   const footer = (
@@ -106,7 +157,7 @@ export function ExportModal({
         <button
           className={styles.primaryBtn}
           onClick={handleExport}
-          disabled={isExporting || !jsonData}
+          disabled={isExporting || !jsonData || !!validationError}
         >
           {isExporting ? 'Exporting...' : '⬇ Export JSON'}
         </button>
@@ -126,6 +177,22 @@ export function ExportModal({
         <div className={styles.description}>
           Preview the JSON data before exporting. This will download a file containing all map objects and their properties.
         </div>
+
+        {validationError && (
+          <div style={{
+            padding: '12px',
+            marginBottom: '16px',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '6px',
+            color: '#ef4444',
+            fontSize: '14px',
+            whiteSpace: 'pre-wrap'
+          }}>
+            <strong>Validation Error:</strong><br />
+            {validationError}
+          </div>
+        )}
 
         <div className={styles.preview}>
           <div className={styles.previewHeader}>

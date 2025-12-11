@@ -26,13 +26,19 @@ export const TemplateObjectTypeSchema = z.object({
 /**
  * Template Relation Type Schema
  * Defines allowed relationships between object types
+ *
+ * Cardinality format:
+ * - "N": unlimited (many-to-many)
+ * - "1:1": max 1 connection
+ * - "1:2": max 2 connections
+ * - "1:N": where N is any positive integer
  */
 export const TemplateRelationTypeSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   sourceType: z.string(),
   targetType: z.string(),
-  cardinality: z.enum(['1:1', '1:N']),
+  cardinality: z.string().regex(/^(N|1:\d+)$/, 'Cardinality must be "N" or "1:number" (e.g., "1:1", "1:5")'),
   propertyKey: z.string(),
   autoLink: z.object({
     strategy: z.enum(['nearest']),

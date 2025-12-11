@@ -10,6 +10,25 @@ interface AutoLinkResult {
     sourceCenter: { x: number; y: number }
 }
 
+/**
+ * Parse cardinality string to extract max count
+ * @param cardinality - "N" (unlimited) or "1:number" (e.g., "1:1", "1:5")
+ * @returns max count or null for unlimited
+ */
+export function parseCardinality(cardinality: string): number | null {
+    if (cardinality === 'N') {
+        return null // unlimited
+    }
+
+    const match = cardinality.match(/^1:(\d+)$/)
+    if (match) {
+        return parseInt(match[1], 10)
+    }
+
+    console.warn(`Invalid cardinality format: ${cardinality}`)
+    return null
+}
+
 export function autoLinkObjects(
     graph: dia.Graph,
     sourceElement: dia.Element,
@@ -45,13 +64,19 @@ export function autoLinkObjects(
             return distA - distB
         })
 
-        if (config.cardinality === '1:1') {
+        const maxCount = parseCardinality(config.cardinality)
+
+        if (maxCount === 1) {
+            // Single relationship - link only nearest
             if (inRange.length > 0) {
                 linkedIds.push(inRange[0].id as string)
             }
-        } else {
-            // 1:N - link all in range
+        } else if (maxCount === null) {
+            // Unlimited - link all in range
             linkedIds.push(...inRange.map(el => el.id as string))
+        } else {
+            // Limited count - link up to maxCount nearest
+            linkedIds.push(...inRange.slice(0, maxCount).map(el => el.id as string))
         }
     }
 
@@ -62,25 +87,34 @@ export function updateRelationship(
     element: dia.Element,
     propertyKey: string,
     targetId: string,
-    cardinality: '1:1' | '1:N',
+    cardinality: string,
     action: 'add' | 'remove'
 ) {
     const currentData = element.get('data') || {}
     const currentProps = currentData.properties || {}
     const value = currentProps[propertyKey]
 
+    const maxCount = parseCardinality(cardinality)
     let newValue: string | string[] | undefined
 
-    if (cardinality === '1:1') {
+    if (maxCount === 1) {
+        // Single relationship (1:1)
         if (action === 'add') {
             newValue = targetId
         } else {
             newValue = undefined
         }
     } else {
-        // 1:N
+        // Multiple relationships (1:N or N - unlimited)
         const list = Array.isArray(value) ? [...value] : (value ? [value] : [])
+
         if (action === 'add') {
+            // Check max count limit
+            if (maxCount !== null && list.length >= maxCount) {
+                console.warn(`Cannot add more relations. Maximum limit (${maxCount}) reached.`)
+                return currentData // Reject addition
+            }
+
             if (!list.includes(targetId)) {
                 list.push(targetId)
             }
@@ -90,7 +124,7 @@ export function updateRelationship(
                 list.splice(index, 1)
             }
         }
-        newValue = list
+        newValue = list.length > 0 ? list : undefined
     }
 
     const newData = {
@@ -172,17 +206,20 @@ export function autoLinkAllObjects(
 
             if (linkedIds.length > 0) {
                 // Update element properties
-                updateRelationship(
-                    sourceElement,
-                    config.propertyKey,
-                    linkedIds[0], // For single link
-                    config.cardinality,
-                    'add'
-                )
+                const maxCount = parseCardinality(config.cardinality)
 
-                // For 1:N, add all linked IDs
-                if (config.cardinality === '1:N' && linkedIds.length > 1) {
-                    linkedIds.slice(1).forEach(targetId => {
+                if (maxCount === 1) {
+                    // Single relationship - add only first
+                    updateRelationship(
+                        sourceElement,
+                        config.propertyKey,
+                        linkedIds[0],
+                        config.cardinality,
+                        'add'
+                    )
+                } else {
+                    // Multiple relationships - add all linked IDs
+                    linkedIds.forEach(targetId => {
                         updateRelationship(
                             sourceElement,
                             config.propertyKey,

@@ -588,8 +588,8 @@ export default function EditorPage() {
             if (bbox && bbox.width > 0 && bbox.height > 0) {
               // Create a temporary canvas with same aspect ratio as card (4:3)
               const canvas = document.createElement('canvas')
-              const targetWidth = 800  // Higher resolution for better quality
-              const targetHeight = 600
+              const targetWidth = 400  // Reduced for smaller file size
+              const targetHeight = 300
               canvas.width = targetWidth
               canvas.height = targetHeight
               const ctx = canvas.getContext('2d')
@@ -599,15 +599,16 @@ export default function EditorPage() {
                 ctx.fillStyle = '#0f172a'
                 ctx.fillRect(0, 0, targetWidth, targetHeight)
 
-                // Calculate scale to fit content with padding
+                // Calculate scale to fit content with less padding
                 const scaleX = targetWidth / bbox.width
                 const scaleY = targetHeight / bbox.height
-                const scale = Math.min(scaleX, scaleY) * 0.65 // 65% to show full map with more padding
+                const scale = Math.min(scaleX, scaleY) * 0.9 // 90% to show more content, less empty space
 
                 const scaledWidth = bbox.width * scale
                 const scaledHeight = bbox.height * scale
                 const offsetX = (targetWidth - scaledWidth) / 2
-                const offsetY = (targetHeight - scaledHeight) / 2
+                // Shift content up slightly to show more of the bottom
+                const offsetY = (targetHeight - scaledHeight) / 2 - (targetHeight * 0.05)
 
                 // Create SVG image
                 const svgData = new XMLSerializer().serializeToString(svg)
@@ -1026,14 +1027,17 @@ export default function EditorPage() {
       )}
 
       {/* Export Modal */}
-      <ExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        graph={graph}
-        lotName={currentLotData?.name}
-        floorName={currentFloor || undefined}
-        floorOrder={1}
-      />
+      {currentLotData && currentFloor && (
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          graph={graph}
+          lotName={currentLotData.name}
+          lotCreated={currentLotData.created}
+          floorName={useFloorStore.getState().getCurrentFloorData()?.name || 'Floor 1'}
+          floorOrder={useFloorStore.getState().getCurrentFloorData()?.order || 1}
+        />
+      )}
     </div>
   )
 }
