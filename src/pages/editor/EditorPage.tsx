@@ -1289,19 +1289,21 @@ export default function EditorPage() {
       />
 
       <main className={styles.main}>
-        {/* Left Sidebar */}
-        <ResizablePanel
-          side="left"
-          defaultWidth={360}
-          minWidth={200}
-          maxWidth={500}
-          defaultCollapsed={!currentLotData?.templateId}
-        >
-          <ObjectTypeSidebar
-            selectedTypeId={selectedTypeId}
-            onSelectType={handleTypeSelect}
-          />
-        </ResizablePanel>
+        {/* Left Sidebar - Hidden in Viewer Mode */}
+        {viewMode === 'edit' && (
+          <ResizablePanel
+            side="left"
+            defaultWidth={360}
+            minWidth={200}
+            maxWidth={500}
+            defaultCollapsed={!currentLotData?.templateId}
+          >
+            <ObjectTypeSidebar
+              selectedTypeId={selectedTypeId}
+              onSelectType={handleTypeSelect}
+            />
+          </ResizablePanel>
+        )}
 
         {/* No Types Warning Modal */}
         <Modal
@@ -1488,32 +1490,34 @@ export default function EditorPage() {
           {isRestoring && <LoadingOverlay message="Loading floor..." />}
         </div>
 
-        {/* Right Sidebar */}
-        <ResizablePanel
-          side="right"
-          defaultWidth={300}
-          minWidth={200}
-          maxWidth={400}
-        >
-          <EditorSidebar
-            loadedFileName={loadedFileName}
-            elementCount={elementCount}
-            zoom={zoom}
-            objectsByLayer={objectsByLayer}
-            selectedElementId={selectedElementId}
-            onObjectClick={handleElementClick}
-            onObjectUpdate={handleObjectUpdate}
-            graph={graph}
-            template={template}
-            relationTypes={mutableRelationTypes}
-            onUnlink={handleUnlink}
-            onAutoLink={handleAutoLink}
-            onAutoLinkAll={handleOpenAutoLinkModal}
-            onUpdateRelationType={handleUpdateRelationType}
-            onDeleteRelationType={handleDeleteRelationType}
-            onRelationEditModeChange={handleRelationEditModeChange}
-          />
-        </ResizablePanel>
+        {/* Right Sidebar - Hidden in Viewer Mode */}
+        {viewMode === 'edit' && (
+          <ResizablePanel
+            side="right"
+            defaultWidth={300}
+            minWidth={200}
+            maxWidth={400}
+          >
+            <EditorSidebar
+              loadedFileName={loadedFileName}
+              elementCount={elementCount}
+              zoom={zoom}
+              objectsByLayer={objectsByLayer}
+              selectedElementId={selectedElementId}
+              onObjectClick={handleElementClick}
+              onObjectUpdate={handleObjectUpdate}
+              graph={graph}
+              template={template}
+              relationTypes={mutableRelationTypes}
+              onUnlink={handleUnlink}
+              onAutoLink={handleAutoLink}
+              onAutoLinkAll={handleOpenAutoLinkModal}
+              onUpdateRelationType={handleUpdateRelationType}
+              onDeleteRelationType={handleDeleteRelationType}
+              onRelationEditModeChange={handleRelationEditModeChange}
+            />
+          </ResizablePanel>
+        )}
       </main>
 
       <FloorTabs />
