@@ -430,47 +430,19 @@ function calculateCentroid(points: Array<[number, number]>): [number, number] {
 }
 
 /**
- * Extract relation IDs from MapObject relations
+ * Extract ALL relationship properties from object properties
+ * This includes both original properties and derived relations
  */
-interface ExtractedRelations {
-  zoneId?: string
-  columnIds?: string[]
-  parkingLocationIds?: string[]
-  controlId?: string
-  chargerId?: string
-  sensorId?: string
-  linkedSpotId?: string
-  parkingSpotId?: string
-}
+function extractAllRelationProperties(object: MapObject): Record<string, any> {
+  const result: Record<string, any> = {}
 
-function extractRelationIds(object: MapObject): ExtractedRelations {
-  const result: ExtractedRelations = {}
-
-  if (!object.relations) return result
-
-  for (const relation of object.relations) {
-    const key = relation.meta?.propertyKey || ''
-
-    // Map based on property key patterns
-    if (key.toLowerCase().includes('zone')) {
-      result.zoneId = relation.targetId
-    } else if (key.toLowerCase().includes('column')) {
-      if (!result.columnIds) result.columnIds = []
-      result.columnIds.push(relation.targetId)
-    } else if (key.toLowerCase().includes('control')) {
-      result.controlId = relation.targetId
-    } else if (key.toLowerCase().includes('charger')) {
-      result.chargerId = relation.targetId
-    } else if (key.toLowerCase().includes('sensor')) {
-      result.sensorId = relation.targetId
-    } else if (key.toLowerCase().includes('spot') || key.toLowerCase().includes('parking')) {
-      if (object.type === 'Zone' || object.type === 'ParkingZone') {
-        if (!result.parkingLocationIds) result.parkingLocationIds = []
-        result.parkingLocationIds.push(relation.targetId)
-      } else {
-        result.linkedSpotId = relation.targetId
+  // Include all relationship properties from the original properties
+  if (object.properties) {
+    Object.entries(object.properties).forEach(([key, value]) => {
+      if (isRelationshipProperty(key)) {
+        result[key] = value
       }
-    }
+    })
   }
 
   return result
@@ -481,7 +453,7 @@ function extractRelationIds(object: MapObject): ExtractedRelations {
  */
 function transformToCCTV(object: MapObject): LightCCTV {
   const position = extractPosition(object.geometry)
-  const relations = extractRelationIds(object)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
@@ -491,8 +463,7 @@ function transformToCCTV(object: MapObject): LightCCTV {
     ipAddress: object.properties?.ipAddress,
     model: object.properties?.model,
     resolution: object.properties?.resolution,
-    controlId: relations.controlId,
-    zoneId: relations.zoneId
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -518,7 +489,7 @@ function transformToZone(object: MapObject): Zone {
     ]
   }
 
-  const relations = extractRelationIds(object)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
@@ -527,8 +498,7 @@ function transformToZone(object: MapObject): Zone {
     zoneName: object.properties?.zoneName,
     capacity: object.properties?.capacity,
     handicappedSpots: object.properties?.handicappedSpots,
-    columnIds: relations.columnIds,
-    parkingLocationIds: relations.parkingLocationIds
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -537,13 +507,13 @@ function transformToZone(object: MapObject): Zone {
  */
 function transformToColumn(object: MapObject): Column {
   const position = extractPosition(object.geometry)
-  const relations = extractRelationIds(object)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
     name: object.name,
     position,
-    zoneId: relations.zoneId
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -569,7 +539,7 @@ function transformToParkingLocation(object: MapObject): ParkingLocation {
     ]
   }
 
-  const relations = extractRelationIds(object)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
@@ -578,9 +548,7 @@ function transformToParkingLocation(object: MapObject): ParkingLocation {
     spotNumber: object.properties?.spotNumber,
     spotType: object.properties?.spotType,
     status: object.properties?.status,
-    zoneId: relations.zoneId,
-    chargerId: relations.chargerId,
-    sensorId: relations.sensorId
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -589,7 +557,7 @@ function transformToParkingLocation(object: MapObject): ParkingLocation {
  */
 function transformToSensor(object: MapObject): Sensor {
   const position = extractPosition(object.geometry)
-  const relations = extractRelationIds(object)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
@@ -598,7 +566,7 @@ function transformToSensor(object: MapObject): Sensor {
     sensorType: object.properties?.sensorType,
     model: object.properties?.model,
     range: object.properties?.range,
-    linkedSpotId: relations.linkedSpotId
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -607,7 +575,7 @@ function transformToSensor(object: MapObject): Sensor {
  */
 function transformToCharger(object: MapObject): Charger {
   const position = extractPosition(object.geometry)
-  const relations = extractRelationIds(object)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
@@ -617,7 +585,7 @@ function transformToCharger(object: MapObject): Charger {
     chargingType: object.properties?.chargingType,
     connectorType: object.properties?.connectorType,
     status: object.properties?.status,
-    parkingSpotId: relations.parkingSpotId || relations.linkedSpotId
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -626,13 +594,15 @@ function transformToCharger(object: MapObject): Charger {
  */
 function transformToGuideBoard(object: MapObject): GuideBoard {
   const position = extractPosition(object.geometry)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
     name: object.name,
     position,
     content: object.properties?.content,
-    direction: object.properties?.direction
+    direction: object.properties?.direction,
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -641,12 +611,14 @@ function transformToGuideBoard(object: MapObject): GuideBoard {
  */
 function transformToElevator(object: MapObject): Elevator {
   const position = extractPosition(object.geometry)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
     name: object.name,
     position,
-    floors: object.properties?.floors
+    floors: object.properties?.floors,
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -655,13 +627,13 @@ function transformToElevator(object: MapObject): Elevator {
  */
 function transformToEmergencyBell(object: MapObject): EmergencyBell {
   const position = extractPosition(object.geometry)
-  const relations = extractRelationIds(object)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
     name: object.name,
     position: [position.x, position.y] as [number, number],
-    linkedCctvId: relations.controlId
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -681,11 +653,14 @@ function transformToArrow(object: MapObject): Arrow {
     ]
   }
 
+  const relationProps = extractAllRelationProperties(object)
+
   return {
     id: object.id,
     name: object.name,
     points,
-    direction: object.properties?.direction
+    direction: object.properties?.direction,
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -705,11 +680,14 @@ function transformToLine(object: MapObject): Line {
     ]
   }
 
+  const relationProps = extractAllRelationProperties(object)
+
   return {
     id: object.id,
     name: object.name,
     points,
-    lineType: object.properties?.lineType
+    lineType: object.properties?.lineType,
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -718,12 +696,14 @@ function transformToLine(object: MapObject): Line {
  */
 function transformToEntrance(object: MapObject): Entrance {
   const position = extractPosition(object.geometry)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
     name: object.name,
     position,
-    entranceType: object.properties?.entranceType
+    entranceType: object.properties?.entranceType,
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -732,12 +712,14 @@ function transformToEntrance(object: MapObject): Entrance {
  */
 function transformToOnePassReader(object: MapObject): OnePassReader {
   const position = extractPosition(object.geometry)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
     name: object.name,
     position,
-    readerId: object.properties?.readerId
+    readerId: object.properties?.readerId,
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -746,12 +728,14 @@ function transformToOnePassReader(object: MapObject): OnePassReader {
  */
 function transformToOccupancyLight(object: MapObject): OccupancyLight {
   const position = extractPosition(object.geometry)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
     name: object.name,
     position,
-    status: object.properties?.status
+    status: object.properties?.status,
+    ...relationProps // Include all relationship properties
   }
 }
 
@@ -760,12 +744,14 @@ function transformToOccupancyLight(object: MapObject): OccupancyLight {
  */
 function transformToLight(object: MapObject): Light {
   const position = extractPosition(object.geometry)
+  const relationProps = extractAllRelationProperties(object)
 
   return {
     id: object.id,
     name: object.name,
     position,
-    lightType: object.properties?.lightType
+    lightType: object.properties?.lightType,
+    ...relationProps // Include all relationship properties
   }
 }
 

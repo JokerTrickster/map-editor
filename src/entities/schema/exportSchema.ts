@@ -28,7 +28,7 @@ export const LightCCTVSchema = z.object({
   resolution: z.string().optional(),
   controlId: z.string().optional(), // Relation to control system
   zoneId: z.string().optional() // Relation to zone
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 export const CCTVsSchema = z.object({
   lightCctvs: z.array(LightCCTVSchema)
@@ -46,7 +46,7 @@ export const ZoneSchema = z.object({
   handicappedSpots: z.number().optional(),
   columnIds: z.array(z.string()).optional(), // Relations to columns
   parkingLocationIds: z.array(z.string()).optional() // Relations to parking spots
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * Column Schema
@@ -56,7 +56,7 @@ export const ColumnSchema = z.object({
   name: z.string().optional(),
   position: PositionSchema,
   zoneId: z.string().optional() // Relation to zone
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * ParkingLocation Schema
@@ -71,7 +71,7 @@ export const ParkingLocationSchema = z.object({
   zoneId: z.string().optional(), // Relation to zone
   chargerId: z.string().optional(), // Relation to charger
   sensorId: z.string().optional() // Relation to sensor
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * Sensor Schema
@@ -84,7 +84,7 @@ export const SensorSchema = z.object({
   model: z.string().optional(),
   range: z.number().optional(),
   linkedSpotId: z.string().optional() // Relation to parking spot
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * Charger Schema
@@ -98,7 +98,7 @@ export const ChargerSchema = z.object({
   connectorType: z.string().optional(),
   status: z.enum(['available', 'occupied', 'offline']).optional(),
   parkingSpotId: z.string().optional() // Relation to parking spot
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * GuideBoard Schema
@@ -109,7 +109,7 @@ export const GuideBoardSchema = z.object({
   position: PositionSchema,
   content: z.string().optional(),
   direction: z.string().optional()
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * Elevator Schema
@@ -119,7 +119,7 @@ export const ElevatorSchema = z.object({
   name: z.string().optional(),
   position: PositionSchema,
   floors: z.array(z.string()).optional()
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * EmergencyBell Schema
@@ -129,7 +129,7 @@ export const EmergencyBellSchema = z.object({
   name: z.string().optional(),
   position: z.tuple([z.number(), z.number()]),
   linkedCctvId: z.string().optional()
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * Arrow Schema
@@ -139,7 +139,7 @@ export const ArrowSchema = z.object({
   name: z.string().optional(),
   points: z.array(z.tuple([z.number(), z.number()])).min(2),
   direction: z.string().optional()
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * OutLine/InnerLine Schema (shared)
@@ -149,7 +149,7 @@ export const LineSchema = z.object({
   name: z.string().optional(),
   points: z.array(z.tuple([z.number(), z.number()])).min(2),
   lineType: z.string().optional()
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * Entrance Schema
@@ -159,7 +159,7 @@ export const EntranceSchema = z.object({
   name: z.string().optional(),
   position: PositionSchema,
   entranceType: z.string().optional()
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * OnePassReader Schema
@@ -169,7 +169,7 @@ export const OnePassReaderSchema = z.object({
   name: z.string().optional(),
   position: PositionSchema,
   readerId: z.string().optional()
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * OccupancyLight Schema
@@ -179,7 +179,7 @@ export const OccupancyLightSchema = z.object({
   name: z.string().optional(),
   position: PositionSchema,
   status: z.string().optional()
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * Light Schema
@@ -189,7 +189,7 @@ export const LightSchema = z.object({
   name: z.string().optional(),
   position: PositionSchema,
   lightType: z.string().optional()
-})
+}).passthrough() // Allow additional properties for dynamic relationships
 
 /**
  * MapData Export Schema - Type-specific arrays
