@@ -121,15 +121,10 @@ export default function EditorPage() {
   const [mutableRelationTypes, setMutableRelationTypes] = useState<Record<string, TemplateRelationType>>({})
 
   // Initialize JointJS Canvas
-  const { paper, graph, canvasRef: jointJSCanvasRef } = useJointJSCanvas(
-    currentLotData?.mapData,
-    setZoom,
-    false, // Assuming readOnly is false for EditorPage
-    rotation
-  )
+  const { paper, graph } = useJointJSCanvas(canvasRef)
 
   // Canvas panning hook - now aware of rotation
-  useCanvasPanning(paper, graph, jointJSCanvasRef, () => setSelectedElementId(null), rotation)
+  useCanvasPanning(paper, graph, canvasRef, () => setSelectedElementId(null), rotation)
 
   const { handleZoomIn, handleZoomOut, handleZoomReset, handleFitToScreen } = useCanvasZoom(
     paper,
