@@ -1086,26 +1086,26 @@ export default function EditorPage() {
 
         console.log('📊 Floor data saved:', { floorId: currentFloor, elementCount: graph.getCells().length })
 
-        // Generate and save canvas thumbnail - capture current viewport
-        if (paper) {
+        // Generate and save canvas thumbnail - capture entire content
+        if (paper && graph) {
           try {
             const svg = paper.svg
-            const viewport = paper.el.parentElement
 
-            if (!viewport) return
+            // Get bounding box of all content
+            const contentBBox = graph.getBBox()
 
-            // Get current viewport dimensions and transform
-            const viewportWidth = viewport.clientWidth
-            const viewportHeight = viewport.clientHeight
-            const currentScale = paper.scale().sx
-            const currentTranslate = paper.translate()
+            if (!contentBBox || contentBBox.width === 0 || contentBBox.height === 0) {
+              console.warn('⚠️ No content to capture for thumbnail')
+              return
+            }
 
-            // Calculate visible area in graph coordinates
-            const visibleArea = {
-              x: -currentTranslate.tx / currentScale,
-              y: -currentTranslate.ty / currentScale,
-              width: viewportWidth / currentScale,
-              height: viewportHeight / currentScale
+            // Add padding around content (10%)
+            const padding = Math.max(contentBBox.width, contentBBox.height) * 0.1
+            const contentArea = {
+              x: contentBBox.x - padding,
+              y: contentBBox.y - padding,
+              width: contentBBox.width + padding * 2,
+              height: contentBBox.height + padding * 2
             }
 
             // Create thumbnail canvas (4:3 aspect ratio)
@@ -1121,13 +1121,13 @@ export default function EditorPage() {
               ctx.fillStyle = '#0f172a'
               ctx.fillRect(0, 0, targetWidth, targetHeight)
 
-              // Calculate scale to fit visible area to thumbnail
-              const scaleX = targetWidth / visibleArea.width
-              const scaleY = targetHeight / visibleArea.height
+              // Calculate scale to fit entire content to thumbnail
+              const scaleX = targetWidth / contentArea.width
+              const scaleY = targetHeight / contentArea.height
               const scale = Math.min(scaleX, scaleY)
 
-              const scaledWidth = visibleArea.width * scale
-              const scaledHeight = visibleArea.height * scale
+              const scaledWidth = contentArea.width * scale
+              const scaledHeight = contentArea.height * scale
               const offsetX = (targetWidth - scaledWidth) / 2
               const offsetY = (targetHeight - scaledHeight) / 2
 
@@ -1139,8 +1139,8 @@ export default function EditorPage() {
 
               img.onload = () => {
                 ctx.save()
-                // Transform to show only visible area
-                ctx.translate(offsetX - visibleArea.x * scale, offsetY - visibleArea.y * scale)
+                // Transform to show entire content area
+                ctx.translate(offsetX - contentArea.x * scale, offsetY - contentArea.y * scale)
                 ctx.scale(scale, scale)
                 ctx.drawImage(img, 0, 0)
                 ctx.restore()
@@ -1152,7 +1152,7 @@ export default function EditorPage() {
                 const updateLot = useProjectStore.getState().updateLot
                 updateLot(currentLot, { thumbnail })
 
-                console.log('🖼️ Thumbnail saved (current viewport):', currentLot)
+                console.log('🖼️ Thumbnail saved (entire content):', currentLot)
 
                 URL.revokeObjectURL(url)
               }
