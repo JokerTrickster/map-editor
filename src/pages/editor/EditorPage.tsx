@@ -1086,64 +1086,78 @@ export default function EditorPage() {
 
         console.log('📊 Floor data saved:', { floorId: currentFloor, elementCount: graph.getCells().length })
 
-        // Generate and save canvas thumbnail
+        // Generate and save canvas thumbnail - capture current viewport
         if (paper) {
           try {
             const svg = paper.svg
-            const bbox = paper.getContentBBox()
+            const viewport = paper.el.parentElement
 
-            if (bbox && bbox.width > 0 && bbox.height > 0) {
-              // Create a temporary canvas with same aspect ratio as card (4:3)
-              const canvas = document.createElement('canvas')
-              const targetWidth = 400  // Reduced for smaller file size
-              const targetHeight = 300
-              canvas.width = targetWidth
-              canvas.height = targetHeight
-              const ctx = canvas.getContext('2d')
+            if (!viewport) return
 
-              if (ctx) {
-                // Fill with background color
-                ctx.fillStyle = '#0f172a'
-                ctx.fillRect(0, 0, targetWidth, targetHeight)
+            // Get current viewport dimensions and transform
+            const viewportWidth = viewport.clientWidth
+            const viewportHeight = viewport.clientHeight
+            const currentScale = paper.scale().sx
+            const currentTranslate = paper.translate()
 
-                // Calculate scale to fit content with less padding
-                const scaleX = targetWidth / bbox.width
-                const scaleY = targetHeight / bbox.height
-                const scale = Math.min(scaleX, scaleY) * 0.9 // 90% to show more content, less empty space
+            // Calculate visible area in graph coordinates
+            const visibleArea = {
+              x: -currentTranslate.tx / currentScale,
+              y: -currentTranslate.ty / currentScale,
+              width: viewportWidth / currentScale,
+              height: viewportHeight / currentScale
+            }
 
-                const scaledWidth = bbox.width * scale
-                const scaledHeight = bbox.height * scale
-                const offsetX = (targetWidth - scaledWidth) / 2
-                // Shift content up slightly to show more of the bottom
-                const offsetY = (targetHeight - scaledHeight) / 2 - (targetHeight * 0.05)
+            // Create thumbnail canvas (4:3 aspect ratio)
+            const canvas = document.createElement('canvas')
+            const targetWidth = 400
+            const targetHeight = 300
+            canvas.width = targetWidth
+            canvas.height = targetHeight
+            const ctx = canvas.getContext('2d')
 
-                // Create SVG image
-                const svgData = new XMLSerializer().serializeToString(svg)
-                const img = new Image()
-                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-                const url = URL.createObjectURL(svgBlob)
+            if (ctx) {
+              // Fill with background color
+              ctx.fillStyle = '#0f172a'
+              ctx.fillRect(0, 0, targetWidth, targetHeight)
 
-                img.onload = () => {
-                  ctx.save()
-                  ctx.translate(offsetX - bbox.x * scale, offsetY - bbox.y * scale)
-                  ctx.scale(scale, scale)
-                  ctx.drawImage(img, 0, 0)
-                  ctx.restore()
+              // Calculate scale to fit visible area to thumbnail
+              const scaleX = targetWidth / visibleArea.width
+              const scaleY = targetHeight / visibleArea.height
+              const scale = Math.min(scaleX, scaleY)
 
-                  // Convert to base64 with higher quality
-                  const thumbnail = canvas.toDataURL('image/png', 0.9)
+              const scaledWidth = visibleArea.width * scale
+              const scaledHeight = visibleArea.height * scale
+              const offsetX = (targetWidth - scaledWidth) / 2
+              const offsetY = (targetHeight - scaledHeight) / 2
 
-                  // Update project thumbnail
-                  const updateLot = useProjectStore.getState().updateLot
-                  updateLot(currentLot, { thumbnail })
+              // Serialize SVG
+              const svgData = new XMLSerializer().serializeToString(svg)
+              const img = new Image()
+              const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+              const url = URL.createObjectURL(svgBlob)
 
-                  console.log('🖼️ Thumbnail saved for project:', currentLot)
+              img.onload = () => {
+                ctx.save()
+                // Transform to show only visible area
+                ctx.translate(offsetX - visibleArea.x * scale, offsetY - visibleArea.y * scale)
+                ctx.scale(scale, scale)
+                ctx.drawImage(img, 0, 0)
+                ctx.restore()
 
-                  URL.revokeObjectURL(url)
-                }
+                // Convert to base64
+                const thumbnail = canvas.toDataURL('image/png', 0.9)
 
-                img.src = url
+                // Update project thumbnail
+                const updateLot = useProjectStore.getState().updateLot
+                updateLot(currentLot, { thumbnail })
+
+                console.log('🖼️ Thumbnail saved (current viewport):', currentLot)
+
+                URL.revokeObjectURL(url)
               }
+
+              img.src = url
             }
           } catch (err) {
             console.error('Failed to generate thumbnail:', err)
