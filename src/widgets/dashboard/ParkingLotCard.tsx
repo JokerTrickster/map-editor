@@ -65,21 +65,18 @@ export default function ParkingLotCard({
       <div className={styles.cardContent}>
         <div className={styles.cardHeader}>
           <h3 className={styles.cardTitle}>{lot.name}</h3>
-        </div>
-
-        {lot.description && (
-          <p className={styles.cardDescription}>{lot.description}</p>
-        )}
-
-        <div className={styles.cardMeta}>
           <span className={styles.cardDate}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            Created {formatDate(lot.created)}
+            {formatDate(lot.created)}
           </span>
         </div>
+
+        {lot.description && (
+          <p className={styles.cardDescription}>{lot.description}</p>
+        )}
 
         <div className={styles.cardFooter}>
           <button

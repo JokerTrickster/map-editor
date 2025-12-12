@@ -1099,8 +1099,8 @@ export default function EditorPage() {
               return
             }
 
-            // Add padding around content (10%)
-            const padding = Math.max(contentBBox.width, contentBBox.height) * 0.1
+            // Add padding around content (20% for better visibility)
+            const padding = Math.max(contentBBox.width, contentBBox.height) * 0.2
             const contentArea = {
               x: contentBBox.x - padding,
               y: contentBBox.y - padding,
