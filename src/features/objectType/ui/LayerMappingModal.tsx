@@ -23,6 +23,7 @@ const AUTO_LAYER_KEYWORD_MAPPINGS: Record<string, string> = {
   'innerline': '내부선',
   'entrance': '입구/출구',
   'elevator': '엘리베이터',
+  'lightinglineframe': '조명 프레임',
   'lightingline': '조명',
   'occupancylight': '만공차등',
   'cctv': '조명 CCTV',
