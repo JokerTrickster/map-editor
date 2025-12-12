@@ -182,6 +182,11 @@ function createElementFromEntity(
       fillColor = getLayerFillColor(layer)
       strokeColor = getLayerStrokeColor(layer)
     }
+
+    // Force stroke-only for lighting frame (no fill)
+    if (mappedType.name === '조명 프레임' || layer.toLowerCase().includes('lightinglineframe')) {
+      fillColor = 'none'
+    }
   } else {
     fillColor = getLayerFillColor(layer)
     strokeColor = getLayerStrokeColor(layer)
