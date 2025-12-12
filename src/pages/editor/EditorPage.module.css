@@ -230,9 +230,16 @@
 
 /* Single-select highlight (blue) */
 :global(.single-select-highlight) {
-    outline: 2px solid #3B82F6 !important;
+    outline: 4px solid #3B82F6 !important;
     outline-offset: 4px;
     z-index: 9998 !important;
+}
+
+/* Relationship target highlight (red, thinner) */
+:global(.relationship-target-highlight) {
+    outline: 2px solid #EF4444 !important;
+    outline-offset: 4px;
+    z-index: 9997 !important;
 }
 
 /* Success Pulse Animation */

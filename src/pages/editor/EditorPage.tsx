@@ -299,7 +299,7 @@ export default function EditorPage() {
       ? `기존 ${existingCount}개 관계를 삭제하고 ${linkedIds.length}개 새 관계를 생성했습니다.`
       : `${linkedIds.length}개 관계를 자동으로 생성했습니다.`
 
-    alert(message)
+    console.log(`✅ ${message}`)
   }
 
   const handleOpenAutoLinkModal = () => {
@@ -380,12 +380,12 @@ export default function EditorPage() {
       const totalLinks = results.reduce((sum, r) => sum + r.targetIds.length, 0)
       console.log(`✅ Successfully created ${totalLinks} relationships from ${results.length} source objects`)
 
-      // Show success message with detailed info
+      // Log success message with detailed info
       const disabledCount = totalCount - enabledCount
       const message = disabledCount > 0
-        ? `${totalLinks}개 관계를 생성했습니다.\n(활성화: ${enabledCount}개 / 비활성화: ${disabledCount}개)`
+        ? `${totalLinks}개 관계를 생성했습니다. (활성화: ${enabledCount}개 / 비활성화: ${disabledCount}개)`
         : `${totalLinks}개 관계를 생성했습니다.`
-      alert(message)
+      console.log(`✅ ${message}`)
     } else {
       console.warn('⚠️ No relationships created. Check if objects exist and types match.')
       alert('생성된 관계가 없습니다. 객체와 타입을 확인하세요.')
@@ -588,6 +588,7 @@ export default function EditorPage() {
     if (!graph || !paper || !selectedElementId) {
       // Clear visualizations when nothing selected
       if (graph && paper) {
+        console.log('🧹 Clearing relationship visualizations (no selection)')
         clearRelationshipLinks(graph)
         clearTargetHighlights(graph, paper)
         clearElementDimming(graph, paper)
@@ -598,7 +599,12 @@ export default function EditorPage() {
     const selectedElement = graph.getCell(selectedElementId)
     if (!selectedElement || !selectedElement.isElement()) return
 
+    const elementData = selectedElement.get('data') || {}
     console.log(`👁️ Showing relationships for selected element: ${selectedElementId}`)
+    console.log(`   Element type: ${elementData.typeId || elementData.type}`)
+    console.log(`   Element name: ${elementData.properties?.name || 'Unknown'}`)
+    console.log(`   Available relation types:`, Object.keys(mutableRelationTypes))
+    console.log(`   Element properties:`, elementData.properties)
 
     // Clear previous visualizations
     clearRelationshipLinks(graph)
@@ -609,7 +615,9 @@ export default function EditorPage() {
     const links = createRelationshipLinks(
       graph,
       selectedElement as dia.Element,
-      mutableRelationTypes
+      mutableRelationTypes,
+      template || undefined,
+      types
     )
 
     // Highlight target elements with relationship-specific colors
@@ -623,11 +631,12 @@ export default function EditorPage() {
 
     // Cleanup: when selection changes or component unmounts
     return () => {
+      console.log('🧹 Cleanup: Clearing relationship visualizations')
       clearRelationshipLinks(graph)
       clearTargetHighlights(graph, paper)
       clearElementDimming(graph, paper)
     }
-  }, [selectedElementId, graph, paper, mutableRelationTypes, dataVersion])
+  }, [selectedElementId, graph, paper, mutableRelationTypes, template, types, dataVersion])
 
   // Highlight available targets when in relationship edit mode
   useEffect(() => {

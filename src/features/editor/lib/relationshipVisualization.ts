@@ -1,6 +1,8 @@
-import { dia, shapes } from '@joint/core'
-import { TemplateRelationType } from '@/entities/schema/templateSchema'
+import { dia } from '@joint/core'
+import { TemplateRelationType, Template } from '@/entities/schema/templateSchema'
+import { ObjectType } from '@/shared/store/objectTypeStore'
 import { getExistingRelationships } from './relationshipUtils'
+import { routeObjectByType } from './exportUtils'
 
 interface RelationshipLink {
     linkElement: dia.Link
@@ -12,75 +14,76 @@ interface RelationshipLink {
 }
 
 /**
- * Get color and style for relationship type
- * Based on UI/UX design: different colors for different relationship semantics
- */
-function getRelationshipStyle(relationKey: string, relationName: string): {
-    color: string
-    strokeWidth: number
-    dasharray?: string
-} {
-    // Normalize relation name for matching
-    const nameLower = relationName.toLowerCase()
-    const keyLower = relationKey.toLowerCase()
-
-    // Monitoring relationships - Blue (observation/surveillance)
-    if (nameLower.includes('모니터링') || nameLower.includes('monitor') || keyLower.includes('monitor')) {
-        return { color: '#3B82F6', strokeWidth: 2 } // blue-500
-    }
-
-    // Coverage relationships - Green (protection/safety)
-    if (nameLower.includes('커버') || nameLower.includes('cover') || keyLower.includes('cover')) {
-        return { color: '#10B981', strokeWidth: 2 } // green-500
-    }
-
-    // Connection relationships - Purple (physical/system connection)
-    if (nameLower.includes('연결') || nameLower.includes('connect') || keyLower.includes('connect') ||
-        keyLower.includes('cctv_left') || keyLower.includes('cctv_right')) {
-        return { color: '#8B5CF6', strokeWidth: 2 } // purple-500
-    }
-
-    // Emergency/Bell relationships - Pink (service/emergency)
-    if (nameLower.includes('비상') || nameLower.includes('emergency') || nameLower.includes('bell')) {
-        return { color: '#EC4899', strokeWidth: 2 } // pink-500
-    }
-
-    // Proximity relationships - Amber (attention/reference)
-    if (nameLower.includes('근처') || nameLower.includes('near') || nameLower.includes('adjacent')) {
-        return { color: '#F59E0B', strokeWidth: 1.5, dasharray: '4,2' } // amber-500, dashed
-    }
-
-    // Default - Gray
-    return { color: '#6B7280', strokeWidth: 2 } // gray-500
-}
-
-/**
  * Create visual link elements for all relationships of a selected element
  * @param graph - The JointJS graph
  * @param selectedElement - The currently selected element
  * @param relationTypes - Available relation types
+ * @param template - Template configuration with object types
+ * @param objectTypes - Available object types from store
  * @returns Array of created link elements
  */
 export function createRelationshipLinks(
     graph: dia.Graph,
     selectedElement: dia.Element,
-    relationTypes: Record<string, TemplateRelationType>
+    relationTypes: Record<string, TemplateRelationType>,
+    template?: Template,
+    objectTypes?: ObjectType[]
 ): RelationshipLink[] {
     const links: RelationshipLink[] = []
     const sourceId = selectedElement.id as string
-    const elementTypeId = selectedElement.get('data')?.typeId || selectedElement.get('data')?.type
+    const data = selectedElement.get('data') || {}
+    const typeId = data?.typeId || data?.type
+    const layer = data?.layer
+
+    // Build UUID to template type key mapping (same pattern as relationshipUtils.ts)
+    const uuidToTemplateType = new Map<string, string>()
+    if (template?.objectTypes && objectTypes) {
+        objectTypes.forEach(objType => {
+            const templateEntry = Object.entries(template.objectTypes).find(([key, tmplType]: [string, any]) => {
+                // First try exact match
+                if (tmplType.displayName === objType.name) return true
+                // Then try normalized match
+                const normalizedType = routeObjectByType(objType.name)
+                return key === normalizedType
+            })
+            if (templateEntry) {
+                uuidToTemplateType.set(objType.id, templateEntry[0])
+            }
+        })
+        console.log(`  📍 UUID mapping created: ${uuidToTemplateType.size} mappings`)
+    }
+
+    // Get template type key for the selected element
+    let templateTypeKey = uuidToTemplateType.get(typeId) || typeId
+
+    // If no typeId but has layer, try to normalize layer name
+    if (!templateTypeKey && layer && /^[cep]-/i.test(layer)) {
+        templateTypeKey = routeObjectByType(layer)
+        console.log(`  🔄 Using layer for source: "${layer}" -> "${templateTypeKey}"`)
+    }
+
+    console.log(`🔍 Source element type resolution:`, {
+        typeId,
+        layer,
+        templateTypeKey,
+        availableRelations: Object.keys(relationTypes)
+    })
 
     // Find all relation types where this element is the source
     const relevantRelations = Object.entries(relationTypes).filter(
-        ([_, config]) => config.sourceType === elementTypeId
+        ([_, config]) => {
+            const match = config.sourceType === templateTypeKey
+            console.log(`  🎯 Checking relation ${_}: sourceType=${config.sourceType}, templateTypeKey=${templateTypeKey}, match=${match}`)
+            return match
+        }
     )
 
     console.log(`🔗 Creating relationship visualizations for ${sourceId}:`, {
-        elementType: elementTypeId,
+        elementType: templateTypeKey,
         relevantRelationCount: relevantRelations.length
     })
 
-    // Create links for each relationship
+    // Create links for each relationship (without visual link elements, just data)
     relevantRelations.forEach(([relationKey, config]) => {
         const targetIds = getExistingRelationships(selectedElement, config.propertyKey)
 
@@ -97,50 +100,25 @@ export function createRelationshipLinks(
                 return
             }
 
-            // Get relationship-specific style
-            const style = getRelationshipStyle(relationKey, config.name)
+            // Unified red color for all relationships
+            const unifiedColor = '#EF4444'
 
-            // Create visual link with relationship-specific color
-            const link = new shapes.standard.Link({
-                source: { id: sourceId },
-                target: { id: targetId },
-                attrs: {
-                    line: {
-                        stroke: style.color,
-                        strokeWidth: style.strokeWidth,
-                        strokeDasharray: style.dasharray || '0',
-                        targetMarker: {
-                            type: 'path',
-                            d: 'M 10 -5 0 0 10 5 z', // Arrow
-                            fill: style.color
-                        }
-                    }
-                },
-                z: 1000, // Ensure links appear on top
-                router: { name: 'manhattan' }, // Right-angle routing
-                connector: { name: 'rounded' } // Rounded corners
-            })
-
-            // Add custom data to identify this as a temp visualization
-            link.set('isRelationshipVisualization', true)
-            link.set('relationKey', relationKey)
-
-            graph.addCell(link)
-
+            // Don't create visual link elements - just track the relationship data
+            // The highlighting is done separately via highlightRelationshipTargets()
             links.push({
-                linkElement: link,
+                linkElement: null as any, // No visual link element
                 sourceId,
                 targetId,
                 relationKey,
                 relationName: config.name,
-                color: style.color
+                color: unifiedColor
             })
 
-            console.log(`  ✅ Created link: ${sourceId} → ${targetId} (${style.color})`)
+            console.log(`  ✅ Tracked relationship: ${sourceId} → ${targetId} (${unifiedColor})`)
         })
     })
 
-    console.log(`🎨 Total ${links.length} relationship links created`)
+    console.log(`🎨 Total ${links.length} relationships tracked (no visual links)`)
     return links
 }
 
@@ -171,47 +149,24 @@ export function highlightRelationshipTargets(
     paper: dia.Paper,
     links: RelationshipLink[]
 ): void {
-    // Group targets by their relationship color for efficient highlighting
-    const targetsByColor = new Map<string, string[]>()
+    const targetIds = new Set(links.map(link => link.targetId))
 
-    links.forEach(link => {
-        if (!targetsByColor.has(link.color)) {
-            targetsByColor.set(link.color, [])
-        }
-        targetsByColor.get(link.color)!.push(link.targetId)
-    })
-
-    // Apply highlights with relationship-specific colors
+    // Apply CSS class-based highlights to all relationship targets
     let highlightCount = 0
-    targetsByColor.forEach((targetIds, color) => {
-        targetIds.forEach(targetId => {
-            const targetElement = graph.getCell(targetId)
-            if (targetElement && targetElement.isElement()) {
-                const view = paper.findViewByModel(targetElement)
-                if (view) {
-                    view.highlight(null, {
-                        highlighter: {
-                            name: 'stroke',
-                            options: {
-                                padding: 5,
-                                rx: 5,
-                                ry: 5,
-                                attrs: {
-                                    'stroke-width': 3,
-                                    stroke: color,
-                                    'stroke-dasharray': '5,5'
-                                }
-                            }
-                        }
-                    })
-                    highlightCount++
-                }
+    targetIds.forEach(targetId => {
+        const targetElement = graph.getCell(targetId)
+        if (targetElement && targetElement.isElement()) {
+            const view = paper.findViewByModel(targetElement)
+            if (view && view.el) {
+                // Add CSS class for relationship highlight
+                view.el.classList.add('relationship-target-highlight')
+                highlightCount++
             }
-        })
+        }
     })
 
     if (highlightCount > 0) {
-        console.log(`✨ Highlighted ${highlightCount} target elements with relationship-specific colors`)
+        console.log(`✨ Highlighted ${highlightCount} target elements with red CSS class`)
     }
 }
 
@@ -224,12 +179,20 @@ export function clearTargetHighlights(
     graph: dia.Graph,
     paper: dia.Paper
 ): void {
+    let clearedCount = 0
     graph.getElements().forEach(element => {
         const view = paper.findViewByModel(element)
-        if (view) {
-            view.unhighlight()
+        if (view && view.el) {
+            // Remove CSS class for relationship highlight
+            if (view.el.classList.contains('relationship-target-highlight')) {
+                view.el.classList.remove('relationship-target-highlight')
+                clearedCount++
+            }
         }
     })
+    if (clearedCount > 0) {
+        console.log(`🧹 Cleared red highlights from ${clearedCount} elements`)
+    }
 }
 
 /**
@@ -256,9 +219,9 @@ export function dimNonRelatedElements(
 
         const view = paper.findViewByModel(element)
         if (view && view.el) {
-            // Apply dimming effect using CSS
-            view.el.style.opacity = '0.3'
-            view.el.style.filter = 'grayscale(50%)'
+            // Apply strong dimming effect using CSS
+            view.el.style.opacity = '0.15'
+            view.el.style.filter = 'grayscale(100%) blur(1px)'
             dimmedCount++
         }
     })
