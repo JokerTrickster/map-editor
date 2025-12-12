@@ -40,6 +40,7 @@ const EXCLUDED_LAYERS = [
   'c-cctv-id',
   'c-cctv-ip',
   'p-parking-cctvid',
+  'l-lightinglineframe',
 ]
 
 interface SearchableTypeSelectProps {

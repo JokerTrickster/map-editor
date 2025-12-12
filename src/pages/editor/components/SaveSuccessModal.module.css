@@ -133,6 +133,25 @@
     box-shadow: var(--shadow-glow), 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
+.dashboardButton {
+    flex: 1;
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    border: 2px solid var(--color-primary);
+    transition: all var(--transition-fast);
+}
+
+.dashboardButton:hover {
+    background-color: var(--color-primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
 .closeButton {
     flex: 1;
     padding: var(--space-3) var(--space-6);

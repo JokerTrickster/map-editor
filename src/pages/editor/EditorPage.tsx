@@ -1153,13 +1153,6 @@ export default function EditorPage() {
         // Show save success modal with current lot ID as map ID (placeholder until API integration)
         setSavedMapId(currentLot)
         setShowSaveSuccessModal(true)
-
-        // Keep old save modal for auto-navigate case
-        if (shouldAutoNavigate) {
-          setSaveCountdown(3)
-          setAutoNavigate(true)
-          setShowSaveModal(true)
-        }
       }
     }
   }
@@ -1566,6 +1559,10 @@ export default function EditorPage() {
           onViewerMode={() => {
             setShowSaveSuccessModal(false)
             setViewMode('viewer')
+          }}
+          onDashboard={() => {
+            setShowSaveSuccessModal(false)
+            navigate('/dashboard')
           }}
           mapId={savedMapId}
         />

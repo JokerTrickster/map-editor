@@ -11,6 +11,7 @@ interface SaveSuccessModalProps {
   isOpen: boolean
   onClose: () => void
   onViewerMode: () => void
+  onDashboard: () => void
   mapId: string
   baseUrl?: string
 }
@@ -19,6 +20,7 @@ export function SaveSuccessModal({
   isOpen,
   onClose,
   onViewerMode,
+  onDashboard,
   mapId,
   baseUrl = window.location.origin,
 }: SaveSuccessModalProps) {
@@ -129,6 +131,9 @@ export function SaveSuccessModal({
         <div className={styles.actions}>
           <button onClick={onViewerMode} className={styles.viewerButton}>
             뷰어 보기
+          </button>
+          <button onClick={onDashboard} className={styles.dashboardButton}>
+            대시보드로 이동
           </button>
           <button onClick={onClose} className={styles.closeButton}>
             닫기
