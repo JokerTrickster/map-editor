@@ -504,12 +504,6 @@ export default function EditorPage() {
 
   useCanvasPanning(paper, graph, canvasRef, handleBlankClick)
 
-  const { handleZoomIn, handleZoomOut, handleFitToScreen } = useCanvasZoom(
-    paper,
-    canvasRef,
-    setZoom
-  )
-
   // Handle rotation (90 degrees per click, 0 -> 90 -> 180 -> 270 -> 0)
   const handleRotate = useCallback(() => {
     const newRotation = (rotation + 90) % 360
