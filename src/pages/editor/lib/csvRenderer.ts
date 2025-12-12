@@ -23,6 +23,10 @@ interface TypeMapping {
 function getLayerFillColor(layer: string): string {
   const layerLower = layer.toLowerCase()
 
+  // Stroke-only layers
+  if (layerLower.includes('lightinglineframe')) {
+    return 'none'
+  }
   if (layerLower.includes('parking') || layerLower.includes('주차')) {
     return '#4CAF50'
   }
@@ -42,6 +46,10 @@ function getLayerFillColor(layer: string): string {
 function getLayerStrokeColor(layer: string): string {
   const layerLower = layer.toLowerCase()
 
+  // Special stroke colors
+  if (layerLower.includes('lightinglineframe')) {
+    return '#FBBF24' // Yellow for lighting frame
+  }
   if (layerLower.includes('outline') || layerLower.includes('외곽')) {
     return '#000000'
   }

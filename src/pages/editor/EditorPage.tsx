@@ -499,18 +499,18 @@ export default function EditorPage() {
     console.log(`🔄 Rotating canvas to ${newRotation}°`)
   }, [rotation])
 
-  // Apply rotation using CSS transform on paper element
+  // Apply rotation using CSS transform on SVG element
   useEffect(() => {
     if (!paper) return
 
-    const paperEl = paper.el as HTMLElement
-    if (paperEl) {
-      // Apply CSS transform to the paper element
-      paperEl.style.transform = `rotate(${rotation}deg)`
-      paperEl.style.transformOrigin = 'center center'
-      paperEl.style.transition = 'transform 0.3s ease'
+    const svgElement = paper.svg
+    if (svgElement) {
+      // Apply CSS transform to the SVG element
+      svgElement.style.transform = `rotate(${rotation}deg)`
+      svgElement.style.transformOrigin = 'center center'
+      svgElement.style.transition = 'transform 0.3s ease'
 
-      console.log(`✅ Applied rotation ${rotation}° to paper element`)
+      console.log(`✅ Applied rotation ${rotation}° to SVG element`)
     }
   }, [paper, rotation])
 
