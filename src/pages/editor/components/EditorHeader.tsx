@@ -6,14 +6,18 @@
 import { ZoomControls } from './ZoomControls'
 import styles from './EditorHeader.module.css'
 
+export type ViewMode = 'edit' | 'viewer'
+
 interface EditorHeaderProps {
   loadedFileName: string | null
   zoom: number
   theme: 'light' | 'dark'
   hasObjectTypes: boolean
+  viewMode: ViewMode
+  onViewModeChange: (mode: ViewMode) => void
   onZoomIn: () => void
   onZoomOut: () => void
-  onZoomReset: () => void
+  onRotate: () => void
   onFitToScreen: () => void
   onUploadClick: () => void
   onSave: () => void
@@ -29,9 +33,11 @@ export function EditorHeader({
   zoom,
   theme,
   hasObjectTypes,
+  viewMode,
+  onViewModeChange,
   onZoomIn,
   onZoomOut,
-  onZoomReset,
+  onRotate,
   onFitToScreen,
   onUploadClick,
   onSave,
@@ -58,12 +64,27 @@ export function EditorHeader({
         )}
       </div>
 
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${viewMode === 'edit' ? styles.tabActive : ''}`}
+          onClick={() => onViewModeChange('edit')}
+        >
+          Edit
+        </button>
+        <button
+          className={`${styles.tab} ${viewMode === 'viewer' ? styles.tabActive : ''}`}
+          onClick={() => onViewModeChange('viewer')}
+        >
+          Viewer
+        </button>
+      </div>
+
       <div className={styles.toolbar}>
         <ZoomControls
           zoom={zoom}
           onZoomIn={onZoomIn}
           onZoomOut={onZoomOut}
-          onZoomReset={onZoomReset}
+          onRotate={onRotate}
           onFitToScreen={onFitToScreen}
         />
 

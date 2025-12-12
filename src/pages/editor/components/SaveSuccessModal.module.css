@@ -1,0 +1,151 @@
+.container {
+    padding: var(--space-8);
+    max-width: 560px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: var(--space-8);
+}
+
+.successIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #22C55E;
+    margin-bottom: var(--space-4);
+}
+
+.title {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+    letter-spacing: -0.02em;
+}
+
+.description {
+    font-size: var(--font-size-md);
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.linkSection {
+    margin-bottom: var(--space-6);
+}
+
+.label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+}
+
+.label svg {
+    color: var(--color-primary);
+}
+
+.linkBox {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    padding: var(--space-3);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    transition: border-color var(--transition-fast);
+}
+
+.linkBox:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.linkInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+    outline: none;
+    padding: 0;
+}
+
+.copyButton {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface-hover);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    border: 1px solid var(--color-border);
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.copyButton:hover {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+    transform: translateY(-1px);
+}
+
+.copyButton svg {
+    flex-shrink: 0;
+}
+
+.actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
+}
+
+.viewerButton {
+    flex: 1;
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-primary);
+    color: white;
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    border: none;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-glow);
+}
+
+.viewerButton:hover {
+    background-color: var(--color-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow), 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.closeButton {
+    flex: 1;
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    border: 1px solid var(--color-border);
+    transition: all var(--transition-fast);
+}
+
+.closeButton:hover {
+    background-color: var(--color-surface-hover);
+    border-color: var(--color-text-secondary);
+}

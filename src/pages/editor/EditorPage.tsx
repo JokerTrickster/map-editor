@@ -3,7 +3,7 @@
  * Main map editor page - refactored with custom hooks and components
  */
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dia } from '@joint/core'
 import { useTheme } from '@/shared/context/ThemeContext'
@@ -17,10 +17,11 @@ import { ObjectTypeSidebar, LayerMappingModal } from '@/features/objectType'
 import { ResizablePanel } from '@/shared/ui/ResizablePanel'
 import { Modal } from '@/shared/ui/Modal'
 import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
-import { EditorHeader } from './components/EditorHeader'
+import { EditorHeader, ViewMode } from './components/EditorHeader'
 import { EditorSidebar } from './components/EditorSidebar'
 import { AutoLinkModal } from './components/AutoLinkModal'
 import { ExportModal } from './components/ExportModal'
+import { SaveSuccessModal } from './components/SaveSuccessModal'
 import { useJointJSCanvas } from './hooks/useJointJSCanvas'
 import { useCanvasPanning } from './hooks/useCanvasPanning'
 import { useCanvasZoom } from './hooks/useCanvasZoom'
@@ -104,6 +105,14 @@ export default function EditorPage() {
 
   // Export State
   const [showExportModal, setShowExportModal] = useState(false)
+
+  // Viewer State
+  const [viewMode, setViewMode] = useState<ViewMode>('edit')
+  const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false)
+  const [savedMapId, setSavedMapId] = useState<string | null>(null)
+
+  // Rotation State (0, 90, 180, 270)
+  const [rotation, setRotation] = useState(0)
 
   // Load Template for Relation Types
   const { template } = useTemplate(currentLotData?.templateId as TemplateId)
@@ -477,11 +486,18 @@ export default function EditorPage() {
 
   useCanvasPanning(paper, graph, canvasRef, handleBlankClick)
 
-  const { handleZoomIn, handleZoomOut, handleZoomReset, handleFitToScreen } = useCanvasZoom(
+  const { handleZoomIn, handleZoomOut, handleFitToScreen } = useCanvasZoom(
     paper,
     canvasRef,
     setZoom
   )
+
+  // Handle rotation (90 degrees per click, 0 -> 90 -> 180 -> 270 -> 0)
+  const handleRotate = useCallback(() => {
+    const newRotation = (rotation + 90) % 360
+    setRotation(newRotation)
+    console.log(`🔄 Rotating canvas to ${newRotation}°`)
+  }, [rotation])
 
   const { undo, redo } = useUndoRedo(graph, setElementCount)
 
@@ -1118,9 +1134,16 @@ export default function EditorPage() {
           }
         }
 
-        setSaveCountdown(3)
-        setAutoNavigate(shouldAutoNavigate)
-        setShowSaveModal(true)
+        // Show save success modal with current lot ID as map ID (placeholder until API integration)
+        setSavedMapId(currentLot)
+        setShowSaveSuccessModal(true)
+
+        // Keep old save modal for auto-navigate case
+        if (shouldAutoNavigate) {
+          setSaveCountdown(3)
+          setAutoNavigate(true)
+          setShowSaveModal(true)
+        }
       }
     }
   }
@@ -1241,9 +1264,11 @@ export default function EditorPage() {
         zoom={zoom}
         theme={theme}
         hasObjectTypes={types.length > 0}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
-        onZoomReset={handleZoomReset}
+        onRotate={handleRotate}
         onFitToScreen={handleFitToScreen}
         onUploadClick={handleUploadClick}
         onSave={() => handleSave(false)}
@@ -1443,7 +1468,14 @@ export default function EditorPage() {
           )}
 
           {/* JointJS Canvas Container */}
-          <div ref={canvasRef} className={styles.canvas} />
+          <div
+            ref={canvasRef}
+            className={styles.canvas}
+            style={{
+              transform: `rotate(${rotation}deg)`,
+              transition: 'transform 0.3s ease'
+            }}
+          />
 
           {/* Minimap Container */}
           <div className={styles.minimapContainer} ref={minimapContainerRef}>
@@ -1514,6 +1546,19 @@ export default function EditorPage() {
           lotCreated={currentLotData.created}
           floorName={useFloorStore.getState().getCurrentFloorData()?.name || 'Floor 1'}
           floorOrder={useFloorStore.getState().getCurrentFloorData()?.order || 1}
+        />
+      )}
+
+      {/* Save Success Modal */}
+      {savedMapId && (
+        <SaveSuccessModal
+          isOpen={showSaveSuccessModal}
+          onClose={() => setShowSaveSuccessModal(false)}
+          onViewerMode={() => {
+            setShowSaveSuccessModal(false)
+            setViewMode('viewer')
+          }}
+          mapId={savedMapId}
         />
       )}
     </div>

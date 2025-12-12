@@ -9,7 +9,7 @@ interface ZoomControlsProps {
   zoom: number
   onZoomIn: () => void
   onZoomOut: () => void
-  onZoomReset: () => void
+  onRotate: () => void
   onFitToScreen: () => void
 }
 
@@ -17,7 +17,7 @@ export function ZoomControls({
   zoom,
   onZoomIn,
   onZoomOut,
-  onZoomReset,
+  onRotate,
   onFitToScreen,
 }: ZoomControlsProps) {
   return (
@@ -34,10 +34,9 @@ export function ZoomControls({
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
       </button>
-      <button onClick={onZoomReset} className={styles.toolButton} title="Reset Zoom">
+      <button onClick={onRotate} className={styles.toolButton} title="Rotate 90° (4번 클릭시 원상태)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-          <path d="M3 3v5h5" />
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
         </svg>
       </button>
       <button onClick={onFitToScreen} className={styles.toolButton} title="Fit to Screen">
