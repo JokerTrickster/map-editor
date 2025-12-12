@@ -504,28 +504,6 @@ export default function EditorPage() {
 
   useCanvasPanning(paper, graph, canvasRef, handleBlankClick)
 
-  // Handle rotation (90 degrees per click, 0 -> 90 -> 180 -> 270 -> 0)
-  const handleRotate = useCallback(() => {
-    const newRotation = (rotation + 90) % 360
-    setRotation(newRotation)
-    console.log(`🔄 Rotating canvas to ${newRotation}°`)
-  }, [rotation])
-
-  // Apply rotation using CSS transform on SVG element
-  useEffect(() => {
-    if (!paper) return
-
-    const svgElement = paper.svg
-    if (svgElement) {
-      // Apply CSS transform to the SVG element
-      svgElement.style.transform = `rotate(${rotation}deg)`
-      svgElement.style.transformOrigin = 'center center'
-      svgElement.style.transition = 'transform 0.3s ease'
-
-      console.log(`✅ Applied rotation ${rotation}° to SVG element`)
-    }
-  }, [paper, rotation])
-
   const { undo, redo } = useUndoRedo(graph, setElementCount)
 
   // Minimap hook
