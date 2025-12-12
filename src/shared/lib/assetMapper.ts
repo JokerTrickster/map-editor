@@ -65,6 +65,11 @@ export function getAssetPath(layer: string): string {
  * Get fill color based on layer type
  */
 export function getLayerFillColor(layer: string): string {
+  // Stroke-only layers (no fill)
+  if (layer.startsWith('l-lightinglineframe')) {
+    return 'none'
+  }
+
   if (layer.startsWith('p-parking-large-electric')) {
     return 'var(--color-map-parking-electric-fill)'
   }
@@ -185,7 +190,8 @@ export function isPolygonLayer(layer: string): boolean {
     'p-parking-',
     'e-zone-area',
     'p-guideboard-area',
-    'e-elevator'
+    'e-elevator',
+    'l-lightinglineframe'
   ]
 
   return polygonPrefixes.some(prefix => layer.startsWith(prefix))
@@ -210,7 +216,6 @@ export function isLineLayer(layer: string): boolean {
  */
 export function isTextLayer(layer: string): boolean {
   const textPrefixes = [
-    'l-lightinglineframe',
     'p-parking-cctvid',
     'c-cctv-ip',
     'c-cctv-id',

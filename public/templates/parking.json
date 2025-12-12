@@ -80,7 +80,7 @@
     },
     "parkingLocation": {
       "displayName": "주차 구역",
-      "icon": "#10B981",
+      "icon": "#6B7280",
       "category": "parking",
       "priority": 3,
       "usesAsset": false,
@@ -91,10 +91,10 @@
         "angle": 0
       },
       "defaultStyle": {
-        "color": "#10B981",
-        "fillOpacity": 0.3,
+        "color": "#6B7280",
+        "fillOpacity": 0.8,
         "strokeWidth": 2,
-        "strokeColor": "#059669"
+        "strokeColor": "#6B7280"
       }
     },
     "arrow": {
@@ -255,6 +255,21 @@
         "color": "#FCD34D",
         "size": 24,
         "icon": "light"
+      }
+    },
+    "lightingFrame": {
+      "displayName": "조명 프레임",
+      "icon": "#FBBF24",
+      "category": "facility",
+      "priority": 5,
+      "usesAsset": false,
+      "geometryType": "polygon",
+      "defaultProperties": {},
+      "defaultStyle": {
+        "color": "#FBBF24",
+        "fillOpacity": 0,
+        "strokeWidth": 2,
+        "strokeColor": "#FBBF24"
       }
     }
   },
@@ -427,10 +442,10 @@
         ]
       },
       "style": {
-        "color": "#10B981",
-        "fillOpacity": 0.3,
+        "color": "#6B7280",
+        "fillOpacity": 0.8,
         "strokeWidth": 2,
-        "strokeColor": "#059669"
+        "strokeColor": "#6B7280"
       },
       "properties": {
         "type": "regular",
@@ -468,10 +483,10 @@
         ]
       },
       "style": {
-        "color": "#10B981",
-        "fillOpacity": 0.3,
+        "color": "#6B7280",
+        "fillOpacity": 0.8,
         "strokeWidth": 2,
-        "strokeColor": "#059669"
+        "strokeColor": "#6B7280"
       },
       "properties": {
         "type": "regular",

@@ -42,7 +42,7 @@ export function useCanvasZoom(
   const handleZoomIn = useCallback(() => {
     if (paper) {
       const currentScale = paper.scale()
-      const nextScale = Math.min(currentScale.sx * 1.2, 5)
+      const nextScale = Math.min(currentScale.sx * 1.2, 2) // Max 200%
       const viewportWidth = paper.el.parentElement?.clientWidth || 800
       const viewportHeight = paper.el.parentElement?.clientHeight || 600
       const ox = viewportWidth / 2
@@ -54,7 +54,7 @@ export function useCanvasZoom(
   const handleZoomOut = useCallback(() => {
     if (paper) {
       const currentScale = paper.scale()
-      const nextScale = Math.max(currentScale.sx / 1.2, 0.1)
+      const nextScale = Math.max(currentScale.sx / 1.2, 0.3) // Min 30%
       const viewportWidth = paper.el.parentElement?.clientWidth || 800
       const viewportHeight = paper.el.parentElement?.clientHeight || 600
       const ox = viewportWidth / 2
@@ -91,7 +91,7 @@ export function useCanvasZoom(
       const delta = e.deltaY > 0 ? 0.9 : 1.1
 
       let nextScale = currentScale * delta
-      nextScale = Math.max(0.1, Math.min(nextScale, 5))
+      nextScale = Math.max(0.3, Math.min(nextScale, 2))
 
       const rect = paper.el.parentElement?.getBoundingClientRect()
       if (!rect) return

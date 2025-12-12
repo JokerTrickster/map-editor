@@ -16,7 +16,8 @@ export function useMinimap(
   graph: dia.Graph | null,
   minimapContainerRef: RefObject<HTMLDivElement>,
   viewportRectRef: RefObject<HTMLDivElement>,
-  loadedFileName: string | null
+  loadedFileName: string | null,
+  rotation?: number
 ): UseMinimapReturn {
   const minimapPaperRef = useRef<dia.Paper | null>(null)
   const minimapBaseScaleRef = useRef<number | null>(null)
@@ -168,6 +169,22 @@ export function useMinimap(
       paper.off('translate resize scale', updateMinimapViewport)
     }
   }, [paper, updateMinimapViewport])
+
+  // Apply rotation to minimap SVG element (not the container)
+  useEffect(() => {
+    if (!minimapPaperRef.current) return
+
+    const rotationDeg = rotation || 0
+    const svgElement = minimapPaperRef.current.svg
+
+    if (svgElement) {
+      svgElement.style.transform = `rotate(${rotationDeg}deg)`
+      svgElement.style.transformOrigin = 'center center'
+      svgElement.style.transition = 'transform 0.3s ease'
+
+      console.log(`✅ Applied rotation ${rotationDeg}° to minimap SVG`)
+    }
+  }, [rotation])
 
   return { minimapPaper: minimapPaperRef.current, updateMinimapViewport }
 }

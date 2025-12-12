@@ -499,6 +499,21 @@ export default function EditorPage() {
     console.log(`🔄 Rotating canvas to ${newRotation}°`)
   }, [rotation])
 
+  // Apply rotation using CSS transform on paper element
+  useEffect(() => {
+    if (!paper) return
+
+    const paperEl = paper.el as HTMLElement
+    if (paperEl) {
+      // Apply CSS transform to the paper element
+      paperEl.style.transform = `rotate(${rotation}deg)`
+      paperEl.style.transformOrigin = 'center center'
+      paperEl.style.transition = 'transform 0.3s ease'
+
+      console.log(`✅ Applied rotation ${rotation}° to paper element`)
+    }
+  }, [paper, rotation])
+
   const { undo, redo } = useUndoRedo(graph, setElementCount)
 
   useMinimap(
@@ -506,7 +521,8 @@ export default function EditorPage() {
     graph,
     minimapContainerRef,
     viewportRectRef,
-    loadedFileName
+    loadedFileName,
+    rotation
   )
 
   useKeyboardShortcuts(
@@ -1468,14 +1484,7 @@ export default function EditorPage() {
           )}
 
           {/* JointJS Canvas Container */}
-          <div
-            ref={canvasRef}
-            className={styles.canvas}
-            style={{
-              transform: `rotate(${rotation}deg)`,
-              transition: 'transform 0.3s ease'
-            }}
-          />
+          <div ref={canvasRef} className={styles.canvas} />
 
           {/* Minimap Container */}
           <div className={styles.minimapContainer} ref={minimapContainerRef}>
