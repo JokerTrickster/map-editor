@@ -136,6 +136,20 @@ export default function EditorPage() {
     setRotation(prev => (prev + 90) % 360)
   }
 
+  // Apply rotation to SVG element
+  useEffect(() => {
+    if (!paper) return
+
+    const svgElement = paper.svg
+    if (svgElement) {
+      svgElement.style.transform = `rotate(${rotation}deg)`
+      svgElement.style.transformOrigin = 'center center'
+      svgElement.style.transition = 'transform 0.3s ease'
+
+      console.log(`✅ Applied rotation ${rotation}° to SVG element`)
+    }
+  }, [paper, rotation])
+
   // Initialize mutableRelationTypes from template
   useEffect(() => {
     console.log('[EditorPage] Template loaded:', {
