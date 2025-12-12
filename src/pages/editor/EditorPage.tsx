@@ -128,7 +128,7 @@ export default function EditorPage() {
 
   const { handleZoomIn, handleZoomOut, handleZoomReset, handleFitToScreen } = useCanvasZoom(
     paper,
-    zoom,
+    canvasRef,
     setZoom
   )
 
