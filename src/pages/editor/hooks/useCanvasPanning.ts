@@ -10,7 +10,8 @@ export function useCanvasPanning(
   paper: dia.Paper | null,
   graph: dia.Graph | null,
   canvasRef: RefObject<HTMLDivElement>,
-  onBlankClick?: () => void
+  onBlankClick?: () => void,
+  rotation: number = 0
 ) {
   const isPanning = useRef(false)
   const lastMousePosition = useRef({ x: 0, y: 0 })
@@ -31,12 +32,36 @@ export function useCanvasPanning(
     const handleMouseMove = (e: MouseEvent) => {
       if (!isPanning.current || !paper) return
 
-      const dx = e.clientX - lastMousePosition.current.x
-      const dy = e.clientY - lastMousePosition.current.y
+      const rawDx = e.clientX - lastMousePosition.current.x
+      const rawDy = e.clientY - lastMousePosition.current.y
 
       // Track if user has moved (not just clicked)
-      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      if (Math.abs(rawDx) > 2 || Math.abs(rawDy) > 2) {
         hasMoved.current = true
+      }
+
+      // Transform delta based on rotation
+      // When map is rotated, the paper's coordinate system is rotated relative to the screen
+      // We need to adjust dx/dy to match the visual movement
+      let dx = rawDx
+      let dy = rawDy
+
+      switch (rotation) {
+        case 90:
+          dx = rawDy
+          dy = -rawDx
+          break
+        case 180:
+          dx = -rawDx
+          dy = -rawDy
+          break
+        case 270:
+          dx = -rawDy
+          dy = rawDx
+          break
+        default: // 0
+          dx = rawDx
+          dy = rawDy
       }
 
       const currentTranslate = paper.translate()
@@ -52,23 +77,6 @@ export function useCanvasPanning(
       const CANVAS_MAX_Y = 1500
       const viewportWidth = paper.el.parentElement?.clientWidth || 800
       const viewportHeight = paper.el.parentElement?.clientHeight || 600
-
-      // Calculate the scaled canvas size
-      // const canvasWidthScaled = (CANVAS_MAX_X - CANVAS_MIN_X) * currentScale.sx
-      // const canvasHeightScaled = (CANVAS_MAX_Y - CANVAS_MIN_Y) * currentScale.sy
-
-      // Calculate min/max translation values
-      // For X axis:
-      // maxTx: when showing left edge (CANVAS_MIN_X at left of viewport)
-      // minTx: when showing right edge (CANVAS_MAX_X at right of viewport)
-      // const maxTx = -(CANVAS_MIN_X * currentScale.sx)
-      // const minTx = -(CANVAS_MAX_X * currentScale.sx) + viewportWidth
-
-      // For Y axis:
-      // maxTy: when showing top edge (CANVAS_MIN_Y at top of viewport)
-      // minTy: when showing bottom edge (CANVAS_MAX_Y at bottom of viewport)
-      // const maxTy = -(CANVAS_MIN_Y * currentScale.sy)
-      // const minTy = -(CANVAS_MAX_Y * currentScale.sy) + viewportHeight
 
       // Always use center-based clamping to allow full freedom of movement
       // This matches the minimap behavior where you can center on any point within bounds
@@ -109,5 +117,5 @@ export function useCanvasPanning(
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [paper, graph, canvasRef, onBlankClick])
+  }, [paper, graph, canvasRef, onBlankClick, rotation])
 }

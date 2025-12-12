@@ -120,6 +120,27 @@ export default function EditorPage() {
   // Mutable copy of relationTypes (can be edited at runtime)
   const [mutableRelationTypes, setMutableRelationTypes] = useState<Record<string, TemplateRelationType>>({})
 
+  // Initialize JointJS Canvas
+  const { paper, graph, canvasRef: jointJSCanvasRef } = useJointJSCanvas(
+    currentLotData?.mapData,
+    setZoom,
+    false, // Assuming readOnly is false for EditorPage
+    rotation
+  )
+
+  // Canvas panning hook - now aware of rotation
+  useCanvasPanning(paper, graph, jointJSCanvasRef, () => setSelectedElementId(null), rotation)
+
+  const { handleZoomIn, handleZoomOut, handleZoomReset, handleFitToScreen } = useCanvasZoom(
+    paper,
+    zoom,
+    setZoom
+  )
+
+  const handleRotate = () => {
+    setRotation(prev => (prev + 90) % 360)
+  }
+
   // Initialize mutableRelationTypes from template
   useEffect(() => {
     console.log('[EditorPage] Template loaded:', {
@@ -459,9 +480,6 @@ export default function EditorPage() {
     console.log('🔔 showMappingModal changed:', showMappingModal)
   }, [showMappingModal])
 
-  // Hooks
-  const { graph, paper } = useJointJSCanvas(canvasRef)
-
   // CSV Processing
   const { processCSVData } = useCSVProcessing(graph, paper, undefined, handleError)
 
@@ -516,12 +534,13 @@ export default function EditorPage() {
 
   const { undo, redo } = useUndoRedo(graph, setElementCount)
 
+  // Minimap hook
   useMinimap(
     paper,
     graph,
     minimapContainerRef,
     viewportRectRef,
-    loadedFileName,
+    currentLotData ? 'loaded' : null,
     rotation
   )
 
