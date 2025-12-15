@@ -6,6 +6,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTheme } from '@/shared/context/ThemeContext'
+import { useProjectStore } from '@/shared/store/projectStore'
+import { useFloorStore } from '@/shared/store/floorStore'
 import { statusService, useStatusStore, StatusOverlay } from '@/features/status'
 import { ResizablePanel } from '@/shared/ui/ResizablePanel'
 import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
@@ -21,12 +23,17 @@ export default function ViewerPage() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
 
+  // Project store
+  const { getLotById } = useProjectStore()
+  const { floors } = useFloorStore()
+
   // Refs
   const canvasRef = useRef<HTMLDivElement>(null)
 
   // State
   const [loading, setLoading] = useState(true)
   const [projectData, setProjectData] = useState<any>(null)
+  const [currentFloorIndex, setCurrentFloorIndex] = useState(0)
   const [zoom, setZoom] = useState(1)
 
   // JointJS Canvas
@@ -40,29 +47,56 @@ export default function ViewerPage() {
   // Status service
   const { connect, disconnect } = useStatusStore()
 
-  // Load project data
+  // Load project data from store (mock data)
   useEffect(() => {
     if (!projectId) {
       navigate('/dashboard')
       return
     }
 
-    // TODO: Replace with actual API call
-    // For now, try to load from localStorage
-    const savedData = localStorage.getItem(`map_${projectId}`)
-    if (savedData) {
-      try {
-        const data = JSON.parse(savedData)
-        setProjectData(data)
-        setLoading(false)
-      } catch (error) {
-        console.error('Failed to load project data:', error)
-        setLoading(false)
-      }
-    } else {
+    // Load project from store
+    const project = getLotById(projectId)
+    if (!project) {
+      console.error('Project not found:', projectId)
       setLoading(false)
+      return
     }
-  }, [projectId, navigate])
+
+    // Load floors for this project
+    const projectFloors = floors.filter(floor => floor.lotId === projectId)
+
+    if (projectFloors.length === 0) {
+      console.warn('No floors found for project:', projectId)
+      setProjectData({
+        projectId,
+        projectName: project.name,
+        floors: [],
+        graphJson: null
+      })
+      setLoading(false)
+      return
+    }
+
+    // Use first floor by default
+    const firstFloor = projectFloors[0]
+    const graphJson = firstFloor.mapData?.graphJson
+
+    setProjectData({
+      projectId,
+      projectName: project.name,
+      floors: projectFloors,
+      currentFloor: firstFloor,
+      graphJson
+    })
+    setLoading(false)
+
+    console.log('📂 Loaded project data:', {
+      projectId,
+      projectName: project.name,
+      floorCount: projectFloors.length,
+      hasGraph: !!graphJson
+    })
+  }, [projectId, navigate, getLotById, floors])
 
   // Load graph from project data
   useEffect(() => {
@@ -144,6 +178,30 @@ export default function ViewerPage() {
           <h1 className={styles.title}>
             {projectData.projectName || 'Unnamed Project'} (뷰어)
           </h1>
+          {projectData.floors && projectData.floors.length > 1 && (
+            <div className={styles.floorSelector}>
+              <select
+                value={currentFloorIndex}
+                onChange={(e) => {
+                  const newIndex = parseInt(e.target.value)
+                  setCurrentFloorIndex(newIndex)
+                  const newFloor = projectData.floors[newIndex]
+                  setProjectData({
+                    ...projectData,
+                    currentFloor: newFloor,
+                    graphJson: newFloor.mapData?.graphJson
+                  })
+                }}
+                className={styles.floorSelect}
+              >
+                {projectData.floors.map((floor: any, index: number) => (
+                  <option key={floor.id} value={index}>
+                    {floor.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         <div className={styles.headerRight}>
           <div className={styles.zoomInfo}>
