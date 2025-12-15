@@ -54,8 +54,8 @@ jobs:
         run: |
           mkdir -p ~/.ssh
 
-          # Save SSH key (preserve newlines)
-          echo "${{ secrets.DEPLOY_SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+          # Save SSH key using printf to properly handle newlines
+          printf '%s\n' "${{ secrets.DEPLOY_SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
 
           # Set correct permissions
           chmod 600 ~/.ssh/deploy_key
@@ -63,9 +63,10 @@ jobs:
 
           # Verify key format
           echo "🔍 SSH Key info:"
-          head -1 ~/.ssh/deploy_key
-          tail -1 ~/.ssh/deploy_key
-          wc -l ~/.ssh/deploy_key
+          echo "First line: $(head -1 ~/.ssh/deploy_key)"
+          echo "Last line: $(tail -1 ~/.ssh/deploy_key)"
+          echo "Total lines: $(wc -l < ~/.ssh/deploy_key)"
+          echo "File size: $(wc -c < ~/.ssh/deploy_key) bytes"
 
           # Add server to known_hosts
           ssh-keyscan -H ${{ secrets.DEPLOY_SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
@@ -78,7 +79,7 @@ jobs:
             -o BatchMode=yes \
             -o ConnectTimeout=10 \
             ${{ secrets.DEPLOY_SERVER_USERNAME }}@${{ secrets.DEPLOY_SERVER_HOST }} \
-            "echo '✅ SSH connection successful! User: \$(whoami)'" || echo "⚠️ SSH test failed"
+            "echo '✅ SSH connection successful! User: \$(whoami)'" || echo "⚠️ SSH test failed - check key format"
 
       - name: Transfer image to deploy server
         run: |
@@ -113,7 +114,7 @@ jobs:
             echo "▶️ Starting new container..."
             docker run -d \
               --name map-editor \
-              -p 80:80 \
+              -p 5173:80 \
               --restart unless-stopped \
               map-editor:${IMAGE_TAG}
 
@@ -125,7 +126,7 @@ jobs:
             if docker ps | grep -q map-editor; then
               echo "✅ Container is running!"
               if command -v curl >/dev/null 2>&1; then
-                if curl -f http://localhost/health > /dev/null 2>&1; then
+                if curl -f http://localhost:5173/health > /dev/null 2>&1; then
                   echo "✅ Health check passed!"
                 else
                   echo "⚠️  Health check endpoint not responding (container may still be starting)"
