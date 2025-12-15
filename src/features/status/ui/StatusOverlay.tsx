@@ -138,15 +138,21 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
     };
   }, [graph]);
 
+  // Get paper viewport transformation
+  const scale = paper.scale();
+  const translate = paper.translate();
+
   return (
     <div className={styles.statusOverlay}>
       {/* CCTV Status Indicators */}
-      {cctvElements.map(element => {
+      {cctvElements.map((element) => {
         const bbox = element.getBBox();
         // Position badge at top-right corner of CCTV icon
-        const centerX = bbox.x + bbox.width;
-        const topY = bbox.y;
-        const position = paper.localToClientPoint(centerX, topY);
+        // Apply paper transformations manually
+        const paperX = bbox.x + bbox.width;
+        const paperY = bbox.y;
+        const screenX = paperX * scale.sx + translate.tx;
+        const screenY = paperY * scale.sy + translate.ty;
         const objectId = String(element.id);
 
         return (
@@ -154,8 +160,8 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
             key={objectId}
             className={styles.statusPosition}
             style={{
-              left: position.x - 8, // Offset to align with icon edge
-              top: position.y - 8,
+              left: screenX - 8, // Offset to align with icon edge
+              top: screenY - 8,
             }}
           >
             <CctvStatusIndicator objectId={objectId} />
