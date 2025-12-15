@@ -16,13 +16,14 @@ export function FloorTabs() {
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize first floor if none exists
+  // Initialize first floor if none exists (only once per project)
   useEffect(() => {
     if (currentLot && floors.length === 0) {
-      // Let floorStore's calculateNextOrder determine the order (B2 for first floor)
+      // Let floorStore's calculateNextOrder determine the order (B1 for first floor)
       addFloor(currentLot);
     }
-  }, [currentLot, floors.length, addFloor]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLot]); // Only run when currentLot changes, not on floors.length or addFloor changes
 
   // Focus input when entering edit mode
   useEffect(() => {
