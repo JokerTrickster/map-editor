@@ -49,39 +49,46 @@ aws cloudfront create-invalidation \
 
 ## 내부 서버 배포 (Docker)
 
-### 방법 1: GitHub Actions를 통한 자동 빌드
+### 방법 1: GitHub Actions를 통한 자동 배포 (권장)
 
 1. **GitHub 저장소 → Actions 탭** 이동
-2. **"Build and Push Docker Image"** 워크플로우 선택
+2. **"Deploy to Docker"** 워크플로우 선택
 3. **"Run workflow"** 클릭
-4. 옵션 선택:
-   - Branch: 배포할 브랜치
-   - Registry: Docker Hub / GHCR / Private Registry
-   - Tag: 이미지 태그 (선택사항)
-5. 빌드 시작
+4. **배포할 브랜치 선택** (main 또는 dev)
+5. 자동으로 빌드 → 푸시 → 배포 실행
 
 #### 필요한 GitHub Secrets
 
-**Docker Hub 사용 시:**
 ```
-DOCKERHUB_USERNAME          # Docker Hub 사용자명
-DOCKERHUB_TOKEN             # Docker Hub Access Token
+# Docker Registry
+DOCKER_REGISTRY_URL         # Private registry URL (예: registry.company.com)
+DOCKER_REGISTRY_USERNAME    # Registry 사용자명
+DOCKER_REGISTRY_PASSWORD    # Registry 비밀번호
+
+# Deploy Server (SSH)
+DEPLOY_SERVER_HOST          # 배포 서버 IP 또는 도메인
+DEPLOY_SERVER_USERNAME      # SSH 사용자명 (예: ubuntu, root)
+DEPLOY_SERVER_SSH_KEY       # SSH Private Key
+DEPLOY_SERVER_PORT          # (선택) SSH 포트 (기본값: 22)
+
+# Build
 VITE_GOOGLE_CLIENT_ID       # Google OAuth Client ID
 ```
 
-**GitHub Container Registry (GHCR) 사용 시:**
-```
-VITE_GOOGLE_CLIENT_ID       # Google OAuth Client ID
-# GITHUB_TOKEN은 자동으로 제공됨
-```
+#### 배포 프로세스
 
-**Private Registry 사용 시:**
-```
-PRIVATE_REGISTRY_URL        # Private registry URL
-PRIVATE_REGISTRY_USERNAME   # Registry 사용자명
-PRIVATE_REGISTRY_PASSWORD   # Registry 비밀번호
-VITE_GOOGLE_CLIENT_ID       # Google OAuth Client ID
-```
+1. **빌드 서버 (GitHub Actions)**:
+   - 코드 체크아웃
+   - Docker 이미지 빌드
+   - Private Registry에 푸시
+   - 타임스탬프 태그 자동 생성 (main-20240101-123456)
+
+2. **배포 서버 (자동 SSH 실행)**:
+   - Registry에서 최신 이미지 pull
+   - 기존 컨테이너 중지 및 삭제
+   - 새 컨테이너 시작
+   - Health check 확인
+   - 구 이미지 정리
 
 ### 방법 2: 로컬에서 직접 빌드
 

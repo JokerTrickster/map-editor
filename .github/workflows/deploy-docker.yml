@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Deploy to Docker
 
 on:
   workflow_dispatch:
@@ -11,22 +11,9 @@ on:
           - main
           - dev
         default: 'main'
-      registry:
-        description: 'Docker registry'
-        required: true
-        type: choice
-        options:
-          - dockerhub
-          - ghcr
-          - private
-        default: 'dockerhub'
-      tag:
-        description: 'Image tag (default: branch name)'
-        required: false
-        type: string
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -38,48 +25,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
-        if: github.event.inputs.registry == 'dockerhub'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Login to GitHub Container Registry
-        if: github.event.inputs.registry == 'ghcr'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Login to Private Registry
-        if: github.event.inputs.registry == 'private'
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.PRIVATE_REGISTRY_URL }}
-          username: ${{ secrets.PRIVATE_REGISTRY_USERNAME }}
-          password: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
+          registry: ${{ secrets.DOCKER_REGISTRY_URL }}
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
-      - name: Determine image tag
+      - name: Set image tag
         id: tag
         run: |
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
-            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build image name
-        id: image
-        run: |
-          if [ "${{ github.event.inputs.registry }}" = "dockerhub" ]; then
-            echo "name=${{ secrets.DOCKERHUB_USERNAME }}/map-editor" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.inputs.registry }}" = "ghcr" ]; then
-            echo "name=ghcr.io/${{ github.repository_owner }}/map-editor" >> $GITHUB_OUTPUT
-          else
-            echo "name=${{ secrets.PRIVATE_REGISTRY_URL }}/map-editor" >> $GITHUB_OUTPUT
-          fi
+          echo "tag=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+          echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -88,66 +45,67 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}
-            ${{ steps.image.outputs.name }}:latest
+            ${{ secrets.DOCKER_REGISTRY_URL }}/map-editor:${{ steps.tag.outputs.tag }}
+            ${{ secrets.DOCKER_REGISTRY_URL }}/map-editor:${{ steps.tag.outputs.tag }}-${{ steps.tag.outputs.timestamp }}
+            ${{ secrets.DOCKER_REGISTRY_URL }}/map-editor:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
 
-      - name: Create deployment guide
-        run: |
-          cat << EOF > deployment-guide.txt
-          ✅ Docker Image Built Successfully!
-
-          📦 Image Details:
-          - Registry: ${{ github.event.inputs.registry }}
-          - Image: ${{ steps.image.outputs.name }}
-          - Tag: ${{ steps.tag.outputs.tag }}
-          - Branch: ${{ github.event.inputs.branch }}
-
-          🚀 Deployment Commands:
-
-          ## Pull Image
-          docker pull ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}
-
-          ## Run Container
-          docker run -d \\
-            --name map-editor \\
-            -p 80:80 \\
-            --restart unless-stopped \\
-            ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}
-
-          ## Using Docker Compose
-          Copy the docker-compose.yml file to your server and run:
-          docker-compose up -d
-
-          ## Health Check
-          curl http://localhost/health
-
-          ## View Logs
-          docker logs map-editor
-
-          ## Stop Container
-          docker stop map-editor
-
-          ## Update Container
-          docker pull ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}
-          docker stop map-editor
-          docker rm map-editor
-          docker run -d --name map-editor -p 80:80 --restart unless-stopped ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}
-          EOF
-
-      - name: Upload deployment guide
-        uses: actions/upload-artifact@v4
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.0.0
         with:
-          name: deployment-guide
-          path: deployment-guide.txt
+          host: ${{ secrets.DEPLOY_SERVER_HOST }}
+          username: ${{ secrets.DEPLOY_SERVER_USERNAME }}
+          key: ${{ secrets.DEPLOY_SERVER_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SERVER_PORT || 22 }}
+          script: |
+            echo "🚀 Starting deployment..."
+
+            # Login to registry
+            echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login ${{ secrets.DOCKER_REGISTRY_URL }} -u ${{ secrets.DOCKER_REGISTRY_USERNAME }} --password-stdin
+
+            # Pull latest image
+            echo "📥 Pulling image..."
+            docker pull ${{ secrets.DOCKER_REGISTRY_URL }}/map-editor:${{ steps.tag.outputs.tag }}
+
+            # Stop and remove old container
+            echo "🛑 Stopping old container..."
+            docker stop map-editor || true
+            docker rm map-editor || true
+
+            # Run new container
+            echo "▶️ Starting new container..."
+            docker run -d \
+              --name map-editor \
+              -p 80:80 \
+              --restart unless-stopped \
+              ${{ secrets.DOCKER_REGISTRY_URL }}/map-editor:${{ steps.tag.outputs.tag }}
+
+            # Wait for container to be healthy
+            echo "⏳ Waiting for health check..."
+            sleep 5
+
+            # Health check
+            if curl -f http://localhost/health > /dev/null 2>&1; then
+              echo "✅ Container is healthy!"
+            else
+              echo "❌ Health check failed!"
+              docker logs map-editor
+              exit 1
+            fi
+
+            # Cleanup old images
+            echo "🧹 Cleaning up old images..."
+            docker image prune -f
+
+            echo "✅ Deployment completed successfully!"
 
       - name: Deployment summary
         run: |
-          echo "✅ Docker image built and pushed successfully!"
+          echo "✅ Deployment completed successfully!"
           echo "📌 Branch: ${{ github.event.inputs.branch }}"
-          echo "🐳 Image: ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}"
-          echo ""
-          echo "📥 Download deployment guide artifact for full instructions"
+          echo "🐳 Image: ${{ secrets.DOCKER_REGISTRY_URL }}/map-editor:${{ steps.tag.outputs.tag }}"
+          echo "🏷️ Tag: ${{ steps.tag.outputs.tag }}-${{ steps.tag.outputs.timestamp }}"
+          echo "🖥️ Server: ${{ secrets.DEPLOY_SERVER_HOST }}"
