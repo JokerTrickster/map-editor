@@ -6,12 +6,13 @@ import ViewerPage from './pages/viewer/ViewerPage'
 import { ThemeProvider } from './shared/context/ThemeContext'
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-  const token = localStorage.getItem('accessToken')
+  // TODO: Re-enable authentication when OAuth is configured
+  // const token = localStorage.getItem('accessToken')
+  // if (!token) {
+  //   return <Navigate to="/login" replace />
+  // }
 
-  if (!token) {
-    return <Navigate to="/login" replace />
-  }
-
+  // Temporarily bypass authentication for development
   return <>{children}</>
 }
 
@@ -45,6 +46,7 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route path="/login" element={<Navigate to="/dashboard" replace />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
