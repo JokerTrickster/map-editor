@@ -16,14 +16,19 @@ export function FloorTabs() {
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize first floor if none exists (only once per project)
+  // Track if we've already created initial floor for this project
+  const initializedProjects = useRef<Set<string>>(new Set());
+
+  // Initialize first floor if none exists (ONLY ONCE per project, even with React Strict Mode)
   useEffect(() => {
-    if (currentLot && floors.length === 0) {
+    if (currentLot && floors.length === 0 && !initializedProjects.current.has(currentLot)) {
+      // Mark this project as initialized BEFORE calling addFloor
+      initializedProjects.current.add(currentLot);
       // Let floorStore's calculateNextOrder determine the order (B1 for first floor)
       addFloor(currentLot);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentLot]); // Only run when currentLot changes, not on floors.length or addFloor changes
+  }, [currentLot]); // Only run when currentLot changes
 
   // Focus input when entering edit mode
   useEffect(() => {
