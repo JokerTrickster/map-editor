@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/login/LoginPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import EditorPage from './pages/editor/EditorPage'
+import ViewerPage from './pages/viewer/ViewerPage'
 import { ThemeProvider } from './shared/context/ThemeContext'
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -33,6 +34,14 @@ function App() {
             element={
               <PrivateRoute>
                 <EditorPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/viewer/:projectId"
+            element={
+              <PrivateRoute>
+                <ViewerPage />
               </PrivateRoute>
             }
           />

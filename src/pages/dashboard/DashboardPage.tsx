@@ -173,6 +173,10 @@ export default function DashboardPage() {
     }
   }
 
+  const handleViewLot = (lotId: string) => {
+    navigate(`/viewer/${lotId}`)
+  }
+
   const handleCloseModal = () => {
     setIsCreateModalOpen(false)
     setEditingLot(null)
@@ -293,6 +297,7 @@ export default function DashboardPage() {
                 onEdit={handleEdit}
                 onDelete={handleDeleteClick}
                 onSelect={handleSelectLot}
+                onView={handleViewLot}
               />
             ))}
           </div>

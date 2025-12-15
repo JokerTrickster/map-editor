@@ -6,13 +6,15 @@ interface ParkingLotCardProps {
   onEdit: (lot: ParkingLot) => void
   onDelete: (id: string) => void
   onSelect: (id: string) => void
+  onView?: (id: string) => void
 }
 
 export default function ParkingLotCard({
   lot,
   onEdit,
   onDelete,
-  onSelect
+  onSelect,
+  onView
 }: ParkingLotCardProps) {
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -22,6 +24,11 @@ export default function ParkingLotCard({
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
     onDelete(lot.id)
+  }
+
+  const handleView = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onView) onView(lot.id)
   }
 
   const formatDate = (dateString: string) => {
@@ -79,6 +86,19 @@ export default function ParkingLotCard({
         )}
 
         <div className={styles.cardFooter}>
+          {onView && (
+            <button
+              className={styles.viewButton}
+              onClick={handleView}
+              title="View in viewer mode"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              View
+            </button>
+          )}
           <button
             className={styles.editButton}
             onClick={handleEdit}
