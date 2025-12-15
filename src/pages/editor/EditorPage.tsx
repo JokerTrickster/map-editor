@@ -3,7 +3,7 @@
  * Main map editor page - refactored with custom hooks and components
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dia } from '@joint/core'
 import { useTheme } from '@/shared/context/ThemeContext'
@@ -110,9 +110,13 @@ export default function EditorPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('edit')
   const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false)
   const [savedMapId, setSavedMapId] = useState<string | null>(null)
+  const [savedThumbnail, setSavedThumbnail] = useState<string | null>(null)
 
   // Rotation State (0, 90, 180, 270)
   const [rotation, setRotation] = useState(0)
+
+  // Hover State
+  const [hoveredElementId, setHoveredElementId] = useState<string | null>(null)
 
   // Load Template for Relation Types
   const { template } = useTemplate(currentLotData?.templateId as TemplateId)
@@ -126,7 +130,7 @@ export default function EditorPage() {
   // Canvas panning hook - now aware of rotation
   useCanvasPanning(paper, graph, canvasRef, () => setSelectedElementId(null), rotation)
 
-  const { handleZoomIn, handleZoomOut, handleZoomReset, handleFitToScreen } = useCanvasZoom(
+  const { handleZoomIn, handleZoomOut, handleFitToScreen } = useCanvasZoom(
     paper,
     canvasRef,
     setZoom
@@ -136,19 +140,17 @@ export default function EditorPage() {
     setRotation(prev => (prev + 90) % 360)
   }
 
-  // Apply rotation to SVG element
+  // Apply rotation to canvas container (not SVG element to avoid conflicts with JointJS transforms)
   useEffect(() => {
-    if (!paper) return
+    const canvasElement = canvasRef.current
+    if (!canvasElement) return
 
-    const svgElement = paper.svg
-    if (svgElement) {
-      svgElement.style.transform = `rotate(${rotation}deg)`
-      svgElement.style.transformOrigin = 'center center'
-      svgElement.style.transition = 'transform 0.3s ease'
+    canvasElement.style.transform = `rotate(${rotation}deg)`
+    canvasElement.style.transformOrigin = 'center center'
+    canvasElement.style.transition = 'transform 0.3s ease'
 
-      console.log(`✅ Applied rotation ${rotation}° to SVG element`)
-    }
-  }, [paper, rotation])
+    console.log(`✅ Applied rotation ${rotation}° to canvas container`)
+  }, [rotation])
 
   // Initialize mutableRelationTypes from template
   useEffect(() => {
@@ -553,7 +555,7 @@ export default function EditorPage() {
     () => setSelectedObjectType(null)
   )
 
-  useObjectTypeSync(graph)
+  useObjectTypeSync(graph, paper)
 
   // Highlight multiple selected elements with custom styling
   useEffect(() => {
@@ -655,9 +657,9 @@ export default function EditorPage() {
     // Highlight target elements with relationship-specific colors
     highlightRelationshipTargets(graph, paper, links)
 
-    // Dim non-related elements to make relationships stand out
-    const targetIds = links.map(link => link.targetId)
-    dimNonRelatedElements(graph, paper, selectedElementId, targetIds)
+    // Note: Dimming disabled - user wants all objects visible when selected
+    // const targetIds = links.map(link => link.targetId)
+    // dimNonRelatedElements(graph, paper, selectedElementId, targetIds)
 
     console.log(`✨ Showing relationships for ${selectedElementId}: ${links.length} links`)
 
@@ -729,6 +731,32 @@ export default function EditorPage() {
       })
     }
   }, [relationshipEditState, graph, paper])
+
+  // Handle object hover highlighting
+  useEffect(() => {
+    if (!graph || !paper || !hoveredElementId) return
+
+    console.log('🎨 Hovering over element:', hoveredElementId)
+
+    // Find the element in graph
+    const element = graph.getCell(hoveredElementId)
+    if (!element || !element.isElement()) return
+
+    // Get the element view from paper
+    const view = paper.findViewByModel(element)
+    if (!view || !view.el) return
+
+    // Add CSS class for hover highlight
+    view.el.classList.add('object-hover-highlight')
+
+    // Cleanup: remove highlight when hover ends
+    return () => {
+      console.log('🧹 Removing hover highlight from:', hoveredElementId)
+      if (view && view.el) {
+        view.el.classList.remove('object-hover-highlight')
+      }
+    }
+  }, [hoveredElementId, graph, paper])
 
   // Handle canvas clicks when in relationship edit mode
   useEffect(() => {
@@ -1067,7 +1095,7 @@ export default function EditorPage() {
     reader.readAsText(file)
   }
 
-  const handleSave = (shouldAutoNavigate = false) => {
+  const handleSave = () => {
     if (graph && currentFloor && currentLot) {
       console.log('💾 Saving project:', { currentLot, currentFloor })
 
@@ -1151,6 +1179,9 @@ export default function EditorPage() {
                 // Update project thumbnail
                 const updateLot = useProjectStore.getState().updateLot
                 updateLot(currentLot, { thumbnail })
+
+                // Save thumbnail to state for modal display
+                setSavedThumbnail(thumbnail)
 
                 console.log('🖼️ Thumbnail saved (entire content):', currentLot)
 
@@ -1241,14 +1272,19 @@ export default function EditorPage() {
       )
 
       if (confirmed) {
-        // Save before leaving with auto-navigation enabled
-        handleSave(true)
+        // Save before leaving
+        handleSave()
+        navigate('/dashboard')
       } else {
         navigate('/dashboard')
       }
     } else {
       navigate('/dashboard')
     }
+  }
+
+  const handleObjectHover = (elementId: string | null) => {
+    setHoveredElementId(elementId)
   }
 
   const handleSaveModalConfirm = () => {
@@ -1294,7 +1330,7 @@ export default function EditorPage() {
         onRotate={handleRotate}
         onFitToScreen={handleFitToScreen}
         onUploadClick={handleUploadClick}
-        onSave={() => handleSave(false)}
+        onSave={handleSave}
         onClearCanvas={handleClearCanvas}
         onExport={handleExport}
         onThemeToggle={toggleTheme}
@@ -1529,6 +1565,7 @@ export default function EditorPage() {
               onUpdateRelationType={handleUpdateRelationType}
               onDeleteRelationType={handleDeleteRelationType}
               onRelationEditModeChange={handleRelationEditModeChange}
+              onObjectHover={handleObjectHover}
             />
           </ResizablePanel>
         )}
@@ -1583,6 +1620,7 @@ export default function EditorPage() {
             navigate('/dashboard')
           }}
           mapId={savedMapId}
+          thumbnail={savedThumbnail}
         />
       )}
     </div>

@@ -32,6 +32,7 @@ interface EditorSidebarProps {
   onUpdateRelationType?: (key: string, config: TemplateRelationType) => void
   onDeleteRelationType?: (key: string) => void
   onRelationEditModeChange?: (editing: boolean, relationKey: string | null, availableTargetIds: string[]) => void
+  onObjectHover?: (elementId: string | null) => void
 }
 
 export function EditorSidebar({
@@ -50,7 +51,8 @@ export function EditorSidebar({
   onAutoLinkAll,
   onUpdateRelationType,
   onDeleteRelationType,
-  onRelationEditModeChange
+  onRelationEditModeChange,
+  onObjectHover
 }: EditorSidebarProps) {
   const [activeTab, setActiveTab] = useState<'properties' | 'relationships'>('properties')
   const [mainTab, setMainTab] = useState<'objects' | 'relations'>('objects')
@@ -96,6 +98,13 @@ export function EditorSidebar({
   const handleCancelRelation = () => {
     setIsAddingRelation(false)
     setEditingRelation(null)
+  }
+
+  // Handle object hover
+  const handleObjectHover = (elementId: string | null) => {
+    if (onObjectHover) {
+      onObjectHover(elementId)
+    }
   }
 
   // Helper to get selected type object for relationship matching
@@ -364,6 +373,8 @@ export function EditorSidebar({
                                   <div
                                     key={elementId}
                                     onClick={() => onObjectClick(elementId)}
+                                    onMouseEnter={() => handleObjectHover(elementId)}
+                                    onMouseLeave={() => handleObjectHover(null)}
                                     className={`${styles.elementItem} ${isSelected ? styles.elementItemSelected : ''}`}
                                   >
                                     {text}
@@ -386,6 +397,8 @@ export function EditorSidebar({
                               <div
                                 key={elementId}
                                 onClick={() => onObjectClick(elementId)}
+                                onMouseEnter={() => handleObjectHover(elementId)}
+                                onMouseLeave={() => handleObjectHover(null)}
                                 className={`${styles.elementItem} ${isSelected ? styles.elementItemSelected : ''}`}
                               >
                                 {text}

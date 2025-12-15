@@ -48,9 +48,33 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
-      setAssetFile(file)
-      setPreviewUrl(URL.createObjectURL(file))
-      setFormData(prev => ({ ...prev, icon: URL.createObjectURL(file) }))
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('이미지 파일만 업로드 가능합니다')
+        return
+      }
+
+      // Warn about large files (base64 increases size by ~33%)
+      const maxSize = 1024 * 1024 // 1MB
+      if (file.size > maxSize) {
+        console.warn(`⚠️ Large file detected: ${(file.size / 1024).toFixed(0)}KB. Base64 encoding will increase size by ~33%`)
+      }
+
+      // Convert to base64 for localStorage persistence
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64String = reader.result as string
+        setAssetFile(file)
+        setPreviewUrl(base64String)
+        setFormData(prev => ({ ...prev, icon: base64String }))
+        console.log(`✅ Image converted to base64 (${(base64String.length / 1024).toFixed(0)}KB)`)
+      }
+      reader.onerror = () => {
+        setError('이미지 변환 실패')
+        console.error('❌ Failed to convert image to base64')
+      }
+      reader.readAsDataURL(file)
     }
   }
 
@@ -124,7 +148,12 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
       color: type.color || '#3b82f6',
       properties: [...type.properties],
     })
-    if (type.icon) {
+    // Only set previewUrl for actual image files (not color codes)
+    if (type.icon && (
+      type.icon.startsWith('data:image/') ||
+      type.icon.startsWith('/assets/') ||
+      type.icon.startsWith('http')
+    )) {
       setPreviewUrl(type.icon)
     } else {
       setPreviewUrl(null)
@@ -145,10 +174,6 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
 
   const handlePriorityChange = (typeId: string, priority: number) => {
     updateType(typeId, { priority })
-  }
-
-  const handleColorChange = (typeId: string, color: string) => {
-    updateType(typeId, { color })
   }
 
   const addProperty = () => {
@@ -218,12 +243,27 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
         fileInputRef={fileInputRef}
       />
 
-      {!previewUrl && (
-        <ColorPicker
-          value={formData.color}
-          onChange={(color) => setFormData({ ...formData, color })}
-        />
-      )}
+      {/* Show color picker when there's no actual image icon (allow for color codes and plain colors) */}
+      {(() => {
+        const hasActualImageIcon = previewUrl ||
+          formData.icon?.startsWith('data:image/') ||
+          formData.icon?.startsWith('/assets/') ||
+          formData.icon?.startsWith('http')
+
+        return !hasActualImageIcon && (
+          <div>
+            <label className={styles.label}>색상 (이미지가 없을 때 사용)</label>
+            <ColorPicker
+              value={formData.color || (formData.icon?.startsWith('#') ? formData.icon : '')}
+              onChange={(color) => {
+                // If icon was a color code, update it too (for proper sync)
+                const newIcon = formData.icon?.startsWith('#') ? color : formData.icon
+                setFormData({ ...formData, color, icon: newIcon })
+              }}
+            />
+          </div>
+        )
+      })()}
 
       <PropertyEditor
         properties={formData.properties}
@@ -501,7 +541,6 @@ export function ObjectTypeSidebar({ onSelectType, selectedTypeId }: ObjectTypeSi
                 onEdit={() => startEdit(type)}
                 onDelete={() => handleDelete(type.id)}
                 onPriorityChange={handlePriorityChange}
-                onColorChange={handleColorChange}
                 typeItemClassName={styles.typeItem}
                 selectedClassName={styles.selected}
                 typeHeaderClassName={styles.typeHeader}

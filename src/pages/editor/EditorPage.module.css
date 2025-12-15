@@ -242,6 +242,14 @@
     z-index: 9997 !important;
 }
 
+/* Object hover highlight (yellow/gold) */
+:global(.object-hover-highlight) {
+    outline: 3px solid #FCD34D !important;
+    outline-offset: 6px;
+    z-index: 9996 !important;
+    filter: drop-shadow(0 0 12px rgba(252, 211, 77, 0.6)) !important;
+}
+
 /* Success Pulse Animation */
 @keyframes successPulse {
     0% {

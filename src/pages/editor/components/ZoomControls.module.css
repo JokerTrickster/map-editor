@@ -27,6 +27,12 @@
     border-color: var(--color-border);
 }
 
+.toolButton.active {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
 .zoomLevel {
     font-size: var(--font-size-xs);
     color: var(--color-text-secondary);

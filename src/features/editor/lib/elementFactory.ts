@@ -87,7 +87,7 @@ function calculateCentroid(points: BanpoRow[]): { x: number; y: number } {
  */
 function createElementFromEntity(
   entity: GroupedEntity,
-  bounds: { minX: number; minY: number; scale: number }
+  bounds: { minX: number; minY: number; maxX: number; maxY: number; scale: number; flipX?: boolean }
 ): dia.Element | null {
   const { layer, points } = entity
 
@@ -130,13 +130,13 @@ function createElementFromEntity(
  */
 function createPolygonElement(
   entity: GroupedEntity,
-  bounds: { minX: number; minY: number; scale: number }
+  bounds: { minX: number; minY: number; maxX: number; maxY: number; scale: number; flipX?: boolean }
 ): dia.Element {
   const { layer, points, entityHandle } = entity
 
   // Transform all coordinates
   const transformedCoords = points.map(p =>
-    transformCoordinates(p.x, p.y, { minX: bounds.minX, minY: bounds.minY, scale: bounds.scale })
+    transformCoordinates(p.x, p.y, { minX: bounds.minX, minY: bounds.minY, maxX: bounds.maxX, maxY: bounds.maxY, scale: bounds.scale })
   )
 
   // Calculate bounding box for positioning
@@ -195,13 +195,13 @@ function createPolygonElement(
  */
 function createPointElementFromPolygon(
   entity: GroupedEntity,
-  bounds: { minX: number; minY: number; scale: number }
+  bounds: { minX: number; minY: number; maxX: number; maxY: number; scale: number; flipX?: boolean }
 ): dia.Element {
   const { layer, points, entityHandle } = entity
 
   // Calculate centroid of the polygon
   const centroid = calculateCentroid(points)
-  const pos = transformCoordinates(centroid.x, centroid.y, { minX: bounds.minX, minY: bounds.minY, scale: bounds.scale })
+  const pos = transformCoordinates(centroid.x, centroid.y, { minX: bounds.minX, minY: bounds.minY, maxX: bounds.maxX, maxY: bounds.maxY, scale: bounds.scale })
 
   const size = getIconSize(layer)
   const assetPath = getAssetPath(layer)
@@ -240,7 +240,7 @@ function createPointElementFromPolygon(
  */
 function createLineElement(
   entity: GroupedEntity,
-  bounds: { minX: number; minY: number; scale: number }
+  bounds: { minX: number; minY: number; maxX: number; maxY: number; scale: number; flipX?: boolean }
 ): dia.Element | null {
   const { layer, points } = entity
 
@@ -248,7 +248,7 @@ function createLineElement(
 
   // Transform coordinates
   const transformedCoords = points.map(p =>
-    transformCoordinates(p.x, p.y, { minX: bounds.minX, minY: bounds.minY, scale: bounds.scale })
+    transformCoordinates(p.x, p.y, { minX: bounds.minX, minY: bounds.minY, maxX: bounds.maxX, maxY: bounds.maxY, scale: bounds.scale })
   )
 
   // Calculate bounding box
@@ -301,14 +301,14 @@ function createLineElement(
  */
 function createTextElement(
   entity: GroupedEntity,
-  bounds: { minX: number; minY: number; scale: number }
+  bounds: { minX: number; minY: number; maxX: number; maxY: number; scale: number; flipX?: boolean }
 ): dia.Element | null {
   const { layer, points } = entity
 
   if (points.length === 0 || !points[0].text) return null
 
   const point = points[0]
-  const pos = transformCoordinates(point.x, point.y, { minX: bounds.minX, minY: bounds.minY, scale: bounds.scale })
+  const pos = transformCoordinates(point.x, point.y, { minX: bounds.minX, minY: bounds.minY, maxX: bounds.maxX, maxY: bounds.maxY, scale: bounds.scale })
 
   return new shapes.standard.Rectangle({
     id: `${layer}_${point.entityHandle}`,

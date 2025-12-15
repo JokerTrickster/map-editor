@@ -88,6 +88,7 @@ export function createElementsFromCSV(
 
   // Calculate scale factor to fit in canvas (1000px target width)
   const dataWidth = bounds.maxX - bounds.minX
+  const dataHeight = bounds.maxY - bounds.minY
   const TARGET_WIDTH = 1000
   const scale = dataWidth > 0 ? TARGET_WIDTH / dataWidth : 1
 
@@ -104,7 +105,7 @@ export function createElementsFromCSV(
         console.warn(`⚠️ No type mapping for entity ${entity.entityHandle} in layer ${layer.layer}`)
       }
 
-      const element = createElementFromEntity(entity, bounds, scale, layer.layer, mappedType)
+      const element = createElementFromEntity(entity, bounds, scale, dataHeight, layer.layer, mappedType)
 
       if (element) {
         const priority = mappedType?.priority ?? 5
@@ -139,8 +140,9 @@ export function createElementsFromCSV(
  */
 function createElementFromEntity(
   entity: any,
-  bounds: { minX: number; minY: number },
+  bounds: { minX: number; minY: number; maxY: number },
   scale: number,
+  dataHeight: number,
   layer: string,
   mappedType?: ObjectType
 ): dia.Element | null {
@@ -150,10 +152,15 @@ function createElementFromEntity(
     return null
   }
 
-  // Transform coordinates
+  // Calculate canvas height for Y-flip (same as preview)
+  const canvasHeight = dataHeight * scale
+
+  // Transform coordinates WITH Y-AXIS FLIP to match preview
+  // Preview uses: y = canvas.height - (offsetY + (p.y - minY) * scale)
+  // We use: y = canvasHeight - (p.y - minY) * scale (no offset needed)
   const transformedPoints = points.map((p: { x: number; y: number }) => ({
     x: (p.x - bounds.minX) * scale,
-    y: (p.y - bounds.minY) * scale,
+    y: canvasHeight - (p.y - bounds.minY) * scale,  // FLIP Y-AXIS
   }))
 
   // Calculate bounding box
@@ -192,11 +199,12 @@ function createElementFromEntity(
     strokeColor = getLayerStrokeColor(layer)
   }
 
-  // Check if icon is an actual asset file (from /assets/parking/)
+  // Check if icon is an actual asset file (from /assets/parking/, http, or base64 data URL)
   // Only use Image element for actual SVG/image files, not color codes
   const isActualAsset = mappedType?.icon &&
     (mappedType.icon.startsWith('/assets/parking/') ||
-     mappedType.icon.startsWith('http'))
+     mappedType.icon.startsWith('http') ||
+     mappedType.icon.startsWith('data:image/'))
 
   // If type has an actual asset icon, create Image element
   if (isActualAsset) {

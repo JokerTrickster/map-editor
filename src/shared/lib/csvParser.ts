@@ -161,19 +161,47 @@ export function transformCoordinates(
   options: {
     minX: number
     minY: number
+    maxX?: number
+    maxY?: number
     scale?: number
     flipY?: boolean
+    flipX?: boolean
   }
 ): { x: number; y: number } {
   const {
     minX,
     minY,
+    maxX,
+    maxY,
     scale = 1.0,     // 1:1 scale (preserve original units)
-    flipY = true     // Flip Y axis (AutoCAD uses negative Y)
+    flipY = true,    // ALWAYS flip Y to match preview canvas (entrance at top-left)
+    flipX = false    // No X flip by default
   } = options
 
+  // X transformation - just offset and scale (no flip)
   let transformedX = (x - minX) * scale
-  let transformedY = flipY ? Math.abs(y - minY) * scale : (y - minY) * scale
+
+  // Y transformation - matches preview canvas exactly
+  // For negative Y values (AutoCAD), y - minY gives positive values
+  // e.g., y=-41950, minY=-50700 → -41950-(-50700) = 8750
+  let transformedY = (y - minY) * scale
+
+  // Apply Y flip using canvas height (same as preview: canvas.height - value)
+  // This flips so Y=0 is at top (like canvas coordinates)
+  if (flipY && maxY !== undefined) {
+    const height = (maxY - minY) * scale
+    const originalY = transformedY
+    transformedY = height - transformedY
+    console.log(`🔄 Y-Flip: ${originalY.toFixed(2)} → ${transformedY.toFixed(2)} (height: ${height.toFixed(2)})`)
+  } else {
+    console.log(`⚠️ Y-Flip SKIPPED: flipY=${flipY}, maxY=${maxY}`)
+  }
+
+  // Apply horizontal flip if explicitly needed
+  if (flipX && maxX !== undefined) {
+    const width = (maxX - minX) * scale
+    transformedX = width - transformedX
+  }
 
   return { x: transformedX, y: transformedY }
 }

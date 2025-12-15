@@ -40,29 +40,10 @@ export function useCanvasPanning(
         hasMoved.current = true
       }
 
-      // Transform delta based on rotation
-      // When map is rotated, the paper's coordinate system is rotated relative to the screen
-      // We need to adjust dx/dy to match the visual movement
-      let dx = rawDx
-      let dy = rawDy
-
-      switch (rotation) {
-        case 90:
-          dx = rawDy
-          dy = -rawDx
-          break
-        case 180:
-          dx = -rawDx
-          dy = -rawDy
-          break
-        case 270:
-          dx = -rawDy
-          dy = rawDx
-          break
-        default: // 0
-          dx = rawDx
-          dy = rawDy
-      }
+      // No rotation transformation needed - mouse delta applies directly to paper
+      // The visual rotation is applied via CSS on the container, not the paper itself
+      const dx = rawDx
+      const dy = rawDy
 
       const currentTranslate = paper.translate()
       const currentScale = paper.scale()

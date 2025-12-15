@@ -13,6 +13,7 @@ interface SaveSuccessModalProps {
   onViewerMode: () => void
   onDashboard: () => void
   mapId: string
+  thumbnail?: string | null
   baseUrl?: string
 }
 
@@ -22,6 +23,7 @@ export function SaveSuccessModal({
   onViewerMode,
   onDashboard,
   mapId,
+  thumbnail,
   baseUrl = window.location.origin,
 }: SaveSuccessModalProps) {
   const [copiedShareLink, setCopiedShareLink] = useState(false)
@@ -59,6 +61,12 @@ export function SaveSuccessModal({
           <h2 className={styles.title}>저장 완료</h2>
           <p className={styles.description}>맵이 성공적으로 저장되었습니다.</p>
         </div>
+
+        {thumbnail && (
+          <div className={styles.thumbnailSection}>
+            <img src={thumbnail} alt="Map Thumbnail" className={styles.thumbnail} />
+          </div>
+        )}
 
         <div className={styles.linkSection}>
           <label className={styles.label}>
@@ -130,15 +138,25 @@ export function SaveSuccessModal({
 
         <div className={styles.actions}>
           <button onClick={onViewerMode} className={styles.viewerButton}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
             뷰어 보기
           </button>
           <button onClick={onDashboard} className={styles.dashboardButton}>
-            대시보드로 이동
-          </button>
-          <button onClick={onClose} className={styles.closeButton}>
-            닫기
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+            대시보드
           </button>
         </div>
+        <button onClick={onClose} className={styles.closeButton}>
+          닫기
+        </button>
       </div>
     </Modal>
   )
