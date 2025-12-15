@@ -63,12 +63,14 @@ aws cloudfront create-invalidation \
 # Deploy Server (SSH)
 DEPLOY_SERVER_HOST          # 배포 서버 IP 또는 도메인 (예: 192.168.1.100)
 DEPLOY_SERVER_USERNAME      # SSH 사용자명 (예: ubuntu, root)
-DEPLOY_SERVER_PASSWORD      # SSH 비밀번호
+DEPLOY_SERVER_SSH_KEY       # SSH Private Key (전체 내용)
 DEPLOY_SERVER_PORT          # (선택) SSH 포트 (기본값: 22)
 
 # Build
 VITE_GOOGLE_CLIENT_ID       # Google OAuth Client ID
 ```
+
+**참고**: macOS runner는 Container action을 지원하지 않으므로 SSH Key 인증을 사용합니다.
 
 #### 배포 프로세스
 
