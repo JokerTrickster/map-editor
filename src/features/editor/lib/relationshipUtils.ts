@@ -565,9 +565,24 @@ export function createRadiusCircles(
             }
         })
 
+        // Mark as radius circle for easy identification and removal
+        circle.set('isRadiusCircle', true)
+
         paper.model.addCell(circle)
         circles.push(circle)
     })
 
     return circles
+}
+
+/**
+ * Remove all radius circles from the graph
+ */
+export function clearRadiusCircles(graph: dia.Graph): void {
+    const circles = graph.getElements().filter(el => el.get('isRadiusCircle') === true)
+    circles.forEach(circle => circle.remove())
+
+    if (circles.length > 0) {
+        console.log(`🧹 Removed ${circles.length} radius circles`)
+    }
 }

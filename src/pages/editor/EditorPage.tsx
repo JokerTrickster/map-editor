@@ -41,7 +41,7 @@ import { ObjectType } from '@/shared/store/objectTypeStore'
 import { useTemplate } from '@/features/template/hooks/useTemplate'
 import { TemplateId } from '@/features/template/lib/templateLoader'
 import { TemplateRelationType } from '@/entities/schema/templateSchema'
-import { autoLinkObjects, updateRelationship, autoLinkAllObjects, createRadiusCircles, getExistingRelationships, parseCardinality, isTargetLinkedGlobally } from '@/features/editor/lib/relationshipUtils'
+import { autoLinkObjects, updateRelationship, autoLinkAllObjects, createRadiusCircles, clearRadiusCircles, getExistingRelationships, parseCardinality, isTargetLinkedGlobally } from '@/features/editor/lib/relationshipUtils'
 import {
   createRelationshipLinks,
   clearRelationshipLinks,
@@ -172,7 +172,7 @@ export default function EditorPage() {
 
   // Control interactivity based on view mode
   useEffect(() => {
-    if (!paper) return
+    if (!paper || !graph) return
 
     const isViewerMode = viewMode === 'viewer'
 
@@ -193,8 +193,13 @@ export default function EditorPage() {
       }
     })
 
+    // Clear radius circles when entering viewer mode
+    if (isViewerMode) {
+      clearRadiusCircles(graph)
+    }
+
     console.log(`🔒 View mode: ${viewMode}, Click: ${true}, Move: ${!isViewerMode}`)
-  }, [paper, viewMode])
+  }, [paper, graph, viewMode])
 
   const handleError = (error: Error) => {
     setErrorModal({ show: true, message: error.message })
@@ -994,6 +999,9 @@ export default function EditorPage() {
         // Get current CSV store state (snapshot)
         const currentCSVState = useCSVStore.getState()
 
+        // Clear radius circles before saving
+        clearRadiusCircles(graph)
+
         // Save graph JSON
         const json = graph.toJSON()
 
@@ -1166,6 +1174,9 @@ export default function EditorPage() {
   const handleSave = () => {
     if (graph && currentFloor && currentLot) {
       console.log('💾 Saving project:', { currentLot, currentFloor })
+
+      // Clear radius circles before saving
+      clearRadiusCircles(graph)
 
       const json = graph.toJSON()
       const currentFloorData = floors.find(f => f.id === currentFloor)
