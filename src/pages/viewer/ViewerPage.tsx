@@ -100,7 +100,14 @@ export default function ViewerPage() {
 
   // Load graph from project data
   useEffect(() => {
-    if (!graph || !paper || !projectData?.graphJson) return
+    if (!graph || !paper || !projectData?.graphJson) {
+      console.log('⚠️ Graph loading skipped:', {
+        hasGraph: !!graph,
+        hasPaper: !!paper,
+        hasGraphJson: !!projectData?.graphJson
+      })
+      return
+    }
 
     try {
       // Clear existing graph
@@ -110,19 +117,37 @@ export default function ViewerPage() {
       graph.fromJSON(projectData.graphJson)
       console.log('✅ Graph loaded in viewer mode:', graph.getCells().length, 'cells')
 
+      // Get graph bounds
+      const bbox = graph.getBBox()
+      console.log('📏 Graph bounds:', bbox)
+
+      // Get current scale and viewport
+      const scale = paper.scale()
+      const translate = paper.translate()
+      console.log('🔍 Current paper state:', { scale, translate })
+
       // Fit content to screen after a short delay to ensure rendering is complete
       setTimeout(() => {
         if (graph.getCells().length > 0) {
+          console.log('📐 Attempting to fit content to screen...')
+
+          // Try to fit content
           paper.scaleContentToFit({
             padding: 50,
             maxScale: 1.5,
             minScale: 0.1,
           })
-          console.log('📐 Content fitted to screen')
+
+          // Log new state after fitting
+          const newScale = paper.scale()
+          const newTranslate = paper.translate()
+          console.log('✅ Content fitted. New state:', { scale: newScale, translate: newTranslate })
+        } else {
+          console.warn('⚠️ No cells to fit')
         }
       }, 100)
     } catch (error) {
-      console.error('Failed to load graph:', error)
+      console.error('❌ Failed to load graph:', error)
     }
   }, [graph, paper, projectData])
 

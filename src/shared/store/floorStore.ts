@@ -76,7 +76,7 @@ const generateFloorName = (order: number): string => {
 const calculateNextOrder = (floors: Floor[], lotId: string): number => {
   const lotFloors = floors.filter((f) => f.lotId === lotId);
   if (lotFloors.length === 0) {
-    return 0; // Start with ground floor (1F)
+    return -2; // Start with B2 (basement level 2)
   }
 
   // Get the highest order
