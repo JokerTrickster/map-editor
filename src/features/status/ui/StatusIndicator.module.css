@@ -74,12 +74,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   background-color: #ef4444; /* Red background */
   border: 2px solid white;
   border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   cursor: default;
   user-select: none;
   animation: badgePulse 1.5s ease-in-out infinite;
@@ -87,7 +87,7 @@
 
 .badgeIcon {
   color: white;
-  font-size: 14px;
+  font-size: 10px;
   font-weight: bold;
   line-height: 1;
 }
