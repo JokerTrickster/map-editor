@@ -13,6 +13,12 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Accept build argument for Google Client ID
+ARG VITE_GOOGLE_CLIENT_ID
+
+# Set as environment variable so Vite can embed it during build
+ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+
 # Build for production
 RUN npm run build
 
