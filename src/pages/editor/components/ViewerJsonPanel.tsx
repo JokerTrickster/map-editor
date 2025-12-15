@@ -3,7 +3,7 @@
  * Displays the full map JSON data in viewer mode
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { dia } from '@joint/core'
 import styles from './ViewerJsonPanel.module.css'
 
@@ -13,6 +13,25 @@ interface ViewerJsonPanelProps {
 }
 
 export function ViewerJsonPanel({ graph, projectName }: ViewerJsonPanelProps) {
+  // Track graph changes to force re-render
+  const [, setGraphVersion] = useState(0)
+
+  // Listen to graph changes
+  useEffect(() => {
+    if (!graph) return
+
+    const handleChange = () => {
+      setGraphVersion(v => v + 1)
+    }
+
+    // Listen to all graph change events
+    graph.on('add remove change', handleChange)
+
+    return () => {
+      graph.off('add remove change', handleChange)
+    }
+  }, [graph])
+
   // Generate JSON data from graph
   const jsonData = useMemo(() => {
     if (!graph) {
@@ -63,7 +82,7 @@ export function ViewerJsonPanel({ graph, projectName }: ViewerJsonPanelProps) {
       },
       objects,
     }
-  }, [graph, projectName])
+  }, [graph, projectName, graph?.getCells().length])
 
   // Format JSON with syntax highlighting
   const formattedJson = useMemo(() => {

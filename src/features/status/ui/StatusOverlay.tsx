@@ -143,7 +143,10 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
       {/* CCTV Status Indicators */}
       {cctvElements.map(element => {
         const bbox = element.getBBox();
-        const position = paper.localToClientPoint(bbox.x, bbox.y);
+        // Position badge at top-right corner of CCTV icon
+        const centerX = bbox.x + bbox.width;
+        const topY = bbox.y;
+        const position = paper.localToClientPoint(centerX, topY);
         const objectId = String(element.id);
 
         return (
@@ -151,8 +154,8 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
             key={objectId}
             className={styles.statusPosition}
             style={{
-              left: position.x,
-              top: position.y - 30, // Position above the object
+              left: position.x - 8, // Offset to align with icon edge
+              top: position.y - 8,
             }}
           >
             <CctvStatusIndicator objectId={objectId} />
