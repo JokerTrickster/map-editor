@@ -45,7 +45,6 @@ import {
   clearRelationshipLinks,
   highlightRelationshipTargets,
   clearTargetHighlights,
-  dimNonRelatedElements,
   clearElementDimming
 } from '@/features/editor/lib/relationshipVisualization'
 import styles from './EditorPage.module.css'
