@@ -43,23 +43,6 @@ export function ParkingStatusIndicator({ objectId, className }: ParkingStatusInd
     }
   }
 
-  // Only show indicator when occupied (parking space itself turns red)
-  if (!occupied) {
-    return null; // Hide when available for cleaner view
-  }
-
-  return (
-    <div
-      className={`${styles.parkingInfo} ${className || ''}`}
-      data-occupied={occupied}
-      title={`주차됨 (${lastUpdateTime})${vehicleInfo?.plateNumber ? `\n${vehicleInfo.plateNumber}` : ''}${parkingDuration ? `\n주차 시간: ${parkingDuration}` : ''}`}
-    >
-      {vehicleInfo?.plateNumber && (
-        <span className={styles.plateNumber}>{vehicleInfo.plateNumber}</span>
-      )}
-      {parkingDuration && (
-        <span className={styles.duration}>{parkingDuration}</span>
-      )}
-    </div>
-  );
+  // Only show color change on parking space itself - no overlay indicator needed
+  return null;
 }
