@@ -17,24 +17,26 @@ export function useObjectCreation(
 
         const handlePointerDown = (_evt: dia.Event, x: number, y: number) => {
             if (selectedType.icon) {
-                // Rectangle Drawing (Drag)
-                setIsDrawing(true)
-                setPoints([{ x, y }])
-
-                // Create temp element
-                const rect = new shapes.standard.Rectangle()
-                rect.position(x, y)
-                rect.resize(1, 1)
-                rect.attr({
-                    body: {
-                        fill: 'rgba(59, 130, 246, 0.2)',
-                        stroke: '#3b82f6',
-                        strokeWidth: 2,
-                        strokeDasharray: '5,5'
-                    }
+                // Create image object directly at click position
+                const defaultSize = 30 // Default icon size
+                const image = new shapes.standard.Image()
+                image.position(x - defaultSize / 2, y - defaultSize / 2) // Center on click point
+                image.resize(defaultSize, defaultSize)
+                image.attr({
+                    image: { xlinkHref: selectedType.icon },
+                    label: { text: selectedType.name, refY: '100%', refY2: 5 }
                 })
-                rect.addTo(graph)
-                tempElementRef.current = rect
+
+                // Add custom properties
+                image.prop('customProperties', selectedType.properties)
+                image.prop('objectTypeId', selectedType.id)
+                image.prop('objectType', selectedType.name)
+
+                graph.addCell(image)
+                console.log(`✅ Created image object: ${selectedType.name} at (${x}, ${y})`)
+
+                // Notify completion
+                onCreationComplete()
             } else {
                 // Polygon Drawing (Click points)
                 if (!isDrawing) {
@@ -61,59 +63,20 @@ export function useObjectCreation(
         }
 
         const handlePointerMove = (_evt: dia.Event, x: number, y: number) => {
-            if (!isDrawing || !tempElementRef.current) return
+            if (!isDrawing || !tempElementRef.current || selectedType.icon) return
 
-            if (selectedType.icon) {
-                // Update Rectangle
-                const start = points[0]
-                const width = x - start.x
-                const height = y - start.y
-
-                tempElementRef.current.position(
-                    width > 0 ? start.x : x,
-                    height > 0 ? start.y : y
-                )
-                tempElementRef.current.resize(Math.abs(width), Math.abs(height))
-            } else {
-                // Update Polygon Preview (Line to cursor)
-                // For simplicity, just redraw path with current points + cursor
-                const currentPoints = [...points, { x, y }]
-                // Construct SVG path data
-                const d = 'M ' + currentPoints.map(p => `${p.x} ${p.y}`).join(' L ')
-                tempElementRef.current.attr('body/d', d)
-            }
+            // Update Polygon Preview (Line to cursor)
+            // For simplicity, just redraw path with current points + cursor
+            const currentPoints = [...points, { x, y }]
+            // Construct SVG path data
+            const d = 'M ' + currentPoints.map(p => `${p.x} ${p.y}`).join(' L ')
+            tempElementRef.current.attr('body/d', d)
         }
 
         const handlePointerUp = () => {
-            if (!isDrawing || !tempElementRef.current) return
-
-            if (selectedType.icon) {
-                // Finish Rectangle
-                const finalElement = tempElementRef.current
-                const bbox = finalElement.getBBox()
-
-                // Create actual object
-                const image = new shapes.standard.Image()
-                image.position(bbox.x, bbox.y)
-                image.resize(bbox.width, bbox.height)
-                image.attr({
-                    image: { xlinkHref: selectedType.icon },
-                    label: { text: selectedType.name, refY: '100%', refY2: 5 }
-                })
-
-                // Add custom properties
-                image.prop('customProperties', selectedType.properties)
-                image.prop('objectTypeId', selectedType.id)
-
-                graph.addCell(image)
-
-                // Cleanup
-                finalElement.remove()
-                tempElementRef.current = null
-                setIsDrawing(false)
-                setPoints([])
-                onCreationComplete()
-            }
+            // Icon objects are created directly on click, no drag needed
+            // This handler is only for polygon drawing (no icon)
+            return
         }
 
         const handleDoubleClick = () => {
