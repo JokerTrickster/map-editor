@@ -185,6 +185,13 @@ export default function DashboardPage() {
 
   const deletingLot = deletingLotId ? lots.find((l) => l.id === deletingLotId) : null
 
+  // Sort lots by creation date (newest first)
+  const sortedLots = [...lots].sort((a, b) => {
+    const dateA = new Date(a.created).getTime()
+    const dateB = new Date(b.created).getTime()
+    return dateB - dateA // Descending order (newest first)
+  })
+
   return (
     <div className={styles.container}>
       {/* Sidebar */}
@@ -290,7 +297,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className={styles.grid}>
-            {lots.map((lot) => (
+            {sortedLots.map((lot) => (
               <ParkingLotCard
                 key={lot.id}
                 lot={lot}
