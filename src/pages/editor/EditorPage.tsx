@@ -55,7 +55,7 @@ import '@/shared/lib/testHelpers'
 export default function EditorPage() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
-  const { currentFloor, updateFloor, floors, updateFloorMapData, addFloor, setCurrentFloor } = useFloorStore()
+  const { currentFloor, updateFloor, floors, updateFloorMapData, setCurrentFloor } = useFloorStore()
   const currentLot = useProjectStore(state => state.currentLot)
   const currentLotData = useProjectStore(state => state.getLotById(state.currentLot || ''))
   const setCurrentLot = useObjectTypeStore(state => state.setCurrentLot)
@@ -153,23 +153,18 @@ export default function EditorPage() {
     console.log(`✅ Applied rotation ${rotation}° to canvas container`)
   }, [rotation])
 
-  // Initialize floor for new projects
+  // Select first floor if none selected (floor creation handled by FloorTabs)
   useEffect(() => {
     if (!currentLot) return
 
-    // Check if this project has any floors
     const projectFloors = floors.filter(f => f.lotId === currentLot)
 
-    if (projectFloors.length === 0) {
-      console.log('📝 Creating initial floor for project:', currentLot)
-      // Create first floor (1F)
-      addFloor(currentLot)
-    } else if (!currentFloor) {
-      // Project has floors but none selected, select the first one
+    // Only handle floor selection, NOT creation (FloorTabs handles creation)
+    if (projectFloors.length > 0 && !currentFloor) {
       console.log('📌 Selecting first floor for project:', currentLot)
       setCurrentFloor(projectFloors[0].id)
     }
-  }, [currentLot, floors, currentFloor, addFloor, setCurrentFloor])
+  }, [currentLot, floors, currentFloor, setCurrentFloor])
 
   // Initialize mutableRelationTypes from template
   useEffect(() => {
