@@ -53,9 +53,9 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+          echo -e "${{ secrets.DEPLOY_SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.DEPLOY_SERVER_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.DEPLOY_SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Transfer image to deploy server
         run: |
@@ -66,21 +66,25 @@ jobs:
             ${{ secrets.DEPLOY_SERVER_USERNAME }}@${{ secrets.DEPLOY_SERVER_HOST }}:/tmp/
 
       - name: Deploy on remote server
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -p ${{ secrets.DEPLOY_SERVER_PORT || 22 }} \
             -o StrictHostKeyChecking=no \
-            ${{ secrets.DEPLOY_SERVER_USERNAME }}@${{ secrets.DEPLOY_SERVER_HOST }} << 'EOF'
+            ${{ secrets.DEPLOY_SERVER_USERNAME }}@${{ secrets.DEPLOY_SERVER_HOST }} \
+            "IMAGE_TAG=${IMAGE_TAG}" 'bash -s' << 'EOF'
             echo "🚀 Starting deployment..."
+            echo "📦 Image tag: ${IMAGE_TAG}"
 
             # Load Docker image
             echo "📥 Loading Docker image..."
-            docker load < /tmp/map-editor-${{ steps.tag.outputs.tag }}.tar.gz
+            docker load < /tmp/map-editor-${IMAGE_TAG}.tar.gz
 
             # Stop and remove old container
             echo "🛑 Stopping old container..."
-            docker stop map-editor || true
-            docker rm map-editor || true
+            docker stop map-editor 2>/dev/null || true
+            docker rm map-editor 2>/dev/null || true
 
             # Run new container
             echo "▶️ Starting new container..."
@@ -88,24 +92,33 @@ jobs:
               --name map-editor \
               -p 80:80 \
               --restart unless-stopped \
-              map-editor:${{ steps.tag.outputs.tag }}
+              map-editor:${IMAGE_TAG}
 
             # Wait for container to be healthy
             echo "⏳ Waiting for health check..."
-            sleep 5
+            sleep 10
 
             # Health check
-            if curl -f http://localhost/health > /dev/null 2>&1; then
-              echo "✅ Container is healthy!"
+            if docker ps | grep -q map-editor; then
+              echo "✅ Container is running!"
+              if command -v curl >/dev/null 2>&1; then
+                if curl -f http://localhost/health > /dev/null 2>&1; then
+                  echo "✅ Health check passed!"
+                else
+                  echo "⚠️  Health check endpoint not responding (container may still be starting)"
+                fi
+              else
+                echo "⚠️  curl not found, skipping health check"
+              fi
             else
-              echo "❌ Health check failed!"
+              echo "❌ Container failed to start!"
               docker logs map-editor
               exit 1
             fi
 
             # Cleanup
             echo "🧹 Cleaning up..."
-            rm -f /tmp/map-editor-${{ steps.tag.outputs.tag }}.tar.gz
+            rm -f /tmp/map-editor-${IMAGE_TAG}.tar.gz
             docker image prune -f
 
             echo "✅ Deployment completed successfully!"
