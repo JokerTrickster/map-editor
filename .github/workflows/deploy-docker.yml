@@ -53,9 +53,32 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo -e "${{ secrets.DEPLOY_SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+
+          # Save SSH key (preserve newlines)
+          echo "${{ secrets.DEPLOY_SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+
+          # Set correct permissions
           chmod 600 ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+
+          # Verify key format
+          echo "🔍 SSH Key info:"
+          head -1 ~/.ssh/deploy_key
+          tail -1 ~/.ssh/deploy_key
+          wc -l ~/.ssh/deploy_key
+
+          # Add server to known_hosts
           ssh-keyscan -H ${{ secrets.DEPLOY_SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          # Test SSH connection
+          echo "🔐 Testing SSH connection to ${{ secrets.DEPLOY_SERVER_USERNAME }}@${{ secrets.DEPLOY_SERVER_HOST }}..."
+          ssh -i ~/.ssh/deploy_key \
+            -p ${{ secrets.DEPLOY_SERVER_PORT || 22 }} \
+            -o StrictHostKeyChecking=no \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            ${{ secrets.DEPLOY_SERVER_USERNAME }}@${{ secrets.DEPLOY_SERVER_HOST }} \
+            "echo '✅ SSH connection successful! User: \$(whoami)'" || echo "⚠️ SSH test failed"
 
       - name: Transfer image to deploy server
         run: |
