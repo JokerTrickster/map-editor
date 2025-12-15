@@ -18,49 +18,76 @@ export function useJointJSCanvas(
   const [paper, setPaper] = useState<dia.Paper | null>(null)
   const graphRef = useRef<dia.Graph | null>(null)
   const paperRef = useRef<dia.Paper | null>(null)
+  const initializedRef = useRef<boolean>(false)
 
   useEffect(() => {
-    // Wait for canvasRef.current to be available
-    if (!canvasRef.current) {
-      console.log('⏳ Waiting for canvas element to mount...')
+    // Prevent double initialization
+    if (initializedRef.current) {
       return
     }
 
-    console.log('✅ Canvas element mounted, initializing JointJS...')
+    // Wait for canvasRef.current to be available
+    if (!canvasRef.current) {
+      // Poll until canvas is available
+      const checkInterval = setInterval(() => {
+        if (canvasRef.current && !initializedRef.current) {
+          clearInterval(checkInterval)
+          initializeCanvas()
+        }
+      }, 50)
 
-    // Create graph
-    const newGraph = new dia.Graph({}, { cellNamespace: shapes })
-    graphRef.current = newGraph
-    setGraph(newGraph)
+      return () => clearInterval(checkInterval)
+    }
 
-    // Create paper with default theme (will be updated by theme effect)
-    const newPaper = new dia.Paper({
-      model: newGraph,
-      width: 100000,
-      height: 100000,
-      gridSize: 10,
-      drawGrid: { name: 'dot', args: { color: '#2d3139', thickness: 1 } },
-      background: { color: '#13151a' },
-      cellViewNamespace: shapes,
-      interactive: false,
-      async: true,
-      sorting: dia.Paper.sorting.APPROX,
-    })
-    paperRef.current = newPaper
-    setPaper(newPaper)
+    // Canvas is already available, initialize immediately
+    initializeCanvas()
 
-    // Append paper to container
-    canvasRef.current.appendChild(newPaper.el)
+    function initializeCanvas() {
+      if (initializedRef.current || !canvasRef.current) return
 
-    console.log('🎨 JointJS initialized successfully')
+      console.log('✅ Canvas element mounted, initializing JointJS...')
+
+      // Mark as initialized
+      initializedRef.current = true
+
+      // Create graph
+      const newGraph = new dia.Graph({}, { cellNamespace: shapes })
+      graphRef.current = newGraph
+      setGraph(newGraph)
+
+      // Create paper with default theme (will be updated by theme effect)
+      const newPaper = new dia.Paper({
+        model: newGraph,
+        width: 100000,
+        height: 100000,
+        gridSize: 10,
+        drawGrid: { name: 'dot', args: { color: '#2d3139', thickness: 1 } },
+        background: { color: '#13151a' },
+        cellViewNamespace: shapes,
+        interactive: false,
+        async: true,
+        sorting: dia.Paper.sorting.APPROX,
+      })
+      paperRef.current = newPaper
+      setPaper(newPaper)
+
+      // Append paper to container
+      canvasRef.current!.appendChild(newPaper.el)
+
+      console.log('🎨 JointJS initialized successfully')
+    }
 
     // Cleanup
     return () => {
-      console.log('🧹 Cleaning up JointJS...')
-      newPaper.remove()
-      newGraph.clear()
+      if (graphRef.current && paperRef.current) {
+        console.log('🧹 Cleaning up JointJS...')
+        paperRef.current.remove()
+        graphRef.current.clear()
+      }
+      initializedRef.current = false
     }
-  }, [canvasRef.current])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty array - run only on mount, polling handles canvas availability
 
   return { graph, paper }
 }
