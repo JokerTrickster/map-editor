@@ -26,7 +26,7 @@ import type {
 class MockStatusService implements IStatusService {
   private connected = false;
   private subscribers: Set<(message: StatusMessage) => void> = new Set();
-  private updateInterval: NodeJS.Timeout | null = null;
+  private updateInterval: ReturnType<typeof setInterval> | null = null;
 
   // Mock data: Object IDs for simulation
   private mockCctvIds: string[] = [];

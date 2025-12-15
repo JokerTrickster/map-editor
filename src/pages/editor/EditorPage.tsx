@@ -14,6 +14,7 @@ import { useCSVStore } from '@/features/csv/model/csvStore'
 import { FloorTabs } from '@/widgets/editor/FloorTabs'
 import { CSVUploader } from '@/features/csv'
 import { ObjectTypeSidebar, LayerMappingModal } from '@/features/objectType'
+import { statusService, useStatusStore, StatusOverlay } from '@/features/status'
 import { ResizablePanel } from '@/shared/ui/ResizablePanel'
 import { Modal } from '@/shared/ui/Modal'
 import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
@@ -1064,6 +1065,46 @@ export default function EditorPage() {
     }
   }, [currentFloor, graph, updateFloorMapData])
 
+  // Initialize status service for real-time status updates
+  const { connect, disconnect } = useStatusStore()
+
+  useEffect(() => {
+    if (!graph) return
+
+    // Get all CCTV and ParkingLocation objects
+    const elements = graph.getElements()
+
+    const cctvIds = elements
+      .filter(el => {
+        const type = el.get('type') || el.get('objectType')
+        return type === 'Cctv' || type === 'cctv'
+      })
+      .map(el => String(el.id))
+
+    const parkingIds = elements
+      .filter(el => {
+        const type = el.get('type') || el.get('objectType')
+        return type === 'ParkingLocation' || type === 'parkingLocation'
+      })
+      .map(el => String(el.id))
+
+    console.log('[StatusService] Initializing with objects:', {
+      cctvCount: cctvIds.length,
+      parkingCount: parkingIds.length
+    })
+
+    // Initialize service with object IDs
+    statusService.initialize(cctvIds, parkingIds)
+
+    // Connect to status updates
+    connect()
+
+    // Cleanup on unmount
+    return () => {
+      disconnect()
+    }
+  }, [graph, elementCount, connect, disconnect])
+
   // Handlers
   const handleUploadClick = () => {
     if (types.length === 0) {
@@ -1529,6 +1570,11 @@ export default function EditorPage() {
 
           {/* JointJS Canvas Container */}
           <div ref={canvasRef} className={styles.canvas} />
+
+          {/* Status Overlay - Real-time status indicators for CCTV and Parking */}
+          {graph && paper && (
+            <StatusOverlay graph={graph} paper={paper} />
+          )}
 
           {/* Minimap Container */}
           <div className={styles.minimapContainer} ref={minimapContainerRef}>
