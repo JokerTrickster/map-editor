@@ -169,6 +169,24 @@ export default function EditorPage() {
     }
   }, [template, currentLotData])
 
+  // Control interactivity based on view mode
+  useEffect(() => {
+    if (!paper) return
+
+    const isViewerMode = viewMode === 'viewer'
+
+    // Set paper interactivity
+    paper.setInteractivity(isViewerMode ? false : () => {
+      // In edit mode, allow interaction with elements
+      return {
+        elementMove: true,
+        addLinkFromMagnet: false,
+      }
+    })
+
+    console.log(`🔒 View mode: ${viewMode}, Interactive: ${!isViewerMode}`)
+  }, [paper, viewMode])
+
   const handleError = (error: Error) => {
     setErrorModal({ show: true, message: error.message })
   }
@@ -533,7 +551,8 @@ export default function EditorPage() {
     undo,
     redo,
     () => setSelectedElementId(null),
-    setElementCount
+    setElementCount,
+    viewMode === 'viewer' // Disable shortcuts in viewer mode
   )
 
   useThemeSync(paper, theme)

@@ -12,9 +12,13 @@ export function useKeyboardShortcuts(
   undo: () => void,
   redo: () => void,
   onElementDelete?: (elementId: string) => void,
-  onElementCountChange?: (count: number) => void
+  onElementCountChange?: (count: number) => void,
+  disabled?: boolean
 ) {
   useEffect(() => {
+    // Don't register shortcuts if disabled (e.g., in viewer mode)
+    if (disabled) return
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Undo: Ctrl+Z (or Cmd+Z on Mac)
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
@@ -53,5 +57,5 @@ export function useKeyboardShortcuts(
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [selectedElementId, graph, undo, redo, onElementDelete, onElementCountChange])
+  }, [selectedElementId, graph, undo, redo, onElementDelete, onElementCountChange, disabled])
 }
