@@ -1199,18 +1199,22 @@ export default function EditorPage() {
               const offsetX = (targetWidth - scaledWidth) / 2
               const offsetY = (targetHeight - scaledHeight) / 2
 
-              // Serialize SVG
-              const svgData = new XMLSerializer().serializeToString(svg)
+              // Clone SVG and set viewBox for proper rendering
+              const svgClone = svg.cloneNode(true) as SVGSVGElement
+              svgClone.setAttribute('viewBox', `${contentArea.x} ${contentArea.y} ${contentArea.width} ${contentArea.height}`)
+              svgClone.setAttribute('width', String(contentArea.width))
+              svgClone.setAttribute('height', String(contentArea.height))
+
+              // Serialize SVG with viewBox
+              const svgData = new XMLSerializer().serializeToString(svgClone)
               const img = new Image()
               const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
               const url = URL.createObjectURL(svgBlob)
 
               img.onload = () => {
                 ctx.save()
-                // Transform to show entire content area
-                ctx.translate(offsetX - contentArea.x * scale, offsetY - contentArea.y * scale)
-                ctx.scale(scale, scale)
-                ctx.drawImage(img, 0, 0)
+                ctx.translate(offsetX, offsetY)
+                ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight)
                 ctx.restore()
 
                 // Convert to base64
