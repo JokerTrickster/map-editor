@@ -1,0 +1,70 @@
+/**
+ * Status Indicator Styles
+ * Shared styles for CCTV and Parking status indicators
+ */
+
+.statusIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: default;
+  user-select: none;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* CCTV Status Colors */
+.statusDot.connected {
+  background-color: #10b981; /* Green - Connected */
+}
+
+.statusDot.disconnected {
+  background-color: #ef4444; /* Red - Disconnected */
+  animation: none; /* No pulse when disconnected */
+}
+
+/* Parking Status Colors */
+.statusDot.occupied {
+  background-color: #ef4444; /* Red - Occupied */
+}
+
+.statusDot.available {
+  background-color: #10b981; /* Green - Available */
+}
+
+.statusLabel {
+  color: #1f2937;
+  line-height: 1;
+}
+
+.vehicleInfo {
+  color: #6b7280;
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+/* Pulse animation for active states */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Hover effect */
+.statusIndicator:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
