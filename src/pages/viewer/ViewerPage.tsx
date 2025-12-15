@@ -81,6 +81,16 @@ export default function ViewerPage() {
     const firstFloor = projectFloors[0]
     const graphJson = firstFloor.mapData?.graphJson
 
+    console.log('📂 Loaded project data:', {
+      projectId,
+      projectName: project.name,
+      floorCount: projectFloors.length,
+      hasMapData: !!firstFloor.mapData,
+      hasGraphJson: !!graphJson,
+      graphJsonCells: graphJson?.cells?.length || 0,
+      firstFloorData: firstFloor
+    })
+
     setProjectData({
       projectId,
       projectName: project.name,
@@ -89,13 +99,6 @@ export default function ViewerPage() {
       graphJson
     })
     setLoading(false)
-
-    console.log('📂 Loaded project data:', {
-      projectId,
-      projectName: project.name,
-      floorCount: projectFloors.length,
-      hasGraph: !!graphJson
-    })
   }, [projectId, navigate, getLotById, floors])
 
   // Load graph from project data
