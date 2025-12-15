@@ -43,22 +43,22 @@ export function ParkingStatusIndicator({ objectId, className }: ParkingStatusInd
     }
   }
 
+  // Only show indicator when occupied (parking space itself turns red)
+  if (!occupied) {
+    return null; // Hide when available for cleaner view
+  }
+
   return (
     <div
-      className={`${styles.statusIndicator} ${className || ''}`}
+      className={`${styles.parkingInfo} ${className || ''}`}
       data-occupied={occupied}
-      title={
-        occupied
-          ? `주차됨 (${lastUpdateTime})${vehicleInfo?.plateNumber ? `\n${vehicleInfo.plateNumber}` : ''}${parkingDuration ? `\n주차 시간: ${parkingDuration}` : ''}`
-          : `비어있음 (${lastUpdateTime})`
-      }
+      title={`주차됨 (${lastUpdateTime})${vehicleInfo?.plateNumber ? `\n${vehicleInfo.plateNumber}` : ''}${parkingDuration ? `\n주차 시간: ${parkingDuration}` : ''}`}
     >
-      <div className={`${styles.statusDot} ${occupied ? styles.occupied : styles.available}`} />
-      <span className={styles.statusLabel}>
-        {occupied ? '주차' : '빈자리'}
-      </span>
-      {occupied && vehicleInfo?.plateNumber && (
-        <span className={styles.vehicleInfo}>{vehicleInfo.plateNumber}</span>
+      {vehicleInfo?.plateNumber && (
+        <span className={styles.plateNumber}>{vehicleInfo.plateNumber}</span>
+      )}
+      {parkingDuration && (
+        <span className={styles.duration}>{parkingDuration}</span>
       )}
     </div>
   );

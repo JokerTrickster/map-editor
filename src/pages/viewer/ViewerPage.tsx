@@ -166,24 +166,51 @@ export default function ViewerPage() {
     console.log('🔒 Viewer mode: Read-only')
   }, [paper])
 
-  // Initialize status service
+  // Initialize status service (reinitialize when graph data changes)
   useEffect(() => {
-    if (!graph) return
+    if (!graph || !projectData?.graphJson) return
 
     const elements = graph.getElements()
+
+    // Filter CCTV/reader elements by ID pattern
     const cctvIds = elements
       .filter(el => {
-        const type = el.get('type') || el.get('objectType')
-        return type === 'Cctv' || type === 'cctv'
+        const id = String(el.id);
+        const type = el.get('type') || el.get('objectType');
+
+        // Check both type property and ID pattern
+        return (
+          type === 'Cctv' ||
+          type === 'cctv' ||
+          id.includes('cctv') ||
+          id.includes('onepassreader') ||
+          id.includes('reader')
+        );
       })
       .map(el => String(el.id))
 
+    // Filter parking elements by ID pattern
     const parkingIds = elements
       .filter(el => {
-        const type = el.get('type') || el.get('objectType')
-        return type === 'ParkingLocation' || type === 'parkingLocation'
+        const id = String(el.id);
+        const type = el.get('type') || el.get('objectType');
+
+        // Check both type property and ID pattern
+        return (
+          type === 'ParkingLocation' ||
+          type === 'parkingLocation' ||
+          type === 'parking' ||
+          id.includes('parking')
+        );
       })
       .map(el => String(el.id))
+
+    console.log('🚗 Detected objects for status tracking:', {
+      cctvCount: cctvIds.length,
+      parkingCount: parkingIds.length,
+      sampleCctv: cctvIds.slice(0, 2),
+      sampleParking: parkingIds.slice(0, 2)
+    });
 
     statusService.initialize(cctvIds, parkingIds)
     connect()
@@ -191,7 +218,7 @@ export default function ViewerPage() {
     return () => {
       disconnect()
     }
-  }, [graph, connect, disconnect])
+  }, [graph, projectData, connect, disconnect])
 
   if (loading) {
     return <LoadingOverlay message="맵 로딩 중..." />

@@ -39,6 +39,10 @@ class MockStatusService implements IStatusService {
   initialize(cctvIds: string[], parkingIds: string[]) {
     this.mockCctvIds = cctvIds;
     this.mockParkingIds = parkingIds;
+    console.log('[StatusService] Initializing with objects:', {
+      cctvCount: cctvIds.length,
+      parkingCount: parkingIds.length,
+    });
   }
 
   connect(): void {

@@ -16,8 +16,8 @@ interface CctvStatusIndicatorProps {
 /**
  * CCTV Status Indicator
  * Shows connection status with color coding:
- * - Green: Connected
- * - Red: Disconnected
+ * - Green badge: Connected
+ * - Red badge: Disconnected
  */
 export function CctvStatusIndicator({ objectId, className }: CctvStatusIndicatorProps) {
   const status = useCctvStatus(objectId);
@@ -29,20 +29,19 @@ export function CctvStatusIndicator({ objectId, className }: CctvStatusIndicator
   const { connected, lastUpdate, errorMessage } = status;
   const lastUpdateTime = new Date(lastUpdate).toLocaleTimeString();
 
-  return (
-    <div
-      className={`${styles.statusIndicator} ${className || ''}`}
-      data-connected={connected}
-      title={
-        connected
-          ? `연결됨 (${lastUpdateTime})`
-          : `연결 끊김 (${lastUpdateTime})${errorMessage ? `\n${errorMessage}` : ''}`
-      }
-    >
-      <div className={`${styles.statusDot} ${connected ? styles.connected : styles.disconnected}`} />
-      <span className={styles.statusLabel}>
-        {connected ? '연결' : '끊김'}
-      </span>
-    </div>
-  );
+  // Only show badge when disconnected for better visibility
+  if (!connected) {
+    return (
+      <div
+        className={`${styles.cctvBadge} ${className || ''}`}
+        data-connected={false}
+        title={`연결 끊김 (${lastUpdateTime})${errorMessage ? `\n${errorMessage}` : ''}`}
+      >
+        <div className={styles.badgeIcon}>⚠</div>
+      </div>
+    );
+  }
+
+  // Show small indicator when connected (optional)
+  return null; // Hide when connected for cleaner view
 }

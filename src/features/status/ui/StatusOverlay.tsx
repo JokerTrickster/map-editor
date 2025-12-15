@@ -1,12 +1,14 @@
 /**
  * Status Overlay Component
  * Displays status indicators overlaid on canvas objects
+ * and applies visual changes to elements based on their status
  */
 
 import { useEffect } from 'react';
 import { dia } from '@joint/core';
 import { CctvStatusIndicator } from './CctvStatusIndicator';
 import { ParkingStatusIndicator } from './ParkingStatusIndicator';
+import { useStatusStore } from '../model/statusStore';
 import styles from './StatusOverlay.module.css';
 
 interface StatusOverlayProps {
@@ -49,18 +51,80 @@ interface StatusOverlayProps {
  * ```
  */
 export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
-  // Get all elements and filter by type
+  // Get all elements and filter by type/ID pattern
   const elements = graph.getElements();
 
   const cctvElements = elements.filter(el => {
+    const id = String(el.id);
     const type = el.get('type') || el.get('objectType');
-    return type === 'Cctv' || type === 'cctv';
+
+    return (
+      type === 'Cctv' ||
+      type === 'cctv' ||
+      id.includes('cctv') ||
+      id.includes('onepassreader') ||
+      id.includes('reader')
+    );
   });
 
   const parkingElements = elements.filter(el => {
+    const id = String(el.id);
     const type = el.get('type') || el.get('objectType');
-    return type === 'ParkingLocation' || type === 'parkingLocation';
+
+    return (
+      type === 'ParkingLocation' ||
+      type === 'parkingLocation' ||
+      type === 'parking' ||
+      id.includes('parking')
+    );
   });
+
+  // Get status data from store
+  const { cctvStatuses, parkingStatuses } = useStatusStore();
+
+  // Apply visual changes to elements based on status
+  useEffect(() => {
+    // Update parking space colors based on occupancy
+    parkingElements.forEach(element => {
+      const objectId = String(element.id);
+      const status = parkingStatuses[objectId];
+
+      if (status) {
+        // Store original color if not already stored
+        if (!element.get('originalColor')) {
+          const currentColor = element.attr('body/fill') || '#4b5563'; // gray-600
+          element.set('originalColor', currentColor);
+        }
+
+        // Change color based on occupancy
+        if (status.occupied) {
+          element.attr('body/fill', '#ef4444'); // red-500 when occupied
+          element.attr('body/fillOpacity', 0.7);
+        } else {
+          // Restore original color when available
+          const originalColor = element.get('originalColor') || '#4b5563';
+          element.attr('body/fill', originalColor);
+          element.attr('body/fillOpacity', 0.5);
+        }
+      }
+    });
+
+    // Update CCTV appearance based on connection status
+    cctvElements.forEach(element => {
+      const objectId = String(element.id);
+      const status = cctvStatuses[objectId];
+
+      if (status) {
+        // For disconnected CCTV, we'll add a red badge via CSS
+        // The badge will be rendered in the indicator component
+        if (!status.connected) {
+          element.attr('root/data-cctv-disconnected', true);
+        } else {
+          element.attr('root/data-cctv-disconnected', false);
+        }
+      }
+    });
+  }, [parkingElements, cctvElements, parkingStatuses, cctvStatuses]);
 
   // Listen for graph changes to re-render
   useEffect(() => {

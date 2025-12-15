@@ -68,3 +68,74 @@
 .statusIndicator:hover {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
+
+/* CCTV Badge (for disconnected state) */
+.cctvBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: #ef4444; /* Red background */
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  cursor: default;
+  user-select: none;
+  animation: badgePulse 1.5s ease-in-out infinite;
+}
+
+.badgeIcon {
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* Badge pulse animation (more noticeable than dot pulse) */
+@keyframes badgePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.cctvBadge:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  transform: scale(1.05);
+}
+
+/* Parking Info (for occupied state) */
+.parkingInfo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 4px;
+  border-left: 3px solid #ef4444;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: default;
+  user-select: none;
+  font-size: 11px;
+}
+
+.plateNumber {
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.duration {
+  color: #6b7280;
+  font-size: 10px;
+}
+
+.parkingInfo:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
