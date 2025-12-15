@@ -20,7 +20,13 @@ export function useJointJSCanvas(
   const paperRef = useRef<dia.Paper | null>(null)
 
   useEffect(() => {
-    if (!canvasRef.current) return
+    // Wait for canvasRef.current to be available
+    if (!canvasRef.current) {
+      console.log('⏳ Waiting for canvas element to mount...')
+      return
+    }
+
+    console.log('✅ Canvas element mounted, initializing JointJS...')
 
     // Create graph
     const newGraph = new dia.Graph({}, { cellNamespace: shapes })
@@ -46,12 +52,15 @@ export function useJointJSCanvas(
     // Append paper to container
     canvasRef.current.appendChild(newPaper.el)
 
+    console.log('🎨 JointJS initialized successfully')
+
     // Cleanup
     return () => {
+      console.log('🧹 Cleaning up JointJS...')
       newPaper.remove()
       newGraph.clear()
     }
-  }, [canvasRef])
+  }, [canvasRef.current])
 
   return { graph, paper }
 }
