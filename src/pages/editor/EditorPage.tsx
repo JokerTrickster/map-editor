@@ -176,15 +176,23 @@ export default function EditorPage() {
     const isViewerMode = viewMode === 'viewer'
 
     // Set paper interactivity
-    paper.setInteractivity(isViewerMode ? false : () => {
-      // In edit mode, allow interaction with elements
-      return {
-        elementMove: true,
-        addLinkFromMagnet: false,
+    paper.setInteractivity(() => {
+      if (isViewerMode) {
+        // Viewer mode: allow selection but no movement
+        return {
+          elementMove: false,
+          addLinkFromMagnet: false,
+        }
+      } else {
+        // Edit mode: allow full interaction
+        return {
+          elementMove: true,
+          addLinkFromMagnet: false,
+        }
       }
     })
 
-    console.log(`🔒 View mode: ${viewMode}, Interactive: ${!isViewerMode}`)
+    console.log(`🔒 View mode: ${viewMode}, Click: ${true}, Move: ${!isViewerMode}`)
   }, [paper, viewMode])
 
   const handleError = (error: Error) => {

@@ -1,0 +1,25 @@
+{
+  "types": [
+    {
+      "id": "parking-area",
+      "name": "Parking Area",
+      "color": "#4ade80",
+      "icon": "parking",
+      "priority": 1
+    },
+    {
+      "id": "zone",
+      "name": "Zone",
+      "color": "#60a5fa",
+      "icon": "zone",
+      "priority": 2
+    },
+    {
+      "id": "sensor",
+      "name": "Sensor",
+      "color": "#f59e0b",
+      "icon": "sensor",
+      "priority": 3
+    }
+  ]
+}
