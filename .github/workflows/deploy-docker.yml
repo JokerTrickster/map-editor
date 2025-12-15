@@ -44,6 +44,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          platforms: linux/amd64
           tags: |
             ${{ secrets.DOCKER_REGISTRY_URL }}/map-editor:${{ steps.tag.outputs.tag }}
             ${{ secrets.DOCKER_REGISTRY_URL }}/map-editor:${{ steps.tag.outputs.tag }}-${{ steps.tag.outputs.timestamp }}

@@ -77,39 +77,65 @@ VITE_GOOGLE_CLIENT_ID       # Google OAuth Client ID
 
 #### 배포 프로세스
 
-1. **빌드 서버 (GitHub Actions)**:
+1. **빌드 서버 (맥미니 ARM64)**:
    - 코드 체크아웃
-   - Docker 이미지 빌드
+   - Docker 크로스 플랫폼 빌드 (linux/amd64)
    - Private Registry에 푸시
    - 타임스탬프 태그 자동 생성 (main-20240101-123456)
 
-2. **배포 서버 (자동 SSH 실행)**:
+2. **배포 서버 (Linux AMD64, 자동 SSH 실행)**:
    - Registry에서 최신 이미지 pull
    - 기존 컨테이너 중지 및 삭제
    - 새 컨테이너 시작
    - Health check 확인
    - 구 이미지 정리
 
+**참고**: 빌드 서버(ARM64)와 배포 서버(AMD64) 아키텍처가 다르므로 Docker Buildx를 사용한 크로스 플랫폼 빌드가 자동으로 수행됩니다.
+
 ### 방법 2: 로컬에서 직접 빌드
 
 #### 2.1. 도커 이미지 빌드
+
+**맥미니(ARM64)에서 Linux AMD64용 빌드:**
+
+```bash
+# Buildx 설정 (최초 1회)
+docker buildx create --name mybuilder --use
+docker buildx inspect --bootstrap
+
+# 크로스 플랫폼 빌드
+docker buildx build \
+  --platform linux/amd64 \
+  --tag map-editor:latest \
+  --load \
+  .
+
+# 또는 Registry에 직접 푸시
+docker buildx build \
+  --platform linux/amd64 \
+  --tag registry.company.com/map-editor:latest \
+  --push \
+  .
+```
+
+**일반 빌드 (같은 아키텍처):**
 
 ```bash
 # 프로젝트 루트에서
 docker build -t map-editor:latest .
 ```
 
-#### 2.2. 도커 허브에 푸시 (선택사항)
+#### 2.2. Registry에 푸시
 
 ```bash
-# 로그인
-docker login
+# Registry 로그인
+docker login registry.company.com
 
 # 태그
-docker tag map-editor:latest your-username/map-editor:latest
+docker tag map-editor:latest registry.company.com/map-editor:latest
 
 # 푸시
-docker push your-username/map-editor:latest
+docker push registry.company.com/map-editor:latest
 ```
 
 ### 방법 3: 내부 서버에서 직접 실행
