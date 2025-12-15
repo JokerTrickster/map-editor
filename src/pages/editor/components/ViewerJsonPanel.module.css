@@ -1,0 +1,108 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-background-secondary);
+  border-left: 1px solid var(--color-border);
+}
+
+.header {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-background-primary);
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.info {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+.jsonDisplay {
+  margin: 0;
+  padding: 16px;
+  background-color: var(--color-background-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.jsonDisplay code {
+  color: inherit;
+  background: none;
+  padding: 0;
+}
+
+.actions {
+  padding: 16px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: 8px;
+  background-color: var(--color-background-primary);
+}
+
+.copyButton,
+.downloadButton {
+  flex: 1;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copyButton:hover,
+.downloadButton:hover {
+  background-color: var(--color-background-secondary);
+  border-color: var(--color-primary);
+}
+
+.copyButton:active,
+.downloadButton:active {
+  transform: scale(0.98);
+}
+
+/* Scrollbar styling */
+.content::-webkit-scrollbar,
+.jsonDisplay::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.content::-webkit-scrollbar-track,
+.jsonDisplay::-webkit-scrollbar-track {
+  background: var(--color-background-secondary);
+}
+
+.content::-webkit-scrollbar-thumb,
+.jsonDisplay::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.content::-webkit-scrollbar-thumb:hover,
+.jsonDisplay::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}

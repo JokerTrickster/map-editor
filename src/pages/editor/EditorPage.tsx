@@ -20,6 +20,7 @@ import { Modal } from '@/shared/ui/Modal'
 import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
 import { EditorHeader, ViewMode } from './components/EditorHeader'
 import { EditorSidebar } from './components/EditorSidebar'
+import { ViewerJsonPanel } from './components/ViewerJsonPanel'
 import { AutoLinkModal } from './components/AutoLinkModal'
 import { ExportModal } from './components/ExportModal'
 import { SaveSuccessModal } from './components/SaveSuccessModal'
@@ -1616,8 +1617,8 @@ export default function EditorPage() {
           {isRestoring && <LoadingOverlay message="Loading floor..." />}
         </div>
 
-        {/* Right Sidebar - Hidden in Viewer Mode */}
-        {viewMode === 'edit' && (
+        {/* Right Sidebar - Editor or Viewer JSON Panel */}
+        {viewMode === 'edit' ? (
           <ResizablePanel
             side="right"
             defaultWidth={300}
@@ -1642,6 +1643,18 @@ export default function EditorPage() {
               onDeleteRelationType={handleDeleteRelationType}
               onRelationEditModeChange={handleRelationEditModeChange}
               onObjectHover={handleObjectHover}
+            />
+          </ResizablePanel>
+        ) : (
+          <ResizablePanel
+            side="right"
+            defaultWidth={400}
+            minWidth={300}
+            maxWidth={600}
+          >
+            <ViewerJsonPanel
+              graph={graph}
+              projectName={currentLotData?.name || 'Unnamed Project'}
             />
           </ResizablePanel>
         )}
