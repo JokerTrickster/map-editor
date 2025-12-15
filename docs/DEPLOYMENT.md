@@ -60,15 +60,10 @@ aws cloudfront create-invalidation \
 #### 필요한 GitHub Secrets
 
 ```
-# Docker Registry
-DOCKER_REGISTRY_URL         # Private registry URL (예: registry.company.com)
-DOCKER_REGISTRY_USERNAME    # Registry 사용자명
-DOCKER_REGISTRY_PASSWORD    # Registry 비밀번호
-
 # Deploy Server (SSH)
-DEPLOY_SERVER_HOST          # 배포 서버 IP 또는 도메인
+DEPLOY_SERVER_HOST          # 배포 서버 IP 또는 도메인 (예: 192.168.1.100)
 DEPLOY_SERVER_USERNAME      # SSH 사용자명 (예: ubuntu, root)
-DEPLOY_SERVER_SSH_KEY       # SSH Private Key
+DEPLOY_SERVER_SSH_KEY       # SSH Private Key (전체 내용)
 DEPLOY_SERVER_PORT          # (선택) SSH 포트 (기본값: 22)
 
 # Build
@@ -80,17 +75,20 @@ VITE_GOOGLE_CLIENT_ID       # Google OAuth Client ID
 1. **빌드 서버 (맥미니 ARM64)**:
    - 코드 체크아웃
    - Docker 크로스 플랫폼 빌드 (linux/amd64)
-   - Private Registry에 푸시
-   - 타임스탬프 태그 자동 생성 (main-20240101-123456)
+   - 이미지를 tar.gz 파일로 저장
+   - SCP로 배포 서버에 전송
 
 2. **배포 서버 (Linux AMD64, 자동 SSH 실행)**:
-   - Registry에서 최신 이미지 pull
+   - tar.gz 파일에서 Docker 이미지 로드
    - 기존 컨테이너 중지 및 삭제
    - 새 컨테이너 시작
    - Health check 확인
-   - 구 이미지 정리
+   - 임시 파일 및 구 이미지 정리
 
-**참고**: 빌드 서버(ARM64)와 배포 서버(AMD64) 아키텍처가 다르므로 Docker Buildx를 사용한 크로스 플랫폼 빌드가 자동으로 수행됩니다.
+**장점**:
+- Docker Registry 불필요 (설정 간소화)
+- 빌드 서버에서 배포 서버로 직접 전송
+- 아키텍처 차이 자동 처리 (ARM64 → AMD64)
 
 ### 방법 2: 로컬에서 직접 빌드
 
