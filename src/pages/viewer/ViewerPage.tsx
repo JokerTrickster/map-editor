@@ -100,15 +100,31 @@ export default function ViewerPage() {
 
   // Load graph from project data
   useEffect(() => {
-    if (!graph || !projectData?.graphJson) return
+    if (!graph || !paper || !projectData?.graphJson) return
 
     try {
+      // Clear existing graph
+      graph.clear()
+
+      // Load graph data
       graph.fromJSON(projectData.graphJson)
-      console.log('✅ Graph loaded in viewer mode')
+      console.log('✅ Graph loaded in viewer mode:', graph.getCells().length, 'cells')
+
+      // Fit content to screen after a short delay to ensure rendering is complete
+      setTimeout(() => {
+        if (graph.getCells().length > 0) {
+          paper.scaleContentToFit({
+            padding: 50,
+            maxScale: 1.5,
+            minScale: 0.1,
+          })
+          console.log('📐 Content fitted to screen')
+        }
+      }, 100)
     } catch (error) {
       console.error('Failed to load graph:', error)
     }
-  }, [graph, projectData])
+  }, [graph, paper, projectData])
 
   // Set paper to read-only mode
   useEffect(() => {
