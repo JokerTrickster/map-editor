@@ -19,7 +19,8 @@ export function FloorTabs() {
   // Initialize first floor if none exists
   useEffect(() => {
     if (currentLot && floors.length === 0) {
-      addFloor(currentLot, { order: 0 });
+      // Let floorStore's calculateNextOrder determine the order (B2 for first floor)
+      addFloor(currentLot);
     }
   }, [currentLot, floors.length, addFloor]);
 
@@ -35,10 +36,8 @@ export function FloorTabs() {
   const handleAddFloor = () => {
     if (!currentLot) return;
 
-    const maxOrder = floors.length > 0 ? Math.max(...floors.map((f) => f.order)) : -1;
-    const newOrder = maxOrder + 1;
-
-    addFloor(currentLot, { order: newOrder });
+    // Let floorStore's calculateNextOrder determine the order
+    addFloor(currentLot);
   };
 
   // Floor deletion is completely disabled and removed
