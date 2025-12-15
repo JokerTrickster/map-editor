@@ -1,0 +1,153 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        type: choice
+        options:
+          - main
+          - dev
+        default: 'main'
+      registry:
+        description: 'Docker registry'
+        required: true
+        type: choice
+        options:
+          - dockerhub
+          - ghcr
+          - private
+        default: 'dockerhub'
+      tag:
+        description: 'Image tag (default: branch name)'
+        required: false
+        type: string
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: github.event.inputs.registry == 'dockerhub'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        if: github.event.inputs.registry == 'ghcr'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Private Registry
+        if: github.event.inputs.registry == 'private'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.PRIVATE_REGISTRY_URL }}
+          username: ${{ secrets.PRIVATE_REGISTRY_USERNAME }}
+          password: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build image name
+        id: image
+        run: |
+          if [ "${{ github.event.inputs.registry }}" = "dockerhub" ]; then
+            echo "name=${{ secrets.DOCKERHUB_USERNAME }}/map-editor" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.registry }}" = "ghcr" ]; then
+            echo "name=ghcr.io/${{ github.repository_owner }}/map-editor" >> $GITHUB_OUTPUT
+          else
+            echo "name=${{ secrets.PRIVATE_REGISTRY_URL }}/map-editor" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}
+            ${{ steps.image.outputs.name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+
+      - name: Create deployment guide
+        run: |
+          cat << EOF > deployment-guide.txt
+          ✅ Docker Image Built Successfully!
+
+          📦 Image Details:
+          - Registry: ${{ github.event.inputs.registry }}
+          - Image: ${{ steps.image.outputs.name }}
+          - Tag: ${{ steps.tag.outputs.tag }}
+          - Branch: ${{ github.event.inputs.branch }}
+
+          🚀 Deployment Commands:
+
+          ## Pull Image
+          docker pull ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}
+
+          ## Run Container
+          docker run -d \\
+            --name map-editor \\
+            -p 80:80 \\
+            --restart unless-stopped \\
+            ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}
+
+          ## Using Docker Compose
+          Copy the docker-compose.yml file to your server and run:
+          docker-compose up -d
+
+          ## Health Check
+          curl http://localhost/health
+
+          ## View Logs
+          docker logs map-editor
+
+          ## Stop Container
+          docker stop map-editor
+
+          ## Update Container
+          docker pull ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}
+          docker stop map-editor
+          docker rm map-editor
+          docker run -d --name map-editor -p 80:80 --restart unless-stopped ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}
+          EOF
+
+      - name: Upload deployment guide
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-guide
+          path: deployment-guide.txt
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Docker image built and pushed successfully!"
+          echo "📌 Branch: ${{ github.event.inputs.branch }}"
+          echo "🐳 Image: ${{ steps.image.outputs.name }}:${{ steps.tag.outputs.tag }}"
+          echo ""
+          echo "📥 Download deployment guide artifact for full instructions"

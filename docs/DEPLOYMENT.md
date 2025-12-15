@@ -1,0 +1,279 @@
+# 배포 가이드
+
+이 문서는 map-editor 프로젝트의 배포 방법을 설명합니다.
+
+## 목차
+- [클라우드 배포 (S3)](#클라우드-배포-s3)
+- [내부 서버 배포 (Docker)](#내부-서버-배포-docker)
+- [환경 변수 설정](#환경-변수-설정)
+
+---
+
+## 클라우드 배포 (S3)
+
+### GitHub Actions를 통한 자동 배포
+
+1. **GitHub 저장소 → Actions 탭** 이동
+2. **"Deploy to S3"** 워크플로우 선택
+3. **"Run workflow"** 클릭
+4. 배포할 브랜치 선택 (default: main)
+5. 배포 시작
+
+### 필요한 GitHub Secrets
+
+`.github/workflows/deploy.yml` 실행을 위해 다음 시크릿이 필요합니다:
+
+```
+AWS_ACCESS_KEY_ID           # AWS Access Key
+AWS_SECRET_ACCESS_KEY       # AWS Secret Key
+VITE_GOOGLE_CLIENT_ID       # Google OAuth Client ID
+CLOUDFRONT_DISTRIBUTION_ID  # (선택사항) CloudFront 배포 ID
+```
+
+### 수동 배포
+
+```bash
+# 1. 빌드
+npm run build
+
+# 2. AWS CLI로 S3 업로드
+aws s3 sync dist/ s3://your-bucket-name --delete
+
+# 3. (선택사항) CloudFront 캐시 무효화
+aws cloudfront create-invalidation \
+  --distribution-id YOUR_DIST_ID \
+  --paths "/*"
+```
+
+---
+
+## 내부 서버 배포 (Docker)
+
+### 방법 1: GitHub Actions를 통한 자동 빌드
+
+1. **GitHub 저장소 → Actions 탭** 이동
+2. **"Build and Push Docker Image"** 워크플로우 선택
+3. **"Run workflow"** 클릭
+4. 옵션 선택:
+   - Branch: 배포할 브랜치
+   - Registry: Docker Hub / GHCR / Private Registry
+   - Tag: 이미지 태그 (선택사항)
+5. 빌드 시작
+
+#### 필요한 GitHub Secrets
+
+**Docker Hub 사용 시:**
+```
+DOCKERHUB_USERNAME          # Docker Hub 사용자명
+DOCKERHUB_TOKEN             # Docker Hub Access Token
+VITE_GOOGLE_CLIENT_ID       # Google OAuth Client ID
+```
+
+**GitHub Container Registry (GHCR) 사용 시:**
+```
+VITE_GOOGLE_CLIENT_ID       # Google OAuth Client ID
+# GITHUB_TOKEN은 자동으로 제공됨
+```
+
+**Private Registry 사용 시:**
+```
+PRIVATE_REGISTRY_URL        # Private registry URL
+PRIVATE_REGISTRY_USERNAME   # Registry 사용자명
+PRIVATE_REGISTRY_PASSWORD   # Registry 비밀번호
+VITE_GOOGLE_CLIENT_ID       # Google OAuth Client ID
+```
+
+### 방법 2: 로컬에서 직접 빌드
+
+#### 2.1. 도커 이미지 빌드
+
+```bash
+# 프로젝트 루트에서
+docker build -t map-editor:latest .
+```
+
+#### 2.2. 도커 허브에 푸시 (선택사항)
+
+```bash
+# 로그인
+docker login
+
+# 태그
+docker tag map-editor:latest your-username/map-editor:latest
+
+# 푸시
+docker push your-username/map-editor:latest
+```
+
+### 방법 3: 내부 서버에서 직접 실행
+
+#### 3.1. Docker 직접 실행
+
+```bash
+# 이미지 가져오기 (GitHub Actions로 빌드한 경우)
+docker pull your-username/map-editor:latest
+
+# 컨테이너 실행
+docker run -d \
+  --name map-editor \
+  -p 80:80 \
+  --restart unless-stopped \
+  your-username/map-editor:latest
+
+# 상태 확인
+docker ps
+curl http://localhost/health
+```
+
+#### 3.2. Docker Compose 사용 (권장)
+
+```bash
+# docker-compose.yml 파일이 있는 디렉토리에서
+
+# 이미지 빌드 및 컨테이너 시작
+docker-compose up -d
+
+# 로그 확인
+docker-compose logs -f
+
+# 중지
+docker-compose down
+
+# 재시작
+docker-compose restart
+```
+
+### 배포 후 확인
+
+```bash
+# 헬스 체크
+curl http://your-server-ip/health
+
+# 컨테이너 로그
+docker logs map-editor
+
+# 컨테이너 상태
+docker ps | grep map-editor
+```
+
+### 업데이트
+
+```bash
+# 새 이미지 가져오기
+docker pull your-username/map-editor:latest
+
+# 기존 컨테이너 중지 및 삭제
+docker stop map-editor
+docker rm map-editor
+
+# 새 컨테이너 실행
+docker run -d \
+  --name map-editor \
+  -p 80:80 \
+  --restart unless-stopped \
+  your-username/map-editor:latest
+```
+
+또는 Docker Compose 사용:
+
+```bash
+docker-compose pull
+docker-compose up -d
+```
+
+---
+
+## 환경 변수 설정
+
+### 개발 환경
+
+프로젝트 루트에 `.env.local` 파일 생성:
+
+```env
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+```
+
+### 프로덕션 환경
+
+#### S3 배포 시
+GitHub Secrets에 `VITE_GOOGLE_CLIENT_ID` 설정
+
+#### Docker 배포 시
+1. **빌드 타임**: GitHub Actions에서 build-args로 전달
+2. **런타임**: 환경 변수가 빌드 시 포함되어 있음
+
+---
+
+## 포트 설정
+
+- **개발 서버**: 5173 (Vite 기본값)
+- **프로덕션 (Docker)**: 80 (nginx)
+
+다른 포트 사용 시:
+
+```bash
+# Docker 실행 시 포트 변경
+docker run -d -p 8080:80 --name map-editor map-editor:latest
+
+# docker-compose.yml 수정
+services:
+  map-editor:
+    ports:
+      - "8080:80"  # 호스트:컨테이너
+```
+
+---
+
+## 트러블슈팅
+
+### Docker 빌드 실패
+
+```bash
+# 캐시 없이 재빌드
+docker build --no-cache -t map-editor:latest .
+
+# 빌드 로그 상세 확인
+docker build --progress=plain -t map-editor:latest .
+```
+
+### 컨테이너 시작 실패
+
+```bash
+# 로그 확인
+docker logs map-editor
+
+# 컨테이너 내부 접근
+docker exec -it map-editor sh
+
+# nginx 설정 테스트
+docker exec map-editor nginx -t
+```
+
+### 포트 충돌
+
+```bash
+# 포트 사용 확인
+netstat -tuln | grep 80
+lsof -i :80
+
+# 다른 포트 사용
+docker run -d -p 8080:80 map-editor:latest
+```
+
+---
+
+## 보안 고려사항
+
+1. **환경 변수**: 민감한 정보는 절대 코드에 하드코딩하지 마세요
+2. **HTTPS**: 프로덕션에서는 HTTPS 사용 (nginx SSL 설정 또는 리버스 프록시)
+3. **방화벽**: 필요한 포트만 개방
+4. **정기 업데이트**: 베이스 이미지 및 의존성 정기 업데이트
+
+---
+
+## 추가 리소스
+
+- [Docker 공식 문서](https://docs.docker.com/)
+- [nginx 설정 가이드](https://nginx.org/en/docs/)
+- [AWS S3 정적 웹 호스팅](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html)
+- [GitHub Actions 문서](https://docs.github.com/en/actions)
