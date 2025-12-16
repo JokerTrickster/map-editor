@@ -13,7 +13,7 @@ interface ConnectionPanelProps {
 }
 
 export function ConnectionPanel({ projectId, onClose }: ConnectionPanelProps) {
-  const { isConnected, connect, disconnect } = useStatusStore();
+  const { connected, connect, disconnect } = useStatusStore();
   const [serverUrl, setServerUrl] = useState('ws://localhost:8080/status');
   const [copied, setCopied] = useState(false);
 
@@ -22,7 +22,7 @@ export function ConnectionPanel({ projectId, onClose }: ConnectionPanelProps) {
   const embedCode = `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0"></iframe>`;
 
   const handleConnect = () => {
-    if (isConnected) {
+    if (connected) {
       disconnect();
     } else {
       // TODO: Implement real server connection with serverUrl
@@ -57,8 +57,8 @@ export function ConnectionPanel({ projectId, onClose }: ConnectionPanelProps) {
           <section className={styles.section}>
             <h3>실시간 상태 서버 연결</h3>
             <div className={styles.connectionStatus}>
-              <span className={`${styles.statusDot} ${isConnected ? styles.connected : styles.disconnected}`} />
-              <span>{isConnected ? '연결됨' : '연결 안됨'}</span>
+              <span className={`${styles.statusDot} ${connected ? styles.connected : styles.disconnected}`} />
+              <span>{connected ? '연결됨' : '연결 안됨'}</span>
             </div>
 
             <div className={styles.inputGroup}>
@@ -69,16 +69,16 @@ export function ConnectionPanel({ projectId, onClose }: ConnectionPanelProps) {
                 value={serverUrl}
                 onChange={(e) => setServerUrl(e.target.value)}
                 placeholder="ws://localhost:8080/status"
-                disabled={isConnected}
+                disabled={connected}
                 className={styles.input}
               />
             </div>
 
             <button
               onClick={handleConnect}
-              className={`${styles.button} ${isConnected ? styles.buttonDanger : styles.buttonPrimary}`}
+              className={`${styles.button} ${connected ? styles.buttonDanger : styles.buttonPrimary}`}
             >
-              {isConnected ? '연결 해제' : '서버 연결'}
+              {connected ? '연결 해제' : '서버 연결'}
             </button>
           </section>
 
