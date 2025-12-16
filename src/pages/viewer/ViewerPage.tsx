@@ -12,6 +12,7 @@ import { statusService, useStatusStore, StatusOverlay } from '@/features/status'
 import { ResizablePanel } from '@/shared/ui/ResizablePanel'
 import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
 import { ViewerJsonPanel } from '../editor/components/ViewerJsonPanel'
+import { ConnectionPanel } from './components/ConnectionPanel'
 import { useJointJSCanvas } from '../editor/hooks/useJointJSCanvas'
 import { useCanvasPanning } from '../editor/hooks/useCanvasPanning'
 import { useCanvasZoom } from '../editor/hooks/useCanvasZoom'
@@ -35,6 +36,7 @@ export default function ViewerPage() {
   const [projectData, setProjectData] = useState<any>(null)
   const [currentFloorIndex, setCurrentFloorIndex] = useState(0)
   const [zoom, setZoom] = useState(1)
+  const [showConnectionPanel, setShowConnectionPanel] = useState(false)
 
   // JointJS Canvas
   const { graph, paper } = useJointJSCanvas(canvasRef)
@@ -279,6 +281,13 @@ export default function ViewerPage() {
             Zoom: {Math.round(zoom * 100)}%
           </div>
           <button
+            className={styles.connectionButton}
+            onClick={() => setShowConnectionPanel(true)}
+            aria-label="Connection and Share"
+          >
+            🔌 연결 & 공유
+          </button>
+          <button
             className={styles.themeButton}
             onClick={toggleTheme}
             aria-label="Toggle theme"
@@ -315,6 +324,14 @@ export default function ViewerPage() {
           />
         </ResizablePanel>
       </main>
+
+      {/* Connection Panel */}
+      {showConnectionPanel && (
+        <ConnectionPanel
+          projectId={projectId!}
+          onClose={() => setShowConnectionPanel(false)}
+        />
+      )}
     </div>
   )
 }

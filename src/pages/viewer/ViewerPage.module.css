@@ -90,6 +90,23 @@
   color: var(--color-text-secondary);
 }
 
+.connectionButton {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.connectionButton:hover {
+  background-color: var(--color-background-secondary);
+  border-color: var(--color-primary);
+}
+
 .themeButton {
   padding: 8px 12px;
   font-size: 18px;
