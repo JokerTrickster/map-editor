@@ -30,6 +30,8 @@ const AUTO_LAYER_KEYWORD_MAPPINGS: Record<string, string> = {
   'pillar': '기둥',
   'parking': '주차 구역',
   'emergencybell': '비상벨',
+  'e-outline': '배경',
+  '배경': '배경',
 
   // Construction template (c-* layer prefix)
   'c-safetycctv': '안전 CCTV',

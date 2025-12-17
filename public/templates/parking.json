@@ -271,6 +271,21 @@
         "strokeWidth": 2,
         "strokeColor": "#FBBF24"
       }
+    },
+    "background": {
+      "displayName": "배경",
+      "icon": "#6B7280",
+      "category": "structure",
+      "priority": 1,
+      "usesAsset": false,
+      "geometryType": "polygon",
+      "defaultProperties": {},
+      "defaultStyle": {
+        "color": "#6B7280",
+        "fillOpacity": 0.8,
+        "strokeWidth": 2,
+        "strokeColor": "#6B7280"
+      }
     }
   },
   "relationTypes": {
