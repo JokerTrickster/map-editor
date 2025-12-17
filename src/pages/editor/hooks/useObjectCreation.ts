@@ -23,14 +23,32 @@ export function useObjectCreation(
                 image.position(x - defaultSize / 2, y - defaultSize / 2) // Center on click point
                 image.resize(defaultSize, defaultSize)
                 image.attr({
-                    image: { xlinkHref: selectedType.icon },
-                    label: { text: selectedType.name, refY: '100%', refY2: 5 }
+                    image: {
+                        xlinkHref: selectedType.icon,
+                        opacity: 0.9
+                    },
+                    label: {
+                        text: '', // No auto-naming
+                        fill: '#ffffff',
+                        fontSize: 10,
+                        refY: defaultSize + 5,
+                        refX: '50%',
+                        textAnchor: 'middle'
+                    }
                 })
 
-                // Add custom properties
-                image.prop('customProperties', selectedType.properties)
+                // Set data structure similar to CSV-imported objects
+                image.set('data', {
+                    typeId: selectedType.id,
+                    type: selectedType.name,
+                    layer: selectedType.name,
+                    properties: {
+                        name: '' // Empty name by default
+                    }
+                })
+
+                // Keep backward compatibility
                 image.prop('objectTypeId', selectedType.id)
-                image.prop('objectType', selectedType.name)
 
                 graph.addCell(image)
                 console.log(`✅ Created image object: ${selectedType.name} at (${x}, ${y})`)
@@ -96,14 +114,33 @@ export function useObjectCreation(
                 body: {
                     refPoints: pointsStr,
                     fill: color,
-                    fillOpacity: 0.5,
+                    fillOpacity: 0.8,
                     stroke: color,
-                    strokeWidth: 2
+                    strokeWidth: 2,
+                    opacity: 0.8
                 },
-                label: { text: selectedType.name }
+                label: {
+                    text: '', // No auto-naming
+                    fill: '#ffffff',
+                    fontSize: 12,
+                    refY: '50%',
+                    refX: '50%',
+                    textAnchor: 'middle',
+                    textVerticalAnchor: 'middle'
+                }
             })
 
-            polygon.prop('customProperties', selectedType.properties)
+            // Set data structure similar to CSV-imported objects
+            polygon.set('data', {
+                typeId: selectedType.id,
+                type: selectedType.name,
+                layer: selectedType.name,
+                properties: {
+                    name: '' // Empty name by default
+                }
+            })
+
+            // Keep backward compatibility
             polygon.prop('objectTypeId', selectedType.id)
 
             graph.addCell(polygon)
