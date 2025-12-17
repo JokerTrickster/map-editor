@@ -4,7 +4,7 @@
  * and applies visual changes to elements based on their status
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { dia } from '@joint/core';
 import { CctvStatusIndicator } from './CctvStatusIndicator';
 import { ParkingStatusIndicator } from './ParkingStatusIndicator';
@@ -51,6 +51,9 @@ interface StatusOverlayProps {
  * ```
  */
 export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
+  // Force re-render when paper viewport changes (zoom/pan)
+  const [, forceUpdate] = useState({});
+
   // Get all elements and filter by type/ID pattern
   const elements = graph.getElements();
 
@@ -81,6 +84,23 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
 
   // Get status data from store
   const { cctvStatuses, parkingStatuses } = useStatusStore();
+
+  // Listen to paper transformations (zoom, pan) to update badge positions
+  useEffect(() => {
+    const handleTransform = () => {
+      // Force re-render to recalculate positions
+      forceUpdate({});
+    };
+
+    // Subscribe to paper transform events
+    paper.on('scale', handleTransform);
+    paper.on('translate', handleTransform);
+
+    return () => {
+      paper.off('scale', handleTransform);
+      paper.off('translate', handleTransform);
+    };
+  }, [paper]);
 
   // Apply visual changes to elements based on status
   useEffect(() => {
@@ -130,6 +150,7 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
   useEffect(() => {
     const handler = () => {
       // Force re-render when graph changes
+      forceUpdate({});
     };
 
     graph.on('change', handler);
@@ -138,21 +159,14 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
     };
   }, [graph]);
 
-  // Get paper viewport transformation
-  const scale = paper.scale();
-  const translate = paper.translate();
-
   return (
     <div className={styles.statusOverlay}>
       {/* CCTV Status Indicators */}
       {cctvElements.map((element) => {
         const bbox = element.getBBox();
         // Position badge at top-right corner of CCTV icon
-        // Apply paper transformations manually
-        const paperX = bbox.x + bbox.width;
-        const paperY = bbox.y;
-        const screenX = paperX * scale.sx + translate.tx;
-        const screenY = paperY * scale.sy + translate.ty;
+        // Use paper.localToClientPoint for accurate coordinate transformation
+        const position = paper.localToClientPoint(bbox.x + bbox.width, bbox.y);
         const objectId = String(element.id);
 
         return (
@@ -160,8 +174,8 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
             key={objectId}
             className={styles.statusPosition}
             style={{
-              left: screenX - 8, // Offset to align with icon edge
-              top: screenY - 8,
+              left: position.x - 8, // Offset to align with icon edge
+              top: position.y - 8,
             }}
           >
             <CctvStatusIndicator objectId={objectId} />
