@@ -1,7 +1,7 @@
 /* CCTV Alert Container */
 .alertContainer {
   position: fixed;
-  top: var(--space-6);
+  top: 120px;
   left: var(--space-6);  /* Changed from right to left */
   z-index: 10000;
   max-width: 420px;
