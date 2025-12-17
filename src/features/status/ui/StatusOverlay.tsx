@@ -180,7 +180,9 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
             className={styles.statusPosition}
             style={{
               left: `${x}px`,
-              top: `${y - 8}px`,
+              top: `${y - 8 * scale.sy}px`,
+              transform: `scale(${scale.sx})`,
+              transformOrigin: 'top left',
             }}
           >
             <CctvStatusIndicator objectId={objectId} />
@@ -202,7 +204,9 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
             className={styles.statusPosition}
             style={{
               left: `${x}px`,
-              top: `${y - 30}px`, // Position above the object
+              top: `${y - 30 * scale.sy}px`, // Position above the object
+              transform: `scale(${scale.sx})`,
+              transformOrigin: 'top left',
             }}
           >
             <ParkingStatusIndicator objectId={objectId} />
