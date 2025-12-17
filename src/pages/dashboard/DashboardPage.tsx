@@ -239,7 +239,7 @@ export default function DashboardPage() {
       <main className={styles.main}>
         <header className={styles.header}>
           <div>
-            <h1 className={styles.title}>Parking Lot Projects</h1>
+            <h1 className={styles.title}>Map Editor Project</h1>
             <p className={styles.subtitle}>
               {lots.length === 0
                 ? 'Create your first parking lot project'
