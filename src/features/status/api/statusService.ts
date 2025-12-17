@@ -92,18 +92,29 @@ class MockStatusService implements IStatusService {
     const cctvStatuses: Record<string, CctvStatus> = {};
     const parkingStatuses: Record<string, ParkingLocationStatus> = {};
 
-    // Generate initial CCTV statuses (80% connected)
-    this.mockCctvIds.forEach(id => {
+    // Generate initial CCTV statuses (2-3 disconnected, rest connected)
+    const disconnectedCount = Math.floor(Math.random() * 2) + 2; // 2 or 3
+    const disconnectedIndices = new Set<number>();
+
+    // Randomly select 2-3 CCTVs to be disconnected
+    while (disconnectedIndices.size < Math.min(disconnectedCount, this.mockCctvIds.length)) {
+      disconnectedIndices.add(Math.floor(Math.random() * this.mockCctvIds.length));
+    }
+
+    this.mockCctvIds.forEach((id, index) => {
+      const isDisconnected = disconnectedIndices.has(index);
       cctvStatuses[id] = {
         objectId: id,
-        connected: Math.random() > 0.2,
+        connected: !isDisconnected,
         lastUpdate: Date.now(),
+        errorMessage: isDisconnected ? 'Network timeout - 연결 끊김' : undefined,
       };
     });
 
-    // Generate initial parking statuses (30% occupied)
+    // Generate initial parking statuses (50-70% occupied)
+    const occupancyRate = 0.5 + Math.random() * 0.2; // 50-70%
     this.mockParkingIds.forEach(id => {
-      const occupied = Math.random() > 0.7;
+      const occupied = Math.random() < occupancyRate;
       parkingStatuses[id] = {
         objectId: id,
         occupied,

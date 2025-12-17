@@ -51,9 +51,22 @@ export function SaveSuccessModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="" maxWidth="680px">
       <div className={styles.container}>
+        {/* Close Button - Top Right */}
+        <button
+          onClick={onClose}
+          className={styles.closeButtonTop}
+          aria-label="Close modal"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
+        {/* Header Section */}
         <div className={styles.header}>
           <div className={styles.successIcon}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
@@ -62,101 +75,117 @@ export function SaveSuccessModal({
           <p className={styles.description}>맵이 성공적으로 저장되었습니다.</p>
         </div>
 
+        {/* Thumbnail Section */}
         {thumbnail && (
           <div className={styles.thumbnailSection}>
-            <img src={thumbnail} alt="Map Thumbnail" className={styles.thumbnail} />
+            <div className={styles.thumbnailWrapper}>
+              <img src={thumbnail} alt="Map Thumbnail" className={styles.thumbnail} />
+            </div>
           </div>
         )}
 
-        <div className={styles.linkSection}>
-          <label className={styles.label}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-            </svg>
-            공유 링크
-          </label>
-          <div className={styles.linkBox}>
-            <input
-              type="text"
-              value={shareUrl}
-              readOnly
-              className={styles.linkInput}
-            />
-            <button
-              onClick={() => copyToClipboard(shareUrl, 'share')}
-              className={styles.copyButton}
-            >
-              {copiedShareLink ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              )}
-              {copiedShareLink ? '복사됨' : '복사'}
-            </button>
+        {/* Share & Embed Section */}
+        <div className={styles.linksContainer}>
+          {/* Share Link */}
+          <div className={styles.linkSection}>
+            <label className={styles.label}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+              공유 링크
+            </label>
+            <div className={styles.linkBox}>
+              <input
+                type="text"
+                value={shareUrl}
+                readOnly
+                className={styles.linkInput}
+              />
+              <button
+                onClick={() => copyToClipboard(shareUrl, 'share')}
+                className={`${styles.copyButton} ${copiedShareLink ? styles.copied : ''}`}
+              >
+                {copiedShareLink ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    복사됨
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                    복사
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Embed Code */}
+          <div className={styles.linkSection}>
+            <label className={styles.label}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+              </svg>
+              임베드 코드
+            </label>
+            <div className={styles.linkBox}>
+              <input
+                type="text"
+                value={embedCode}
+                readOnly
+                className={styles.linkInput}
+              />
+              <button
+                onClick={() => copyToClipboard(embedCode, 'embed')}
+                className={`${styles.copyButton} ${copiedEmbedCode ? styles.copied : ''}`}
+              >
+                {copiedEmbedCode ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    복사됨
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                    복사
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className={styles.linkSection}>
-          <label className={styles.label}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="16 18 22 12 16 6" />
-              <polyline points="8 6 2 12 8 18" />
-            </svg>
-            임베드 코드
-          </label>
-          <div className={styles.linkBox}>
-            <input
-              type="text"
-              value={embedCode}
-              readOnly
-              className={styles.linkInput}
-            />
-            <button
-              onClick={() => copyToClipboard(embedCode, 'embed')}
-              className={styles.copyButton}
-            >
-              {copiedEmbedCode ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              )}
-              {copiedEmbedCode ? '복사됨' : '복사'}
-            </button>
-          </div>
-        </div>
-
+        {/* Action Buttons */}
         <div className={styles.actions}>
           <button onClick={onViewerMode} className={styles.viewerButton}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
             뷰어 보기
           </button>
           <button onClick={onDashboard} className={styles.dashboardButton}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7" />
               <rect x="14" y="3" width="7" height="7" />
               <rect x="14" y="14" width="7" height="7" />
               <rect x="3" y="14" width="7" height="7" />
             </svg>
-            대시보드
+            <span>대시보드</span>
           </button>
         </div>
-        <button onClick={onClose} className={styles.closeButton}>
-          닫기
-        </button>
       </div>
     </Modal>
   )

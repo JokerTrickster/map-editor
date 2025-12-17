@@ -13,6 +13,7 @@ import { ResizablePanel } from '@/shared/ui/ResizablePanel'
 import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
 import { ViewerJsonPanel } from '../editor/components/ViewerJsonPanel'
 import { ConnectionPanel } from './components/ConnectionPanel'
+import { CctvAlert } from './components/CctvAlert'
 import { useJointJSCanvas } from '../editor/hooks/useJointJSCanvas'
 import { useCanvasPanning } from '../editor/hooks/useCanvasPanning'
 import { useCanvasZoom } from '../editor/hooks/useCanvasZoom'
@@ -332,6 +333,9 @@ export default function ViewerPage() {
           onClose={() => setShowConnectionPanel(false)}
         />
       )}
+
+      {/* CCTV Disconnection Alert */}
+      <CctvAlert />
     </div>
   )
 }
