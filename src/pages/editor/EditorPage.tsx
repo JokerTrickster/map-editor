@@ -481,6 +481,14 @@ export default function EditorPage() {
   // Handle object type selection - select all objects of this type on the map
   const handleTypeSelect = (type: ObjectType | null) => {
     console.log('🎯 handleTypeSelect called:', { type: type?.name, typeId: type?.id })
+
+    // Prevent selection of types without icons
+    if (type && !type.icon) {
+      console.warn(`⚠️ Cannot select type "${type.name}": no icon available`)
+      alert(`"${type.name}" 타입은 아이콘이 없어서 선택할 수 없습니다.\n먼저 아이콘을 업로드해주세요.`)
+      return
+    }
+
     setSelectedObjectType(type)
 
     if (!graph || !paper || !type) {
