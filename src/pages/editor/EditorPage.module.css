@@ -242,12 +242,12 @@
     z-index: 9997 !important;
 }
 
-/* Object hover highlight (yellow/gold) */
+/* Object hover highlight (red) */
 :global(.object-hover-highlight) {
-    outline: 3px solid #FCD34D !important;
+    outline: 3px solid #EF4444 !important;
     outline-offset: 6px;
     z-index: 9996 !important;
-    filter: drop-shadow(0 0 12px rgba(252, 211, 77, 0.6)) !important;
+    filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.6)) !important;
 }
 
 /* Success Pulse Animation */
