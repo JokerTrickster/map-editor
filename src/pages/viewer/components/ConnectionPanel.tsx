@@ -15,7 +15,8 @@ interface ConnectionPanelProps {
 export function ConnectionPanel({ projectId, onClose }: ConnectionPanelProps) {
   const { connected, connect, disconnect } = useStatusStore();
   const [serverUrl, setServerUrl] = useState('ws://localhost:8080/status');
-  const [copied, setCopied] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
 
   // Generate embed URL
   const embedUrl = `${window.location.origin}/viewer/${projectId}`;
@@ -30,16 +31,26 @@ export function ConnectionPanel({ projectId, onClose }: ConnectionPanelProps) {
     }
   };
 
-  const handleCopyUrl = () => {
-    navigator.clipboard.writeText(embedUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(embedUrl);
+      setUrlCopied(true);
+      setTimeout(() => setUrlCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+      alert('URL 복사에 실패했습니다.');
+    }
   };
 
-  const handleCopyEmbed = () => {
-    navigator.clipboard.writeText(embedCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyEmbed = async () => {
+    try {
+      await navigator.clipboard.writeText(embedCode);
+      setEmbedCopied(true);
+      setTimeout(() => setEmbedCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy embed code:', err);
+      alert('Embed 코드 복사에 실패했습니다.');
+    }
   };
 
   return (
@@ -95,7 +106,7 @@ export function ConnectionPanel({ projectId, onClose }: ConnectionPanelProps) {
                 onClick={handleCopyUrl}
                 className={styles.copyButton}
               >
-                {copied ? '✓ 복사됨' : '📋 복사'}
+                {urlCopied ? '✓ 복사됨' : '📋 복사'}
               </button>
             </div>
           </section>
@@ -113,7 +124,7 @@ export function ConnectionPanel({ projectId, onClose }: ConnectionPanelProps) {
                 onClick={handleCopyEmbed}
                 className={styles.copyButton}
               >
-                {copied ? '✓ 복사됨' : '📋 복사'}
+                {embedCopied ? '✓ 복사됨' : '📋 복사'}
               </button>
             </div>
           </section>
