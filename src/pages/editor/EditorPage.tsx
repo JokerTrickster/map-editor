@@ -128,9 +128,6 @@ export default function EditorPage() {
   // Initialize JointJS Canvas
   const { paper, graph } = useJointJSCanvas(canvasRef)
 
-  // Canvas panning hook - now aware of rotation
-  useCanvasPanning(paper, graph, canvasRef, () => setSelectedElementId(null), rotation)
-
   const { handleZoomIn, handleZoomOut, handleFitToScreen } = useCanvasZoom(
     paper,
     canvasRef,
@@ -566,7 +563,7 @@ export default function EditorPage() {
     selectedElementIds.size > 0
   )
 
-  useCanvasPanning(paper, graph, canvasRef, handleBlankClick)
+  useCanvasPanning(paper, graph, canvasRef, handleBlankClick, rotation, selectedObjectType)
 
   const { undo, redo } = useUndoRedo(graph, setElementCount)
 

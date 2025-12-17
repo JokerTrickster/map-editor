@@ -5,13 +5,15 @@
 
 import { useEffect, useRef, RefObject } from 'react'
 import { dia } from '@joint/core'
+import { ObjectType } from '@/shared/store/objectTypeStore'
 
 export function useCanvasPanning(
   paper: dia.Paper | null,
   graph: dia.Graph | null,
   canvasRef: RefObject<HTMLDivElement>,
   onBlankClick?: () => void,
-  rotation: number = 0
+  rotation: number = 0,
+  selectedObjectType: ObjectType | null = null
 ) {
   const isPanning = useRef(false)
   const lastMousePosition = useRef({ x: 0, y: 0 })
@@ -21,6 +23,12 @@ export function useCanvasPanning(
     if (!paper || !graph) return
 
     const handleBlankPointerDown = (evt: dia.Event) => {
+      // Don't start panning if user is in object creation mode
+      if (selectedObjectType) {
+        console.log('🚫 Panning disabled: object creation mode active')
+        return
+      }
+
       isPanning.current = true
       hasMoved.current = false
       lastMousePosition.current = { x: evt.clientX || 0, y: evt.clientY || 0 }
@@ -98,5 +106,5 @@ export function useCanvasPanning(
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [paper, graph, canvasRef, onBlankClick, rotation])
+  }, [paper, graph, canvasRef, onBlankClick, rotation, selectedObjectType])
 }
