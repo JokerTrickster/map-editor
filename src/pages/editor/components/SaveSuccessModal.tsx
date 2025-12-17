@@ -49,7 +49,7 @@ export function SaveSuccessModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="" maxWidth="680px">
+    <Modal isOpen={isOpen} onClose={onClose} title="" maxWidth="600px">
       <div className={styles.container}>
         {/* Close Button - Top Right */}
         <button
