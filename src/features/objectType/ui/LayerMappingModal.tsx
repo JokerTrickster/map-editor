@@ -17,7 +17,7 @@ import styles from './LayerMappingModal.module.css'
  * If layer name CONTAINS the keyword (case-insensitive), it will be auto-mapped
  */
 const AUTO_LAYER_KEYWORD_MAPPINGS: Record<string, string> = {
-  // Keyword (case-insensitive) -> Object type display name
+  // Parking template (Keyword -> Object type display name)
   'arrow': '화살표',
   // 'outline': '외곽선', // 외곽선은 매핑하지 않음 (다른 객체들을 가림)
   'innerline': '내부선',
@@ -30,6 +30,21 @@ const AUTO_LAYER_KEYWORD_MAPPINGS: Record<string, string> = {
   'pillar': '기둥',
   'parking': '주차 구역',
   'emergencybell': '비상벨',
+
+  // Construction template (c-* layer prefix)
+  'c-safetycctv': '안전 CCTV',
+  'c-hazardzone': '위험 구역',
+  'c-safetyzone': '안전 구역',
+  'c-safetycone': '안전 콘',
+  'c-barrier': '바리케이드',
+  'c-constructionentrance': '출입구',
+  'c-crane': '크레인',
+  'c-scaffold': '비계',
+  'c-emergencyassembly': '비상 집결지',
+  'c-fireextinguisher': '소화기',
+  'c-firstaidkit': '구급함',
+  'c-materialstorage': '자재 보관소',
+  'c-safetysensor': '안전 센서',
 }
 
 /**
@@ -41,6 +56,7 @@ const EXCLUDED_LAYERS = [
   'c-cctv-ip',
   'p-parking-cctvid',
   'l-lightinglineframe',
+  'c-boundary',  // Construction site boundary (covers other objects)
 ]
 
 interface SearchableTypeSelectProps {
