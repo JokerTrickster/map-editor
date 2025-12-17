@@ -54,10 +54,10 @@ class MockStatusService implements IStatusService {
     // Send initial bulk update
     this.sendBulkUpdate();
 
-    // Simulate random status updates every 5 seconds
+    // Simulate random status updates every 1 second
     this.updateInterval = setInterval(() => {
       this.sendRandomUpdate();
-    }, 5000); // 5 seconds
+    }, 1000); // 1 second
   }
 
   disconnect(): void {
@@ -137,18 +137,83 @@ class MockStatusService implements IStatusService {
 
   /**
    * Send random status update
+   * Updates all parking and CCTV statuses every second
    */
   private sendRandomUpdate(): void {
-    // Randomly update either CCTV or parking status
-    if (Math.random() > 0.5) {
-      this.updateRandomCctv();
-    } else {
-      this.updateRandomParking();
-    }
+    // Update all parking statuses with new random occupancy (50-90%)
+    this.updateAllParkingStatuses();
+
+    // Update all CCTV statuses with random disconnections (0-2)
+    this.updateAllCctvStatuses();
   }
 
   /**
-   * Update random CCTV status
+   * Update all parking statuses with random occupancy (50-90%)
+   */
+  private updateAllParkingStatuses(): void {
+    if (this.mockParkingIds.length === 0) return;
+
+    const parkingStatuses: Record<string, ParkingLocationStatus> = {};
+    const occupancyRate = 0.5 + Math.random() * 0.4; // 50-90% random each update
+
+    this.mockParkingIds.forEach(id => {
+      const occupied = Math.random() < occupancyRate;
+      parkingStatuses[id] = {
+        objectId: id,
+        occupied,
+        lastUpdate: Date.now(),
+        vehicleInfo: occupied ? {
+          plateNumber: this.generatePlateNumber(),
+          entryTime: Date.now() - Math.random() * 3600000, // Up to 1 hour ago
+        } : undefined,
+      };
+    });
+
+    const statusData: StatusData = { cctvStatuses: {}, parkingStatuses };
+    const message: StatusMessage = {
+      type: 'bulk_update',
+      data: statusData,
+    };
+
+    this.broadcast(message);
+  }
+
+  /**
+   * Update all CCTV statuses with random disconnections (0-2)
+   */
+  private updateAllCctvStatuses(): void {
+    if (this.mockCctvIds.length === 0) return;
+
+    const cctvStatuses: Record<string, CctvStatus> = {};
+    const disconnectedCount = Math.floor(Math.random() * 3); // 0, 1, or 2
+    const disconnectedIndices = new Set<number>();
+
+    // Randomly select 0-2 CCTVs to be disconnected
+    while (disconnectedIndices.size < Math.min(disconnectedCount, this.mockCctvIds.length)) {
+      disconnectedIndices.add(Math.floor(Math.random() * this.mockCctvIds.length));
+    }
+
+    this.mockCctvIds.forEach((id, index) => {
+      const isDisconnected = disconnectedIndices.has(index);
+      cctvStatuses[id] = {
+        objectId: id,
+        connected: !isDisconnected,
+        lastUpdate: Date.now(),
+        errorMessage: isDisconnected ? 'Network timeout - 연결 끊김' : undefined,
+      };
+    });
+
+    const statusData: StatusData = { cctvStatuses, parkingStatuses: {} };
+    const message: StatusMessage = {
+      type: 'bulk_update',
+      data: statusData,
+    };
+
+    this.broadcast(message);
+  }
+
+  /**
+   * Update random CCTV status (deprecated - kept for backward compatibility)
    */
   private updateRandomCctv(): void {
     if (this.mockCctvIds.length === 0) return;
@@ -175,7 +240,7 @@ class MockStatusService implements IStatusService {
   }
 
   /**
-   * Update random parking status
+   * Update random parking status (deprecated - kept for backward compatibility)
    */
   private updateRandomParking(): void {
     if (this.mockParkingIds.length === 0) return;
