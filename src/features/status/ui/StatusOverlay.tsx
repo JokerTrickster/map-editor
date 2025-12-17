@@ -159,14 +159,19 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
     };
   }, [graph]);
 
+  // Get current paper transformations
+  const scale = paper.scale();
+  const translate = paper.translate();
+
   return (
     <div className={styles.statusOverlay}>
       {/* CCTV Status Indicators */}
       {cctvElements.map((element) => {
         const bbox = element.getBBox();
         // Position badge at top-right corner of CCTV icon
-        // Use paper.localToClientPoint for accurate coordinate transformation
-        const position = paper.localToClientPoint(bbox.x + bbox.width, bbox.y);
+        // Calculate screen position using paper transformations
+        const x = (bbox.x + bbox.width) * scale.sx + translate.tx;
+        const y = bbox.y * scale.sy + translate.ty;
         const objectId = String(element.id);
 
         return (
@@ -174,8 +179,8 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
             key={objectId}
             className={styles.statusPosition}
             style={{
-              left: position.x - 8, // Offset to align with icon edge
-              top: position.y - 8,
+              left: `${x}px`,
+              top: `${y - 8}px`,
             }}
           >
             <CctvStatusIndicator objectId={objectId} />
@@ -186,7 +191,9 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
       {/* Parking Status Indicators */}
       {parkingElements.map(element => {
         const bbox = element.getBBox();
-        const position = paper.localToClientPoint(bbox.x, bbox.y);
+        // Calculate screen position using paper transformations
+        const x = bbox.x * scale.sx + translate.tx;
+        const y = bbox.y * scale.sy + translate.ty;
         const objectId = String(element.id);
 
         return (
@@ -194,8 +201,8 @@ export function StatusOverlay({ graph, paper }: StatusOverlayProps) {
             key={objectId}
             className={styles.statusPosition}
             style={{
-              left: position.x,
-              top: position.y - 30, // Position above the object
+              left: `${x}px`,
+              top: `${y - 30}px`, // Position above the object
             }}
           >
             <ParkingStatusIndicator objectId={objectId} />

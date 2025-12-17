@@ -15,5 +15,5 @@
 .statusPosition {
   position: absolute;
   pointer-events: auto; /* Enable tooltips */
-  transform: translate(-50%, 0); /* Center horizontally */
+  /* No transform - use exact calculated position */
 }
