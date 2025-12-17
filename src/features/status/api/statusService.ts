@@ -54,10 +54,10 @@ class MockStatusService implements IStatusService {
     // Send initial bulk update
     this.sendBulkUpdate();
 
-    // Simulate random status updates every 3-5 seconds
+    // Simulate random status updates every 15 seconds
     this.updateInterval = setInterval(() => {
       this.sendRandomUpdate();
-    }, Math.random() * 2000 + 3000); // 3-5 seconds
+    }, 15000); // 15 seconds
   }
 
   disconnect(): void {

@@ -2,16 +2,16 @@
 .alertContainer {
   position: fixed;
   top: var(--space-6);
-  right: var(--space-6);
+  left: var(--space-6);  /* Changed from right to left */
   z-index: 10000;
   max-width: 420px;
-  animation: slideIn 0.3s ease-out;
+  animation: slideInLeft 0.3s ease-out;  /* New animation for left side */
 }
 
-@keyframes slideIn {
+@keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateX(100%);
+    transform: translateX(-100%);  /* Slide from left instead of right */
   }
   to {
     opacity: 1;
@@ -19,14 +19,17 @@
   }
 }
 
-/* Alert Box */
+/* Alert Box - Redesigned with subtle background */
 .alert {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(30, 30, 36, 0.98);  /* Dark neutral background instead of red gradient */
+  border: 2px solid rgba(251, 146, 60, 0.4);  /* Amber border for warning */
   border-radius: var(--radius-xl);
-  box-shadow: 0 20px 60px rgba(239, 68, 68, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  color: white;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(251, 146, 60, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  color: var(--color-text-primary, #e5e7eb);
   overflow: hidden;
 }
 
@@ -36,7 +39,8 @@
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-5) var(--space-6);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(251, 146, 60, 0.15);  /* Subtle amber separator */
+  background: linear-gradient(to bottom, rgba(251, 146, 60, 0.08), transparent);
 }
 
 .alertIcon {
@@ -46,22 +50,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(249, 115, 22, 0.15));
+  border: 1px solid rgba(251, 146, 60, 0.3);
   border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
+  animation: pulseAmber 2s ease-in-out infinite;
 }
 
-@keyframes pulse {
+@keyframes pulseAmber {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+    box-shadow: 0 0 0 8px rgba(251, 146, 60, 0);
   }
 }
 
 .alertIcon svg {
-  color: white;
+  color: #fb923c;  /* Amber-400 */
 }
 
 .alertTitle {
@@ -72,13 +77,13 @@
   font-size: var(--font-size-lg);
   font-weight: 700;
   margin: 0 0 var(--space-1);
-  color: white;
+  color: #fbbf24;  /* Amber-400 for heading */
 }
 
 .alertTitle p {
   font-size: var(--font-size-sm);
   margin: 0;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(229, 231, 235, 0.8);  /* Gray-200 with opacity */
   font-weight: 500;
 }
 
@@ -89,16 +94,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(55, 65, 81, 0.5);  /* Subtle gray background */
+  border: 1px solid rgba(75, 85, 99, 0.5);
   border-radius: 50%;
-  color: white;
+  color: rgba(229, 231, 235, 0.7);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .closeButton:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(75, 85, 99, 0.7);
+  border-color: rgba(251, 146, 60, 0.5);
+  color: #fb923c;
   transform: rotate(90deg);
 }
 
@@ -124,16 +131,18 @@
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3);
-  background-color: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(55, 65, 81, 0.4);  /* Neutral dark background */
+  border: 1px solid rgba(75, 85, 99, 0.5);
+  border-left: 3px solid #ef4444;  /* Red accent line for critical status */
   border-radius: var(--radius-lg);
   transition: all var(--transition-fast);
 }
 
 .cctvItem:hover {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateX(-4px);
+  background-color: rgba(55, 65, 81, 0.6);
+  border-color: rgba(251, 146, 60, 0.5);
+  border-left-color: #fb923c;  /* Amber accent on hover */
+  transform: translateX(4px);  /* Slide right on hover (changed from left) */
 }
 
 .cctvIcon {
@@ -143,12 +152,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.25);
   border-radius: var(--radius-md);
 }
 
 .cctvIcon svg {
-  color: white;
+  color: #f87171;  /* Red-400 for icon */
 }
 
 .cctvInfo {
@@ -162,7 +172,7 @@
 .cctvId {
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: white;
+  color: #e5e7eb;  /* Gray-200 */
   font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -171,7 +181,7 @@
 
 .cctvError {
   font-size: var(--font-size-xs);
-  color: rgba(255, 255, 255, 0.8);
+  color: #fca5a5;  /* Red-300 for error text */
   font-weight: 500;
 }
 
@@ -181,15 +191,15 @@
 }
 
 .alertBody::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(31, 41, 55, 0.5);
   border-radius: var(--radius-full);
 }
 
 .alertBody::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(251, 146, 60, 0.4);  /* Amber scrollbar */
   border-radius: var(--radius-full);
 }
 
 .alertBody::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(251, 146, 60, 0.6);
 }
