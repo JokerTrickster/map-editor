@@ -212,62 +212,6 @@ class MockStatusService implements IStatusService {
     this.broadcast(message);
   }
 
-  /**
-   * Update random CCTV status (deprecated - kept for backward compatibility)
-   */
-  private updateRandomCctv(): void {
-    if (this.mockCctvIds.length === 0) return;
-
-    const randomId = this.mockCctvIds[
-      Math.floor(Math.random() * this.mockCctvIds.length)
-    ];
-
-    const connected = Math.random() > 0.3; // 70% chance to be connected
-
-    const status: CctvStatus = {
-      objectId: randomId,
-      connected,
-      lastUpdate: Date.now(),
-      errorMessage: !connected ? 'Network timeout' : undefined,
-    };
-
-    const message: StatusMessage = {
-      type: 'cctv_status',
-      data: status,
-    };
-
-    this.broadcast(message);
-  }
-
-  /**
-   * Update random parking status (deprecated - kept for backward compatibility)
-   */
-  private updateRandomParking(): void {
-    if (this.mockParkingIds.length === 0) return;
-
-    const randomId = this.mockParkingIds[
-      Math.floor(Math.random() * this.mockParkingIds.length)
-    ];
-
-    const occupied = Math.random() > 0.5; // 50% chance
-
-    const status: ParkingLocationStatus = {
-      objectId: randomId,
-      occupied,
-      lastUpdate: Date.now(),
-      vehicleInfo: occupied ? {
-        plateNumber: this.generatePlateNumber(),
-        entryTime: Date.now(),
-      } : undefined,
-    };
-
-    const message: StatusMessage = {
-      type: 'parking_status',
-      data: status,
-    };
-
-    this.broadcast(message);
-  }
 
   /**
    * Broadcast message to all subscribers
