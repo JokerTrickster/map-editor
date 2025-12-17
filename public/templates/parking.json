@@ -80,7 +80,7 @@
     },
     "parkingLocation": {
       "displayName": "주차 구역",
-      "icon": "#6B7280",
+      "icon": "#57585c",
       "category": "parking",
       "priority": 3,
       "usesAsset": false,
@@ -91,10 +91,10 @@
         "angle": 0
       },
       "defaultStyle": {
-        "color": "#6B7280",
+        "color": "#57585c",
         "fillOpacity": 0.8,
         "strokeWidth": 2,
-        "strokeColor": "#6B7280"
+        "strokeColor": "#57585c"
       }
     },
     "arrow": {
@@ -167,7 +167,7 @@
     },
     "entrance": {
       "displayName": "입구/출구",
-      "icon": "#14B8A6",
+      "icon": "#96b09b",
       "category": "navigation",
       "priority": 6,
       "usesAsset": false,
@@ -176,7 +176,7 @@
         "type": "entrance"
       },
       "defaultStyle": {
-        "color": "#14B8A6",
+        "color": "#96b09b",
         "size": 36,
         "icon": "door"
       }
@@ -274,17 +274,17 @@
     },
     "background": {
       "displayName": "배경",
-      "icon": "#6B7280",
+      "icon": "#d9d9d9",
       "category": "structure",
       "priority": 1,
       "usesAsset": false,
       "geometryType": "polygon",
       "defaultProperties": {},
       "defaultStyle": {
-        "color": "#6B7280",
+        "color": "#d9d9d9",
         "fillOpacity": 0.8,
         "strokeWidth": 2,
-        "strokeColor": "#6B7280"
+        "strokeColor": "#d9d9d9"
       }
     }
   },

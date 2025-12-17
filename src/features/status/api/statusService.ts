@@ -54,10 +54,10 @@ class MockStatusService implements IStatusService {
     // Send initial bulk update
     this.sendBulkUpdate();
 
-    // Simulate random status updates every 15 seconds
+    // Simulate random status updates every 5 seconds
     this.updateInterval = setInterval(() => {
       this.sendRandomUpdate();
-    }, 15000); // 15 seconds
+    }, 5000); // 5 seconds
   }
 
   disconnect(): void {
@@ -92,11 +92,11 @@ class MockStatusService implements IStatusService {
     const cctvStatuses: Record<string, CctvStatus> = {};
     const parkingStatuses: Record<string, ParkingLocationStatus> = {};
 
-    // Generate initial CCTV statuses (2-3 disconnected, rest connected)
-    const disconnectedCount = Math.floor(Math.random() * 2) + 2; // 2 or 3
+    // Generate initial CCTV statuses (0-2 disconnected, rest connected)
+    const disconnectedCount = Math.floor(Math.random() * 3); // 0, 1, or 2
     const disconnectedIndices = new Set<number>();
 
-    // Randomly select 2-3 CCTVs to be disconnected
+    // Randomly select 0-2 CCTVs to be disconnected
     while (disconnectedIndices.size < Math.min(disconnectedCount, this.mockCctvIds.length)) {
       disconnectedIndices.add(Math.floor(Math.random() * this.mockCctvIds.length));
     }
@@ -111,8 +111,8 @@ class MockStatusService implements IStatusService {
       };
     });
 
-    // Generate initial parking statuses (50-70% occupied)
-    const occupancyRate = 0.5 + Math.random() * 0.2; // 50-70%
+    // Generate initial parking statuses (50-90% occupied)
+    const occupancyRate = 0.5 + Math.random() * 0.4; // 50-90%
     this.mockParkingIds.forEach(id => {
       const occupied = Math.random() < occupancyRate;
       parkingStatuses[id] = {
