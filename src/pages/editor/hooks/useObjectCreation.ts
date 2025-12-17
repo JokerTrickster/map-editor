@@ -15,6 +15,12 @@ export function useObjectCreation(
     useEffect(() => {
         if (!paper || !graph || !selectedType) return
 
+        // Only allow object creation if the type has an icon
+        if (!selectedType.icon) {
+            console.warn(`⚠️ Cannot create object: type "${selectedType.name}" has no icon`)
+            return
+        }
+
         const handlePointerDown = (_evt: dia.Event, x: number, y: number) => {
             if (selectedType.icon) {
                 // Create image object directly at click position

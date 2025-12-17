@@ -88,3 +88,13 @@ a:hover {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-tertiary);
 }
+
+/* Hide JointJS magnet points and port markers */
+.joint-element .joint-port,
+.joint-element [magnet],
+.joint-element .magnet,
+[joint-selector="portBody"],
+circle.joint-port-body,
+rect.joint-port-body {
+  display: none !important;
+}
