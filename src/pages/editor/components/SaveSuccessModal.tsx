@@ -49,7 +49,7 @@ export function SaveSuccessModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="">
+    <Modal isOpen={isOpen} onClose={onClose} title="" maxWidth="680px">
       <div className={styles.container}>
         <div className={styles.header}>
           <div className={styles.successIcon}>
