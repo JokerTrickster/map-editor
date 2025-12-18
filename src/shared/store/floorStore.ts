@@ -19,6 +19,9 @@ export interface MapData {
   assets?: any[];
   objects?: any[];
   graphJson?: any;
+
+  // Selection state
+  selectedElementId?: string | null;
 }
 
 export interface Floor {

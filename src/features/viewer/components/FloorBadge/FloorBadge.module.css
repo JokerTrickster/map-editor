@@ -1,0 +1,56 @@
+.badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.name {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDot.ok {
+  background-color: #4caf50;
+}
+
+.statusDot.warning {
+  background-color: #ff9800;
+}
+
+.statusDot.error {
+  background-color: #f44336;
+}
+
+.statusDot.inactive {
+  background-color: #9e9e9e;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* Dark mode support */
+[data-theme="dark"] .badge {
+  background: rgba(30, 30, 30, 0.95);
+  border-color: var(--color-border);
+}

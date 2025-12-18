@@ -12,3 +12,6 @@ export { useCanvasStore } from './canvasStore';
 
 export { useObjectTypeStore } from './objectTypeStore';
 export type { ObjectType, Property, Mapping } from './objectTypeStore';
+
+export { useViewerStore } from './viewerStore';
+export type { DisplayMode, LayoutMode } from './viewerStore';

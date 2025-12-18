@@ -108,7 +108,7 @@ export function createElementsFromCSV(
       const element = createElementFromEntity(entity, bounds, scale, dataHeight, layer.layer, mappedType)
 
       if (element) {
-        const priority = mappedType?.priority ?? 5
+        const priority = mappedType?.priority ?? 1 // Default priority 1 (background layer)
         elementsWithPriority.push({ element, priority, layer: layer.layer })
         layerElements.push(element)
       }
@@ -119,9 +119,10 @@ export function createElementsFromCSV(
     }
   })
 
-  // Sort by priority (higher priority first, so they get higher z-index)
+  // Sort by priority (lower priority first, so they render first/bottom)
   // Elements added later get higher z-index in JointJS
-  elementsWithPriority.sort((a, b) => b.priority - a.priority)
+  // So we add low priority (background) first, then high priority (foreground) last
+  elementsWithPriority.sort((a, b) => a.priority - b.priority)
 
   // Extract sorted elements
   const sortedElements = elementsWithPriority.map(item => item.element)
@@ -211,7 +212,7 @@ function createElementFromEntity(
     // Determine icon size based on object type (CCTV is smaller)
     const isCCTV = mappedType?.name?.includes('CCTV')
     const iconSize = isCCTV ? 20 : 32
-    const zIndex = mappedType?.priority ?? 5 // Default priority 5
+    const zIndex = mappedType?.priority ?? 1 // Default priority 1 (background layer)
 
     const image = new shapes.standard.Image({
       id: `${layer}_${entityHandle}`,
@@ -257,7 +258,7 @@ function createElementFromEntity(
     .join(' ')
 
   // Create path element
-  const zIndex = mappedType?.priority ?? 5 // Default priority 5
+  const zIndex = mappedType?.priority ?? 1 // Default priority 1 (background layer)
 
   const element = new shapes.standard.Path({
     id: `${layer}_${entityHandle}`,

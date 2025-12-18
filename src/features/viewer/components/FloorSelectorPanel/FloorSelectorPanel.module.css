@@ -1,0 +1,167 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-background-secondary);
+  border-right: 1px solid var(--color-border);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.selectionCount {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: var(--color-background-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text-secondary);
+}
+
+.floorList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.floorItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: var(--color-background-primary);
+  border: 1px solid transparent;
+}
+
+.floorItem:hover:not(.disabled) {
+  background-color: var(--color-background-secondary);
+  border-color: var(--color-border);
+}
+
+.floorItem.selected {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-color: var(--color-primary);
+}
+
+.floorItem.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.checkbox input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
+.floorInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.floorName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDot.ok {
+  background-color: #4caf50;
+}
+
+.statusDot.warning {
+  background-color: #ff9800;
+}
+
+.statusDot.error {
+  background-color: #f44336;
+}
+
+.statusDot.inactive {
+  background-color: #9e9e9e;
+}
+
+.floorMeta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.actionButton {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionButton:hover:not(:disabled) {
+  background-color: var(--color-background-secondary);
+  border-color: var(--color-primary);
+}
+
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.warning {
+  padding: 12px;
+  margin: 8px 12px;
+  font-size: 12px;
+  background-color: rgba(255, 152, 0, 0.1);
+  border: 1px solid #ff9800;
+  border-radius: 4px;
+  color: #ff9800;
+  text-align: center;
+}

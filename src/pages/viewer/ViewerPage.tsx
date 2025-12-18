@@ -1,19 +1,21 @@
 /**
  * ViewerPage
- * Standalone read-only map viewer accessible from dashboard
+ * Standalone read-only map viewer with multi-floor support
  */
 
 import { useState, useRef, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTheme } from '@/shared/context/ThemeContext'
 import { useProjectStore } from '@/shared/store/projectStore'
 import { useFloorStore } from '@/shared/store/floorStore'
+import { useViewerStore } from '@/shared/store/viewerStore'
 import { statusService, useStatusStore, StatusOverlay } from '@/features/status'
 import { ResizablePanel } from '@/shared/ui/ResizablePanel'
 import { LoadingOverlay } from '@/shared/ui/LoadingOverlay'
 import { ViewerJsonPanel } from '../editor/components/ViewerJsonPanel'
 import { ConnectionPanel } from './components/ConnectionPanel'
 import { CctvAlert } from './components/CctvAlert'
+import { FloorSelectorPanel, DisplayModeToggle, MultiFloorCanvas, FloorBadge } from '@/features/viewer'
 import { useJointJSCanvas } from '../editor/hooks/useJointJSCanvas'
 import { useCanvasPanning } from '../editor/hooks/useCanvasPanning'
 import { useCanvasZoom } from '../editor/hooks/useCanvasZoom'
@@ -23,11 +25,20 @@ import styles from './ViewerPage.module.css'
 export default function ViewerPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { theme, toggleTheme } = useTheme()
 
-  // Project store
+  // Stores
   const { getLotById } = useProjectStore()
   const { floors } = useFloorStore()
+  const {
+    displayMode,
+    selectedFloorIds,
+    layout,
+    setDisplayMode,
+    setSelectedFloorIds,
+    setLayout,
+  } = useViewerStore()
 
   // Refs
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -35,11 +46,10 @@ export default function ViewerPage() {
   // State
   const [loading, setLoading] = useState(true)
   const [projectData, setProjectData] = useState<any>(null)
-  const [currentFloorIndex, setCurrentFloorIndex] = useState(0)
   const [zoom, setZoom] = useState(1)
   const [showConnectionPanel, setShowConnectionPanel] = useState(false)
 
-  // JointJS Canvas
+  // JointJS Canvas (for single-floor mode)
   const { graph, paper } = useJointJSCanvas(canvasRef)
 
   // Canvas interactions (read-only)
@@ -50,14 +60,13 @@ export default function ViewerPage() {
   // Status service
   const { connect, disconnect } = useStatusStore()
 
-  // Load project data from store (mock data)
+  // Load project data from store
   useEffect(() => {
     if (!projectId) {
       navigate('/dashboard')
       return
     }
 
-    // Load project from store
     const project = getLotById(projectId)
     if (!project) {
       console.error('Project not found:', projectId)
@@ -65,7 +74,6 @@ export default function ViewerPage() {
       return
     }
 
-    // Load floors for this project
     const projectFloors = floors.filter(floor => floor.lotId === projectId)
 
     if (projectFloors.length === 0) {
@@ -80,82 +88,86 @@ export default function ViewerPage() {
       return
     }
 
-    // Use first floor by default
-    const firstFloor = projectFloors[0]
-    const graphJson = firstFloor.mapData?.graphJson
-
-    console.log('📂 Loaded project data:', {
-      projectId,
-      projectName: project.name,
-      floorCount: projectFloors.length,
-      hasMapData: !!firstFloor.mapData,
-      hasGraphJson: !!graphJson,
-      graphJsonCells: graphJson?.cells?.length || 0,
-      firstFloorData: firstFloor
-    })
+    // Sort floors by order
+    const sortedFloors = [...projectFloors].sort((a, b) => a.order - b.order)
 
     setProjectData({
       projectId,
       projectName: project.name,
-      floors: projectFloors,
-      currentFloor: firstFloor,
-      graphJson
+      floors: sortedFloors,
     })
     setLoading(false)
+
+    // Initialize URL state
+    const urlMode = searchParams.get('mode') as 'single' | 'multi' | null
+    const urlFloors = searchParams.get('floors')?.split(',') || []
+    const urlLayout = searchParams.get('layout') as 'grid' | 'stack' | 'side' | null
+
+    if (urlMode) {
+      setDisplayMode(urlMode)
+    }
+
+    if (urlFloors.length > 0) {
+      const validFloorIds = urlFloors.filter(id => sortedFloors.find(f => f.id === id))
+      if (validFloorIds.length > 0) {
+        setSelectedFloorIds(validFloorIds)
+      } else {
+        // Default to first floor
+        setSelectedFloorIds([sortedFloors[0].id])
+      }
+    } else {
+      // Default to first floor
+      setSelectedFloorIds([sortedFloors[0].id])
+    }
+
+    if (urlLayout) {
+      setLayout(urlLayout)
+    }
   }, [projectId, navigate, getLotById, floors])
 
-  // Load graph from project data
+  // Update URL when viewer state changes
   useEffect(() => {
-    if (!graph || !paper || !projectData?.graphJson) {
-      console.log('⚠️ Graph loading skipped:', {
-        hasGraph: !!graph,
-        hasPaper: !!paper,
-        hasGraphJson: !!projectData?.graphJson
-      })
+    if (!projectData) return
+
+    const params = new URLSearchParams()
+    params.set('mode', displayMode)
+    params.set('floors', selectedFloorIds.join(','))
+    params.set('layout', layout)
+
+    setSearchParams(params, { replace: true })
+  }, [displayMode, selectedFloorIds, layout, projectData])
+
+  // Load graph for single-floor mode
+  useEffect(() => {
+    if (displayMode !== 'single' || !graph || !paper || !projectData?.floors) {
+      return
+    }
+
+    // Get currently selected floor
+    const currentFloor = projectData.floors.find((f: any) => f.id === selectedFloorIds[0])
+    if (!currentFloor?.mapData?.graphJson) {
+      console.log('⚠️ No graph data for selected floor')
       return
     }
 
     try {
-      // Clear existing graph
       graph.clear()
+      graph.fromJSON(currentFloor.mapData.graphJson)
+      console.log('✅ Graph loaded in single-floor mode:', graph.getCells().length, 'cells')
 
-      // Load graph data
-      graph.fromJSON(projectData.graphJson)
-      console.log('✅ Graph loaded in viewer mode:', graph.getCells().length, 'cells')
-
-      // Get graph bounds
-      const bbox = graph.getBBox()
-      console.log('📏 Graph bounds:', bbox)
-
-      // Get current scale and viewport
-      const scale = paper.scale()
-      const translate = paper.translate()
-      console.log('🔍 Current paper state:', { scale, translate })
-
-      // Fit content to screen after a short delay to ensure rendering is complete
       setTimeout(() => {
         if (graph.getCells().length > 0) {
-          console.log('📐 Attempting to fit content to screen...')
-
-          // Try to fit content
           paper.scaleContentToFit({
             padding: 50,
             maxScale: 1.5,
             minScale: 0.1,
           })
-
-          // Log new state after fitting
-          const newScale = paper.scale()
-          const newTranslate = paper.translate()
-          console.log('✅ Content fitted. New state:', { scale: newScale, translate: newTranslate })
-        } else {
-          console.warn('⚠️ No cells to fit')
         }
       }, 100)
     } catch (error) {
       console.error('❌ Failed to load graph:', error)
     }
-  }, [graph, paper, projectData])
+  }, [graph, paper, projectData, displayMode, selectedFloorIds])
 
   // Set paper to read-only mode
   useEffect(() => {
@@ -165,23 +177,18 @@ export default function ViewerPage() {
       elementMove: false,
       addLinkFromMagnet: false,
     }))
-
-    console.log('🔒 Viewer mode: Read-only')
   }, [paper])
 
-  // Initialize status service (reinitialize when graph data changes)
+  // Initialize status service
   useEffect(() => {
-    if (!graph || !projectData?.graphJson) return
+    if (!graph || displayMode !== 'single') return
 
     const elements = graph.getElements()
 
-    // Filter CCTV/reader elements by ID pattern
     const cctvIds = elements
       .filter(el => {
         const id = String(el.id);
         const type = el.get('type') || el.get('objectType');
-
-        // Check both type property and ID pattern
         return (
           type === 'Cctv' ||
           type === 'cctv' ||
@@ -192,13 +199,10 @@ export default function ViewerPage() {
       })
       .map(el => String(el.id))
 
-    // Filter parking elements by ID pattern
     const parkingIds = elements
       .filter(el => {
         const id = String(el.id);
         const type = el.get('type') || el.get('objectType');
-
-        // Check both type property and ID pattern
         return (
           type === 'ParkingLocation' ||
           type === 'parkingLocation' ||
@@ -208,20 +212,39 @@ export default function ViewerPage() {
       })
       .map(el => String(el.id))
 
-    console.log('🚗 Detected objects for status tracking:', {
-      cctvCount: cctvIds.length,
-      parkingCount: parkingIds.length,
-      sampleCctv: cctvIds.slice(0, 2),
-      sampleParking: parkingIds.slice(0, 2)
-    });
-
     statusService.initialize(cctvIds, parkingIds)
     connect()
 
     return () => {
       disconnect()
     }
-  }, [graph, projectData, connect, disconnect])
+  }, [graph, displayMode, connect, disconnect])
+
+  // Handle floor selection change
+  const handleFloorSelectionChange = (floorIds: string[]) => {
+    setSelectedFloorIds(floorIds)
+  }
+
+  // Get selected floors for display (with validation)
+  const getSelectedFloors = () => {
+    if (!projectData?.floors) return []
+    return projectData.floors
+      .filter((f: any) => selectedFloorIds.includes(f.id))
+      .filter((f: any) => {
+        // Validate floor has graph data
+        if (!f.mapData?.graphJson) {
+          console.warn(`⚠️ Floor ${f.name} (${f.id}) has no graph data, skipping from multi-floor view`)
+          return false
+        }
+        return true
+      })
+  }
+
+  // Get current floor for single mode
+  const getCurrentFloor = () => {
+    if (!projectData?.floors || selectedFloorIds.length === 0) return null
+    return projectData.floors.find((f: any) => f.id === selectedFloorIds[0])
+  }
 
   if (loading) {
     return <LoadingOverlay message="맵 로딩 중..." />
@@ -238,6 +261,9 @@ export default function ViewerPage() {
     )
   }
 
+  const currentFloor = getCurrentFloor()
+  const selectedFloors = getSelectedFloors()
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -252,35 +278,38 @@ export default function ViewerPage() {
           <h1 className={styles.title}>
             {projectData.projectName || 'Unnamed Project'} (뷰어)
           </h1>
-          {projectData.floors && projectData.floors.length > 1 && (
-            <div className={styles.floorSelector}>
+
+          {/* Display Mode Toggle */}
+          {projectData.floors.length > 1 && (
+            <DisplayModeToggle
+              mode={displayMode}
+              onChange={setDisplayMode}
+            />
+          )}
+
+          {/* Layout Selector (only in multi mode) */}
+          {displayMode === 'multi' && (
+            <div className={styles.layoutSelector}>
+              <label className={styles.layoutLabel}>레이아웃</label>
               <select
-                value={currentFloorIndex}
-                onChange={(e) => {
-                  const newIndex = parseInt(e.target.value)
-                  setCurrentFloorIndex(newIndex)
-                  const newFloor = projectData.floors[newIndex]
-                  setProjectData({
-                    ...projectData,
-                    currentFloor: newFloor,
-                    graphJson: newFloor.mapData?.graphJson
-                  })
-                }}
-                className={styles.floorSelect}
+                value={layout}
+                onChange={(e) => setLayout(e.target.value as any)}
+                className={styles.layoutSelect}
               >
-                {projectData.floors.map((floor: any, index: number) => (
-                  <option key={floor.id} value={index}>
-                    {floor.name}
-                  </option>
-                ))}
+                <option value="grid">그리드</option>
+                <option value="stack">스택</option>
+                <option value="side">나란히</option>
               </select>
             </div>
           )}
         </div>
+
         <div className={styles.headerRight}>
-          <div className={styles.zoomInfo}>
-            Zoom: {Math.round(zoom * 100)}%
-          </div>
+          {displayMode === 'single' && (
+            <div className={styles.zoomInfo}>
+              Zoom: {Math.round(zoom * 100)}%
+            </div>
+          )}
           <button
             className={styles.connectionButton}
             onClick={() => setShowConnectionPanel(true)}
@@ -300,16 +329,66 @@ export default function ViewerPage() {
 
       {/* Main Content */}
       <main className={styles.main}>
+        {/* Floor Selector Panel (left sidebar) */}
+        {projectData.floors.length > 1 && (
+          <div className={styles.floorSelectorPanel}>
+            <FloorSelectorPanel
+              floors={projectData.floors}
+              selectedFloorIds={selectedFloorIds}
+              onSelectionChange={handleFloorSelectionChange}
+              maxSelection={displayMode === 'single' ? 1 : 5}
+            />
+          </div>
+        )}
+
         {/* Canvas Area */}
         <div className={styles.canvasArea}>
-          <div className={styles.canvasWrapper}>
-            <div ref={canvasRef} className={styles.canvas} />
+          {displayMode === 'single' ? (
+            // Single-floor view
+            <div className={styles.canvasWrapper}>
+              <div ref={canvasRef} className={styles.canvas} />
 
-            {/* Status Overlay */}
-            {graph && paper && (
-              <StatusOverlay graph={graph} paper={paper} />
-            )}
-          </div>
+              {/* Floor Badge */}
+              {currentFloor && (
+                <FloorBadge
+                  floor={currentFloor}
+                  objectCount={currentFloor.mapData?.objects?.length || 0}
+                  statusSummary="ok"
+                />
+              )}
+
+              {/* Status Overlay */}
+              {graph && paper && (
+                <StatusOverlay graph={graph} paper={paper} />
+              )}
+            </div>
+          ) : selectedFloors.length > 0 ? (
+            // Multi-floor view
+            <MultiFloorCanvas
+              floors={selectedFloors}
+              layout={layout}
+            />
+          ) : (
+            // No valid floors selected
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              gap: '16px',
+              padding: '48px',
+              textAlign: 'center',
+              color: 'var(--color-text-secondary)'
+            }}>
+              <p style={{fontSize: '18px', fontWeight: 600, color: 'var(--color-text-primary)'}}>
+                선택된 층이 없습니다
+              </p>
+              <span style={{fontSize: '14px'}}>
+                왼쪽 패널에서 층을 선택하거나, 층 데이터가 있는지 확인하세요
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Right Sidebar - JSON Preview */}
@@ -320,7 +399,7 @@ export default function ViewerPage() {
           maxWidth={600}
         >
           <ViewerJsonPanel
-            graph={graph}
+            graph={displayMode === 'single' ? graph : null}
             projectName={projectData.projectName || 'Unnamed Project'}
           />
         </ResizablePanel>

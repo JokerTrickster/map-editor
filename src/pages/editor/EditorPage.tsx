@@ -1028,7 +1028,7 @@ export default function EditorPage() {
           hasCSV: !!currentCSVState.rawData,
         })
 
-        // Save CSV data from snapshot
+        // Save CSV data and selection state from snapshot
         updateFloorMapData(prevFloorData.id, {
           graphJson: json,
           csvRawData: currentCSVState.rawData || undefined,
@@ -1036,6 +1036,7 @@ export default function EditorPage() {
           csvParsedData: currentCSVState.parsedData,
           csvGroupedLayers: currentCSVState.groupedLayers || undefined,
           csvSelectedLayers: Array.from(currentCSVState.selectedLayers),
+          selectedElementId: selectedElementId,
         })
       }
     }
@@ -1093,6 +1094,23 @@ export default function EditorPage() {
       if (graph && mapData.graphJson) {
         console.log(`🎨 Restoring graph for floor ${currentFloorData.name}`)
         setPendingGraphJson(mapData.graphJson)
+
+        // Restore selection after graph loads (with validation)
+        // Use setTimeout to ensure graph has finished loading
+        setTimeout(() => {
+          if (mapData.selectedElementId) {
+            const cell = graph.getCell(mapData.selectedElementId)
+            if (cell && cell.isElement()) {
+              console.log(`✅ Restoring selection: ${mapData.selectedElementId}`)
+              setSelectedElementId(mapData.selectedElementId)
+            } else {
+              console.warn(`⚠️ Saved selection ID not found in graph: ${mapData.selectedElementId}`)
+              setSelectedElementId(null)
+            }
+          } else {
+            setSelectedElementId(null)
+          }
+        }, 100)
       } else if (graph) {
         console.log(`🧹 Clearing canvas for floor ${currentFloorData.name}`)
         // Clear canvas for new floor
@@ -1205,7 +1223,8 @@ export default function EditorPage() {
             graphJson: json,
             metadata: currentFloorData.mapData?.metadata || {},
             assets: currentFloorData.mapData?.assets || [],
-            objects: currentFloorData.mapData?.objects || []
+            objects: currentFloorData.mapData?.objects || [],
+            selectedElementId: selectedElementId,
           }
         })
 

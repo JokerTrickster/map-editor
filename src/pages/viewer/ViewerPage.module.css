@@ -19,6 +19,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: 1;
 }
 
 .floorSelector {
@@ -126,6 +127,48 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+}
+
+.floorSelectorPanel {
+  width: 280px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background-color: var(--color-background-secondary);
+}
+
+.layoutSelector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layoutLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.layoutSelect {
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.layoutSelect:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-background-secondary);
+}
+
+.layoutSelect:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .canvasArea {
